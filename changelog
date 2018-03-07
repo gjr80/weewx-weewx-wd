@@ -1,0 +1,175 @@
+v1.0.3
+*   bug fixes:
+    -   fixed bug in wdSearchX3.py wdMonthStats SLE that caused problems with
+        monthRainMax_vh for archives with small amounts (partial months) of
+        data
+*   removed two lines of old commented out code from wdSearchX3.py wdMonthStats
+    SLE
+v1.0.2
+*   bug fixes:
+    -   fixed bug in wdStackedWindRose.py where importing Image/ImageDraw
+        failed on systems that use PIL; now tries to import from PIL first
+    -   fixed bug in wdStackedWindRose.py where wind speed was always displayed
+        in the speed units used in the underlying weewx database
+*   removed unused import from wdSearchX3.py
+
+v1.0.1
+*   revised to work with Weewx v3.4.0 and greater
+    -   $almanac.sunrise and $almanac.sunset are now expected as ValueHelpers
+        rather than formatted strings
+*   installer now checks for minimum required weewx version
+*   added heatColorWord, feelsLike and density tags to wdSundryTags SLE
+*   added day_windrun, yest_windrun, week_windrun, seven_day_windrun,
+    month_windrun, year_windrun tags and alltime_windrun tags to wdWindRunTags
+    SLE
+*   ignore locale for non-datetime ValueHelpers in clientraw files using the
+    undocumented .toString() method
+*   installer now adds date-time format and units settings to respective report
+    stanzas in weewx.conf for those reports where date-time formats and units
+    can be customized making it easier for users to customize these settings
+*   database management utility functions in weewxwd3.py removed and placed in
+    new wd_databse utility
+*   bug fixes:
+    -   fixed bug in wdMonthStats SLE where it could crash if there was an
+        included month or greater of no data in the archive
+    -   fixed bug in wdForToday SLE where it would crash if a query on
+        archive_day_outTemp returned no (a None) result
+    -   fixed another bug in wdMonthStats SLE whereby a gap of at least one
+        full calendar month of temp stats would result in all outTemp min stats
+        being None
+    -   clientraw.txt field 48 now correctly provides current conditions icon
+        number and not the forecast icon number
+    -   clientraw.txt field 49 now correctly provides current conditions text
+        and not the forecast text
+    -   fixed issue in imageStackedWindRose3.py that caused weewx to exit if a
+        particular font is not installed, now defaults to system font used by
+        weewx if requested font is not installed
+    -   fixed incorrect avgbearing tag in customclientraw.txt
+*   clientraw.txt.tmpl:
+    -   reformat a number of equations
+*   testtags.php.tmpl:
+    -   revised day length and change in day length calculations
+    -   removed old code used for tags that have been moved to the wdSundryTags and wdWindRunTags SLEs
+    -   now uses additional sundry tags from revised wdSundryTags SLE
+    -   now uses windrun tags from revised wdWindRunTags SLE
+    -   removed template calculations that have now been moved to a SLE
+        (free memory, Easter, latitude/longitude strings, time of next update,
+        wet bulb, Chandler, cloud base, feels like, heat color word,
+        air density, Beaufort and barometer trend)
+    -   now uses free memory, Easter, latitude/longitude strings, time of next
+        update, wet bulb, Chandler, cloud base, feels like, heat color word,
+        air density, Beaufort and barometer trend from applicable SLE
+    -   reworked appTemp calcs
+    -   force sunrise and sunset to HH:MM
+    -   forced vpstormrain tag to 0.0 (until implemented)
+    -   forced currentsolarpercent tag to naString (until implemented)
+*   weewx_pws.xml.tmpl:
+    -   force sunrise, sunset, moonrise and moonset time formats to HH:MM
+*   wdSearchX3.py:
+    -   removed unused imports
+    -   revised wdSundryTags SLE to pickup many sundry tags that were previously calculated in-template
+*   weewxwd3.py:
+    -   implemented syslog wrapper functions
+    -   replaced calls to superseded DBBinder.get_database method with
+        DBBinder.get_manager method
+    -   removed database management utility functions and placed in new
+        wd_database utility
+*   wdTaggedstats3.py:
+    -   removed unused imports
+*   wdAstroSearchX3.py:
+    -   added support for a second debug level (ie debug = 2)
+*   wd_database
+    -   new utility to manage weewx-WD database
+*   customclientraw.txt.tmpl:
+    -   moved template calculations out of the field construction section to
+        the up front of the template
+    -   added inhumTL, inhumTH, TinhumTL and TinhumTH fields
+*   Steelgauges/skin.conf:
+    -   add group_distance and associated formats and labels
+    -   bump version to 12
+    -   now uses wdHourRainTags SLE
+*   Testtags/skin.conf, Clientraw/skin.conf:
+    -   add group_distance and associated formats and labels
+
+v1.0.0
+*   revised to work with Weewx v3.0.0
+*   Weewx-WD now packaged as a Weewx extension
+*   complete restructure of Weewx-WD services; StdArchive is no longer replaced by WDArchive rather two services, WdWXCalculate and WdArchive are added to the suite of standard Weewx services
+*   Weewx-WD now uses its own database (default name weewxwd) to store all Weewx-WD generated observations
+*   Weewx-WD no longer requires alteration of any Weewx database schema
+*   all templates have been reviewed and a number of Weewx-WD SLE generated tags have been replaced with new Weewx native tags now provided in Weewx v3.0.0
+*   testtags.php.tpl format has been revised to better mimic testtags.php v1.07
+*   month averages can now be either calculated from the station historical data or manually set in weewx.conf
+*   following new tags have been included in testtags.php:
+        - next Chinese New Year date
+        - next solar and lunar eclipse type, date and time
+        - next lunar apogee/perigee distance, date and time
+        - lunar annual max apogee distance and min perigee distance
+        - next aphelion and perihelion date and time
+        - max rainfall in any 1 hour period today
+        - time of max 1 hour rainfall today
+        - month and year growing degree days
+        - max and min temperature for this day of the year from all recorded data
+        - total month rain to date on this time last month
+        - total year rain to date on this time last year
+        - number and date on longest number of consecutive wet and dry days this month/year and all time
+
+v0.9.3
+*   SteelGauges data file (customclientraw.txt) now generated through its own skin, SteelGauges, rather than the Clientraw skin
+*   fixed issues with imageStackedWindRose.py that caused it to fail with Weewx v2.6.3
+*   fixed missing import statement in wdarchive.py
+*   revised wdarchive.py version number to align with Weewx-WD version numbering
+*   fixed logic error in imageStackedWindRose.py that resulted in incorrect calculation of wind rose values
+*   removed unnnecessary import statement in imageStackedWindRose.py
+*   tweaked wind rose size calculations to better cater for labels on plot
+*   Clientraw/skin.conf:
+        - fixed minor typos
+        - removed customclientraw.txt.tmpl code
+*   SteelGauges/skin.conf:
+        - created skin.conf and set to call customclientraw.txt.tmpl only
+
+v0.9.2
+*   added manual version numbers to files
+*   windrun calculations better handle periods where no wind data is available for some time at the start of the period (eg year windrun where records only start in March that year)
+*   now supports SteelSeries windrose gauge
+*   testtags.php now includes all time max day windrun and the date this occurred
+*   testtags.php now includes avrainxxxnow and avtempxxnow where xxx is 3 letter month
+*   removed code that previously set windDir and windGustDir to 0 if the loop/archive records have these obs as None
+*   minor formatting chnages to Clientraw\skin.conf
+*   clientraw.txt.tmpl:
+        - simplified rainrate tags in
+        - hardened manual appTemp calculation
+*   customclientraw.txt.tmpl:
+        - removed redundant $beaufort24Desc tag in customclientraw.txt.tmpl
+        - removed redundant white space between json data elements
+        - now checks for humidex and appTemp values in humidex and appTemp tags, if not found then attempts to use extraTemp1 and extraTemp2 tags and then if not found sets to 0
+        - fixed timeUTC tag to provide time in UTC and not local. Refer bitbucket/Weewx-WD issue #37
+        - added windrosedata tag to support SteelSeries windrose gauge
+        - updated windrun calcs
+        - added conditional check for various forecast strings currently in use/under development
+*    updated search_list_extensions setting in Testtags\skin.conf
+*    testtags.php.tmpl:
+        - updated windrun calcs
+        - hardened manual humidex and apptemp calcs
+        - hardened altitude calcs
+        - simplified baroinusa2dp tag code
+        - included recordhighwindrun and associated date tags
+        - minor formatting changes
+        - added $dayornight tag (tag is calculated but not yet used in the template)
+
+v0.9.1
+*   'stale_age' settings in Clientraw skin are now off by default
+
+v0.9
+*   The first controlled release of Weewx-WD. Too many changes from initial trial version to mention, but Weewx-WD now generates data files to support:
+        - Weather Display Live
+            - clientraw.txt
+            - clientrawextra.txt
+            - clientrawdaily.txt
+            - clientrawhour.txt
+        - SteelSeries Gauges
+            - customclientraw.txt
+        - Carter Lake/Saratoga Website templates
+            - testtags.php
+*   Includes imageStackedWindRose.py an image generator that produces a windrose image file for use on the Saratoga Weather Trends page
+*   Added skin named PWS that generates an XML datafile used in conjunction with the Pocket PWS Android app.

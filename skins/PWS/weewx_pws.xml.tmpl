@@ -1,0 +1,74 @@
+##errorCatcher Echo
+##
+##This program is free software; you can redistribute it and/or modify it under
+##the terms of the GNU General Public License as published by the Free Software
+##Foundation; either version 2 of the License, or (at your option) any later
+##version.
+##
+##This program is distributed in the hope that it will be useful, but WITHOUT
+##ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+##FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+##
+###############################################################################
+##                                                                            #
+##                          WEEWX-WD PWS.XML TEMPLATE                         #
+##                                                                            #
+## Version: 1.0.3                                      Date: 31 March 2017    #
+##                                                                            #
+###############################################################################
+<?xml version="1.0" encoding="UTF-8" ?>
+<maintag>
+<!--MISC-->
+<misc><misc data="station_location">$station.location</misc></misc>
+<!--STATION DATA-->
+<realtime><data realtime="station_date">$current.dateTime.format("%a, %d %b %Y")</data></realtime>
+<realtime><data realtime="station_time">$current.dateTime.format("%H:%M %Z")</data></realtime>
+#if $almanac.hasExtras
+<realtime><data realtime="sunrise">$almanac.sun.rise.format("%H:%M")</data></realtime>
+<realtime><data realtime="sunset">$almanac.sun.set.format("%H:%M")<!--sunsetTime--></data></realtime>
+<realtime><data realtime="moonrise">$almanac.moon.rise.format("%H:%M")<!--moonriseTime--></data></realtime>
+<realtime><data realtime="moonset">$almanac.moon.set.format("%H:%M")<!--moonsetTime--></data></realtime>
+#else
+<realtime><data realtime="sunrise">$almanac.sunrise.format("%H:%M")</data></realtime>
+<realtime><data realtime="sunset">$almanac.sunset.format("%H:%M")<!--sunsetTime--></data></realtime>
+<realtime><data realtime="moonrise">  <!--moonriseTime--></data></realtime>
+<realtime><data realtime="moonset">  <!--moonsetTime--></data></realtime>
+#end if
+<!--TEMPERATURE-->
+<realtime><data realtime="temp">$current.outTemp.formatted<!--outsideTemp--></data></realtime>
+<realtime><data realtime="high_temp">$day.outTemp.max.formatted<!--hiOutsideTemp--></data></realtime>
+<realtime><data realtime="low_temp">$day.outTemp.min.formatted<!--lowOutsideTemp--></data></realtime>
+<realtime><data realtime="heatindex">$current.heatindex.formatted<!--outsideHeatIndex--></data></realtime>
+<realtime><data realtime="high_heatindex">$day.heatindex.max.formatted<!--hiHeatindex--></data></realtime>
+<!--HUMIDITY-->
+<realtime><data realtime="hum">$current.outHumidity.formatted<!--outsideHumidity--></data></realtime>
+<realtime><data realtime="high_hum">$day.outHumidity.max.formatted<!--hiHumidity--></data></realtime>
+<realtime><data realtime="low_hum">$day.outHumidity.min.formatted<!--lowHumidity--></data></realtime>
+<!--WIND-->
+<realtime><data realtime="winddir" misc="imgwinddir">$current.windDir.ordinal_compass<!--windDirection--></data></realtime>
+<realtime><data realtime="windspeed">$current.windSpeed.formatted<!--windSpeed--></data></realtime>
+<realtime><data realtime="high_windspeed">$day.wind.max.formatted<!--hiWindSpeed--></data></realtime>
+<realtime><data realtime="windchill">$current.windchill.formatted<!--windChill--></data></realtime>
+<realtime><data realtime="low_windchill">$day.windchill.min.formatted<!--lowWindchill--></data></realtime>
+<!--DEWPOINT-->
+<realtime><data realtime="dew">$current.dewpoint.formatted<!--outsideDewPt--></data></realtime>
+<realtime><data realtime="high_dew">$day.dewpoint.max.formatted<!--hiDewpoint--></data></realtime>
+<realtime><data realtime="low_dew">$day.dewpoint.min.formatted<!--lowDewpoint--></data></realtime>
+<!--BAROMETER-->
+<realtime><data realtime="barometer">$current.barometer.formatted<!--barometer--></data></realtime>
+<realtime><data realtime="changebarometer">$trend($time_delta=3600).barometer.formatted<!--hourchangebarom--></data></realtime>
+<realtime><data realtime="high_barometer">$day.barometer.max.formatted<!--hiBarometer--></data></realtime>
+<realtime><data realtime="low_barometer">$day.barometer.min.formatted<!--lowBarometer--></data></realtime>
+<!--RAIN-->
+<realtime><data realtime="todaysrain">$day.rain.sum.formatted<!--dailyRain--></data></realtime>
+<realtime><data realtime="rain_rate">$current.rainRate.formatted<!--rainRate--></data></realtime>
+<realtime><data realtime="high_rain_rate">$day.rainRate.max.formatted<!--hiRainRate--></data></realtime>
+<realtime><data realtime="storm_rate">$day.rain.sum.formatted<!--dailyRain--></data></realtime>
+<!--UNITS-->
+<realtime><data units="windunit">$unit.label.windSpeed.strip(' ')<!--windUnit--></data></realtime>
+<realtime><data units="rainunit">$unit.label.rain.strip(' ')<!--rainUnit--></data></realtime>
+<realtime><data units="rateunit">$unit.label.rainRate.strip(' ')<!--rateUnit--></data></realtime>
+<realtime><data units="barunit">$unit.label.barometer.strip(' ')<!--barUnit--></data></realtime>
+<realtime><data units="tempunit">$unit.label.outTemp.strip(' ')<!--tempUnit--></data></realtime>
+<realtime><data units="humunit">$unit.label.outHumidity.strip(' ')<!--humUnit--></data></realtime>
+</maintag>
