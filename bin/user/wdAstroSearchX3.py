@@ -1,7 +1,10 @@
+# wdAstroSearchX3.py
+#
+# Astronomical search list extensions for weewx-weeWX-WD
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 2 of the License, or (at your option) any later
+# Foundation; either version 3 of the License, or (at your option) any later
 # version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT
@@ -9,9 +12,13 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
-# Version: 1.0.3                                    Date: 31 March 2017
+# Version: 1.2.0a1                                    Date: 7 March 2018
 #
 # Revision History
+#   7 March 2018        v1.2.0
+#       - minor formatting changes
+#
+# Previous bitbucket revision history
 #   31 March 2017       v1.0.3
 #       - no change, version number change only
 #   14 December 2016    v1.0.2
@@ -19,11 +26,11 @@
 #   30 November 2016    v1.0.1
 #       - added support for second level debug messaging (ie debug = 2)
 #   10 January 2015     v1.0.0
-#       - Rewritten for Weewx v3.0.0
+#       - rewritten for weeWX v3.0.0
 #   21 October 2014     v0.9.4 (never released)
-#       - Initial implementation
+#       - initial implementation
 #
-
+# python imports
 from array import array
 import bisect
 import datetime
@@ -31,19 +38,21 @@ import math
 import syslog
 import time
 
+# weeWX imports
+import weewx
 from weewx.cheetahgenerator import SearchList
 from weewx.units import ValueHelper
 
-WEEWXWD_ASTRO_SLE_VERSION = '1.0.3'
+WEEWXWD_ASTRO_SLE_VERSION = '1.2.0a1'
 
 def logmsg(level, msg):
-    syslog.syslog(level, 'weewxWd: %s' % msg)
+    syslog.syslog(level, 'weewxwd: %s' % msg)
 
 def logdbg(msg):
     logmsg(syslog.LOG_DEBUG, msg)
 
 def logdbg2(msg):
-   if weewx.debug >= 2:
+    if weewx.debug >= 2:
         logmsg(syslog.LOG_DEBUG, msg)
 
 def loginf(msg):
@@ -53,8 +62,7 @@ def logerr(msg):
     logmsg(syslog.LOG_ERR, msg)
 
 class wdMoonApsis(SearchList):
-    """Weewx Search List Extension to provide various lunar apogee/perigee
-       details for use in Weewx generated reports.
+    """WeeWX SLE to provide various lunar apogee/perigee details.
 
        Code to calculate apogee and perigee details based on public domain
        Javascript code used at https://www.fourmilab.ch/earthview/pacalc.html
@@ -162,12 +170,12 @@ class wdMoonApsis(SearchList):
         self.apsis_type_lookup = {'p': 'perigee', 'a': 'apogee'}
 
     def fixangle(self, a):
-        """Range reduce angle in degrees"""
+        """Range reduce angle in degrees."""
 
         return a - 360.0 * (math.floor((a) / 360.0))
 
     def sumser(self, trig, D, M, F, T, argtab, coeff, tfix, tfixc):
-        """Sum the series of periodic terms"""
+        """Sum the series of periodic terms."""
 
         j = 0
         n = 0
@@ -190,7 +198,7 @@ class wdMoonApsis(SearchList):
         return summ
 
     def moonpa(self, k):
-        """Calculate perigee or apogee from index number"""
+        """Calculate perigee or apogee from index number."""
 
         EarthRad = 6378.14;
 
@@ -230,17 +238,14 @@ class wdMoonApsis(SearchList):
         return array('d', [JDE, par, EarthRad / math.sin(par)])
 
     def get_extension_list(self, timespan, db_lookup):
-        """Returns a search list extension with various lunar perigee and
-           apogee details.
+        """Create a search list with various lunar perigee and apogee details.
 
         Parameters:
-          timespan: An instance of weeutil.weeutil.TimeSpan. This will
-                    hold the start and stop times of the domain of
-                    valid times.
+          timespan: An instance of weeutil.weeutil.TimeSpan. This will hold the 
+                    start and stop times of the domain of valid times.
 
-          db_lookup: This is a function that, given a data binding
-                     as its only parameter, will return a database manager
-                     object.
+          db_lookup: This is a function that, given a data binding as its only 
+                     parameter, will return a database manager object.
 
         Returns:
           moon_apsis: A list of tuples with details of each apogee/perigee in
@@ -252,26 +257,27 @@ class wdMoonApsis(SearchList):
                           apsis
                         apsis_distance is the distance in km of the moon from
                           earth at apsis.
-          next_apogee_ts: ValueHelper timestamp of next apogee (could be next
-                          year)
+          next_apogee_ts: ValueHelper containing date-time of next apogee 
+                          (could be next year)
           next_apogee_dist_km: Earth to Moon distance in km at next apogee
-                               (Weewx has no notion of km/mi so cannot use a
+                               (weeWX has no notion of km/mi so cannot use a
                                ValueHelper)
-          next_perigee_ts: ValueHelper timestamp of next apogee (could be next
-                           year)
+          next_perigee_ts: ValueHelper containing date-time of next apogee 
+                           (could be next year)
           next_perigee_dist_km: Earth to Moon distance in km at next perigee
-                               (Weewx has no notion of km/mi so cannot use a
-                               ValueHelper)
+                                (Weewx has no notion of km/mi so cannot use a
+                                ValueHelper)
           max_apogee: Tuple with details of apogee where Moon is furthest from
                       Earth (ie max apogee) this year.
                       Format is:
                         (apsis_ts, apsis_distance)
                       where apsis_ts and apsis_distance as per moon_apsis above
           min_perigee: Tuple with details of perigee where Moon is closest to
-                      Earth (ie min apogee) this year.
-                      Format is:
-                        (apsis_ts, apsis_distance)
-                      where apsis_ts and apsis_distance as per moon_apsis above
+                       Earth (ie min apogee) this year.
+                       Format is:
+                         (apsis_ts, apsis_distance)
+                       where apsis_ts and apsis_distance as per moon_apsis 
+                       above
         """
 
         t1 = time.time()
@@ -280,7 +286,7 @@ class wdMoonApsis(SearchList):
         curr_year = datetime.date.fromtimestamp(timespan.stop).year
         ssk = math.floor((curr_year - 1999.97) * 13.2555)
         apsis_list = []
-        # get our list of apogees/perigees for the current year. List will
+        # Get our list of apogees/perigees for the current year. List will
         # include last apogee/perigee from previous year and first
         # apogee/perigee from next year
         for z in range(0,40):
@@ -312,16 +318,18 @@ class wdMoonApsis(SearchList):
         # make sure our list is in date order
         apsis_list.sort(key=lambda ts: ts[1].raw)
 
-        # get timestamps fro start of this year and start of next year
-        # Necessary so we can identify which events occur this year
+        # get timestamps for start of this year and start of next year, 
+        # necessary so we can identify which events occur this year
         _tt = time.localtime(timespan.stop)
         _ts = time.mktime((_tt.tm_year, 1, 1, 0, 0, 0, 0, 0, -1))
         _ts_y = time.mktime((_tt.tm_year + 1, 1, 1, 0, 0, 0, 0, 0, -1))
         # get max apogee for the year (ie greatest distance to moon)
-        max_apogee = max(apsis_list, key=lambda ap: ap[2] if ap[1].raw >= _ts and ap[1].raw < _ts_y else 0)
+        max_apogee = max(apsis_list, 
+                         key=lambda ap: ap[2] if ap[1].raw >= _ts and ap[1].raw < _ts_y else 0)
         max_apogee = (max_apogee[1], max_apogee[2])
         # get min perigee for the year (ie least distance to moon)
-        min_perigee = min(apsis_list, key=lambda ap: ap[2] if ap[1].raw >= _ts and ap[1].raw < _ts_y else 1000000)
+        min_perigee = min(apsis_list, 
+                          key=lambda ap: ap[2] if ap[1].raw >= _ts and ap[1].raw < _ts_y else 1000000)
         min_perigee = (min_perigee[1], min_perigee[2])
 
         # split our apsis list into individual components so we can find the
@@ -355,17 +363,17 @@ class wdMoonApsis(SearchList):
                                              converter=self.generator.converter)
             next_perigee_dist = None
 
-        # Now create a small dictionary with suitable keys:
+        # now create a small dictionary with suitable keys
         search_list_extension = {'moon_apsis': apsis_list,
-                                 'next_apogee_ts':       next_apogee_ts_vh,
-                                 'next_apogee_dist_km':  next_apogee_dist,
-                                 'next_perigee_ts':      next_perigee_ts_vh,
+                                 'next_apogee_ts': next_apogee_ts_vh,
+                                 'next_apogee_dist_km': next_apogee_dist,
+                                 'next_perigee_ts': next_perigee_ts_vh,
                                  'next_perigee_dist_km': next_perigee_dist,
-                                 'max_apogee':           max_apogee,
-                                 'min_perigee':          min_perigee}
+                                 'max_apogee': max_apogee,
+                                 'min_perigee': min_perigee}
 
         t2 = time.time()
-        logdbg("wdMoonApsis SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("wdMoonApsis SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
@@ -403,7 +411,9 @@ class wdEclipse(SearchList):
                                (2161690375, 'A'), (2176938010, 'T'),
                                (2192289174, 'A'), (2207579026, 'T'),
                                (2220320582, 'P'))
-        self.solar_eclipse_type_lookup = {'A': 'Annular', 'H': 'Hybrid', 'P': 'Partial', 'T': 'Total'}
+        self.solar_eclipse_type_lookup = {'A': 'Annular', 'H': 'Hybrid', 
+                                          'P': 'Partial', 'T': 'Total'
+                                         }
         self.lunar_eclipses = ((1308168823, 'T'), (1323527576, 'T'),
                                (1338807860, 'P'), (1354113247, 'Pe'),
                                (1366920518, 'P'), (1369455066, 'Pe'),
@@ -438,7 +448,10 @@ class wdEclipse(SearchList):
                                (2162892956, 'Pe'), (2175702300, 'Pe'),
                                (2190999265, 'P'), (2206284988, 'P'),
                                (2221645582, 'T'), (2236878281, 'T'))
-        self.lunar_eclipse_type_lookup = {'P': 'Partial', 'Pe': 'Penumbral', 'T': 'Total'}
+        self.lunar_eclipse_type_lookup = {'P': 'Partial', 
+                                          'Pe': 'Penumbral', 
+                                          'T': 'Total'
+                                          }
 
     def deltaT(self, ts):
         """Calculates the difference between Universal Time (UT) and
@@ -446,15 +459,15 @@ class wdEclipse(SearchList):
            determined from the NASA provided eclipse time (which is in TD)
            using the formula:
 
-            delta T = TD - UT
+                delta T = TD - UT
 
            delta T is calculated using the approximation:
 
-            delta T = 62.92 + 0.32217 * t + 0.005589 * (t ** 2)
+                delta T = 62.92 + 0.32217 * t + 0.005589 * (t ** 2)
 
             where
-             t = y - 2000
-             y = year + (month number - 0.5)/12
+                t = y - 2000
+                y = year + (month number - 0.5)/12
 
            Source: http://eclipse.gsfc.nasa.gov/LEcat5/deltat.html
         """
@@ -474,7 +487,7 @@ class wdEclipse(SearchList):
     def get_extension_list(self, timespan, db_lookup):
         """Returns a search list with details of the next Solar and Lunar eclipse.
 
-           Details provided include unix timestamp of the eclipse as well as
+           Details provided include epoch timestamp of the eclipse as well as
            the type. Note that the dictionary of eclipses is all eclipses, not
            just eclipses visible at the stations location, so the eclipse
            returned may not be visible to the user. Eclipse data is based upon
@@ -527,7 +540,8 @@ class wdEclipse(SearchList):
         solar_eclipse_ts_list, solar_eclipse_type_list = zip(*self.solar_eclipses)
         try:
             # find the index of the next solar eclipse
-            next_solar_eclipse_idx = bisect.bisect_left(solar_eclipse_ts_list, search_ts)
+            next_solar_eclipse_idx = bisect.bisect_left(solar_eclipse_ts_list, 
+                                                        search_ts)
             # get ts of next solar eclipse
             next_solar_eclipse_ts = solar_eclipse_ts_list[next_solar_eclipse_idx] - self.deltaT(solar_eclipse_ts_list[next_solar_eclipse_idx])
             # get the type code of next solar eclipse
@@ -549,7 +563,8 @@ class wdEclipse(SearchList):
         lunar_eclipse_ts_list, lunar_eclipse_data_list = zip(*self.lunar_eclipses)
         try:
             # find the index of the next lunar eclipse
-            next_lunar_eclipse_idx = bisect.bisect_left(lunar_eclipse_ts_list, search_ts)
+            next_lunar_eclipse_idx = bisect.bisect_left(lunar_eclipse_ts_list, 
+                                                        search_ts)
             # get ts of next lunar eclipse
             next_lunar_eclipse_ts = lunar_eclipse_ts_list[next_lunar_eclipse_idx] - self.deltaT(lunar_eclipse_ts_list[next_lunar_eclipse_idx])
             # get the type code of next lunar eclipse
@@ -568,13 +583,13 @@ class wdEclipse(SearchList):
         next_lunar_eclipse_type = self.lunar_eclipse_type_lookup[next_lunar_eclipse_type]
 
         # Now create a small dictionary with suitable keys:
-        search_list_extension = {'next_solar_eclipse':      next_solar_eclipse_ts_vh,
+        search_list_extension = {'next_solar_eclipse': next_solar_eclipse_ts_vh,
                                  'next_solar_eclipse_type': next_solar_eclipse_type,
-                                 'next_lunar_eclipse':      next_lunar_eclipse_ts_vh,
+                                 'next_lunar_eclipse': next_lunar_eclipse_ts_vh,
                                  'next_lunar_eclipse_type': next_lunar_eclipse_type}
 
         t2 = time.time()
-        logdbg("wdEclipse SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("wdEclipse SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
@@ -600,24 +615,21 @@ class wdEarthApsis(SearchList):
                         )
 
     def get_extension_list(self, timespan, db_lookup):
-        """Returns a search list with the timestamp the next perihelion and
-           aphelion.
+        """Create a search list with date-time of next perihelion and aphelion.
 
            Source: Earth perihelion and aphelion Table Courtesy of
                    Fred Espenak, www.Astropixels.com
 
         Parameters:
-          timespan: An instance of weeutil.weeutil.TimeSpan. This will
-                    hold the start and stop times of the domain of
-                    valid times.
+            timespan: An instance of weeutil.weeutil.TimeSpan. This will hold
+                      the start and stop times of the domain of valid times.
 
-          db_lookup: This is a function that, given a data binding
-                     as its only parameter, will return a database manager
-                     object.
+          db_lookup: This is a function that, given a data binding as its only 
+                     parameter, will return a database manager object.
 
         Returns:
-          next_perhelion: Timestamp of next perihelion
-          next_aphelion: Timestamp of next aphelion
+            next_perhelion: ValueHelper containing date-time of next perihelion
+            next_aphelion: ValueHelper containing date-time of next aphelion
         """
 
         t1 = time.time()
@@ -649,12 +661,12 @@ class wdEarthApsis(SearchList):
                                           formatter=self.generator.formatter,
                                           converter=self.generator.converter)
 
-        # Now create a small dictionary with suitable keys:
+        # now create a small dictionary with suitable keys
         search_list_extension = {'next_perihelion': next_perihelion_ts_vh,
-                                 'next_aphelion':   next_aphelion_ts_vh}
+                                 'next_aphelion': next_aphelion_ts_vh}
 
         t2 = time.time()
-        logdbg("wdEarthApsis SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("wdEarthApsis SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
@@ -674,22 +686,20 @@ class wdChineseNewYear(SearchList):
                         }
 
     def get_extension_list(self, timespan, db_lookup):
-        """Returns a search list with the date of the next Chinese New Year.
+        """Create a search list with the date of the next Chinese New Year.
 
            Source: http://en.wikipedia.org/wiki/Chinese_New_Year
 
         Parameters:
-          timespan: An instance of weeutil.weeutil.TimeSpan. This will
-                    hold the start and stop times of the domain of
-                    valid times.
+            timespan: An instance of weeutil.weeutil.TimeSpan. This will hold
+                      the start and stop times of the domain of valid times.
 
-          db_lookup: This is a function that, given a data binding
-                     as its only parameter, will return a database manager
-                     object.
+            db_lookup: This is a function that, given a data binding as its
+                       only parameter, will return a database manager object.
 
         Returns:
-          next_cny: Tuple consisting of numeric values (day, month, year) for
-                    next Chinese New Year
+            next_cny: Tuple consisting of numeric values (day, month, year) for
+                      next Chinese New Year
         """
 
         t1 = time.time()
@@ -710,10 +720,10 @@ class wdChineseNewYear(SearchList):
             # if we strike an error then return None
             cny = None
 
-        # Now create a small dictionary with suitable keys:
+        # now create a small dictionary with suitable keys
         search_list_extension = {'next_cny' : cny}
 
         t2 = time.time()
-        logdbg("wdChineseNewYear SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("wdChineseNewYear SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]

@@ -1,7 +1,10 @@
+# wdTaggedStats3.py
+#
+# Specialised timespan stats for weewx-weeWX-WD
 #
 # This program is free software; you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 2 of the License, or (at your option) any later
+# Foundation; either version 3 of the License, or (at your option) any later
 # version.
 #
 # This program is distributed in the hope that it will be useful, but WITHOUT
@@ -9,9 +12,13 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
-# Version: 1.0.3                                    Date: 31 March 2017
+# Version: 1.2.0a1                                      Date: 7 March 2018
 #
 # Revision History
+#   7 March 2018        v1.2.0a1
+#       - minor formatting/comment changes
+#
+# Previous bitbucket revision history
 #   31 March 2017       v1.0.3
 #       - no change, version number change only
 #   14 December 2016    v1.0.2
@@ -44,7 +51,7 @@ from weewx.units import ValueHelper, getStandardUnitType
 from weeutil.weeutil import TimeSpan
 from datetime import date, timedelta
 
-WEEWXWD_TAGGED_STATS_VERSION = '1.0.3'
+WEEWXWD_TAGGED_STATS_VERSION = '1.2.0a1'
 
 # The contexts that are multiples of a day, and can use the daily summaries
 # to answer aggregation queries:
@@ -56,56 +63,62 @@ day_multiples = ['weekdaily', 'monthdaily', 'yearmonthly']
 
 
 class WdTimeBinder(object):
-    """This class allows custom tagged stats drawn from the archive database in
-    support of the Weewx-WD templates. This class along with the associated
-    WDTimeSpanStats and WDStatsTypeHelper classes support the following custom
-    tagged stats:
-    - $weekdaily.xxxxxx.zzzzzz - week of stats aggregated by day
-    - $monthdaily.xxxxxx.zzzzzz - month of stats aggregated by day
-    - $yearmonthy.xxxxxx.zzzzzz - year of stats aggregated by month
-    - where xxxxxx is a Weewx observation eg outTemp, wind (stats database),
-      windSpeed (archive database) etc recorded in the relevant database. Note
-      that WDATaggedStats uses the archive database and WDTaggedStats uses the
-      stats database.
-    - where zzzzzz is either:
-        - maxQuery - returns maximums/highs over the aggregate period
-        - minQuery - returns minimums/lows over the aggregate period
-        - avgQuery - returns averages over the aggregate period
-        - sumQuery - returns sum over the aggregate period
-        - vecdirQuery - returns vector direction over the aggregate period
+    """Title?
 
-    In the Weewx-WD templates these tagged stats (eg $hour.outTemp.maxQuery)
-    result in a list which is assigned to a variable and then each item in
-    the list is reference using its index eg variable_name[0]
+        This class allows custom tagged stats drawn from the archive database
+        in support of the Weewx-WD templates. This class along with the
+        associated WDTimeSpanStats and WDStatsTypeHelper classes support the
+        following custom tagged stats:
 
-    This class sits on the top of chain of helper classes that enable
-    syntax such as $hour.rain.sumQuery in the templates.
+        -   $weekdaily.xxxxxx.zzzzzz - week of stats aggregated by day
+        -   $monthdaily.xxxxxx.zzzzzz - month of stats aggregated by day
+        -   $yearmonthy.xxxxxx.zzzzzz - year of stats aggregated by month
 
-    When a time period is given as an attribute to it, such as obj.hour,
-    the next item in the chain is returned, in this case an instance of
-    WDTimeSpanStats, which binds the database with the
-    time period.
+        where xxxxxx is a Weewx observation eg outTemp, wind (stats database),
+        windSpeed (archive database) etc recorded in the relevant database.
+        Note that WDATaggedStats uses the archive database and WDTaggedStats
+        uses the stats database.
+
+        where zzzzzz is either:
+        -   maxQuery - returns maximums/highs over the aggregate period
+        -   minQuery - returns minimums/lows over the aggregate period
+        -   avgQuery - returns averages over the aggregate period
+        -   sumQuery - returns sum over the aggregate period
+        -   vecdirQuery - returns vector direction over the aggregate period
+
+        In the Weewx-WD templates these tagged stats
+        (eg $hour.outTemp.maxQuery) result in a list which is assigned to a
+        variable and then each item in the list is reference using its
+        index eg variable_name[0]
+
+        This class sits on the top of chain of helper classes that enable
+        syntax such as $hour.rain.sumQuery in the templates.
+
+        When a time period is given as an attribute to it, such as obj.hour,
+        the next item in the chain is returned, in this case an instance of
+        WDTimeSpanStats, which binds the database with the time period.
     """
 
     def __init__(self, db_lookup, report_time, formatter=weewx.units.Formatter(), converter=weewx.units.Converter(), **option_dict):
         """Initialize an instance of WdDatabaseBinder.
 
-        db_lookup: A function with call signature db_lookup(data_binding), which
-        returns a database manager and where data_binding is an optional binding
-        name. If not given, then a default binding will be used.
+        db_lookup: A function with call signature db_lookup(data_binding),
+                   which returns a database manager and where data_binding is
+                   an optional binding name. If not given, then a default
+                   binding will be used.
 
         report_time: The time for which the report should be run.
 
-        formatter: An instance of weewx.units.Formatter() holding the formatting
-        information to be used. [Optional. If not given, the default
-        Formatter will be used.]
+        formatter: An instance of weewx.units.Formatter() holding the
+                   formatting information to be used. [Optional. If not given,
+                   the default Formatter will be used.]
 
-        converter: An instance of weewx.units.Converter() holding the target unit
-        information to be used. [Optional. If not given, the default
-        Converter will be used.]
+        converter: An instance of weewx.units.Converter() holding the target
+                   unit information to be used. [Optional. If not given, the
+                   default Converter will be used.]
 
         option_dict: Other options which can be used to customize calculations.
-        [Optional.]
+                     [Optional.]
         """
         self.db_lookup = db_lookup
         self.report_time = report_time
@@ -113,8 +126,7 @@ class WdTimeBinder(object):
         self.converter = converter
         self.option_dict = option_dict
 
-    # What follows is the list of time period attributes:
-
+    # what follows is the list of time period attributes
     @property
     def weekdaily(self, data_binding=None):
         return WdTimespanBinder((self.report_time - 518400, self.report_time),
@@ -135,6 +147,7 @@ class WdTimeBinder(object):
         return WdTimespanBinder((_start_ts, self.report_time), weeutil.weeutil.genMonthSpans,
                                 self.db_lookup, data_binding, 'yearmonthly',
                                 self.formatter, self.converter, **self.option_dict)
+
 
 #===============================================================================
 #                    Class WdTimespanBinder
@@ -333,54 +346,60 @@ class WdObservationBinder(object):
 
 
 class WdArchiveTimeBinder(object):
-    """This class allows custom tagged stats drawn from the archive database in
-    support of the Weewx-WD templates. This class along with the associated
-    WdArchiveTimespanBinder and WdArchiveObservationBinder classes support the following custom
-    tagged stats:
-    - $minute.xxxxxx.zzzzzz - hour of stats aggregated by minute
-    - $fifteenminute.xxxxxx.zzzzzz - day of stats aggregated by 15 minutes
-    - $hour.xxxxxx.zzzzzz - day of stats aggregated by hour
-    - $sixhour.xxxxxx.zzzzzz - week of stats aggegated by 6 hours
-    - where xxxxxx is a Weewx observation eg outTemp, wind (stats database),
-      windSpeed (archive database) etc recorded in the relevant database. Note
-      that WDATaggedStats uses the archive database and WDTaggedStats uses the
-      stats database.
-    - where zzzzzz is either:
-        - maxQuery - returns maximums/highs over the aggregate period
-        - minQuery - returns minimums/lows over the aggregate period
-        - avgQuery - returns averages over the aggregate period
-        - sumQuery - returns sum over the aggregate period
-        - datetimeQuery - returns datetime over the aggregate period
+    """Titel?
 
-    In the Weewx-WD templates these tagged stats (eg $hour.outTemp.maxQuery)
-    result in a list which is assigned to a variable and then each item in
-    the list is reference using its index eg variable_name[0]
+        This class allows custom tagged stats drawn from the archive database
+        in support of the Weewx-WD templates. This class along with the
+        associated WdArchiveTimespanBinder and WdArchiveObservationBinder
+        classes support the following custom tagged stats:
 
-    This class sits on the top of chain of helper classes that enable
-    syntax such as $hour.rain.sumQuery in the templates.
+        -   $minute.xxxxxx.zzzzzz - hour of stats aggregated by minute
+        -   $fifteenminute.xxxxxx.zzzzzz - day of stats aggregated by 15 minutes
+        -   $hour.xxxxxx.zzzzzz - day of stats aggregated by hour
+        -   $sixhour.xxxxxx.zzzzzz - week of stats aggegated by 6 hours
 
-    When a time period is given as an attribute to it, such as obj.hour,
-    the next item in the chain is returned, in this case an instance of
-    WdArchiveTimespanBinder, which binds the database with the
-    time period.
+        where xxxxxx is a Weewx observation eg outTemp, wind (stats database),
+        windSpeed (archive database) etc recorded in the relevant database.
+        Note that WDATaggedStats uses the archive database and WDTaggedStats
+        uses the stats database.
+
+        where zzzzzz is either:
+        -   maxQuery - returns maximums/highs over the aggregate period
+        -   minQuery - returns minimums/lows over the aggregate period
+        -   avgQuery - returns averages over the aggregate period
+        -   sumQuery - returns sum over the aggregate period
+        -   datetimeQuery - returns datetime over the aggregate period
+
+        In the Weewx-WD templates these tagged stats
+        (eg $hour.outTemp.maxQuery) result in a list which is assigned to a
+        variable and then each item in the list is reference using its index
+        eg variable_name[0]
+
+        This class sits on the top of chain of helper classes that enable
+        syntax such as $hour.rain.sumQuery in the templates.
+
+        When a time period is given as an attribute to it, such as obj.hour,
+        the next item in the chain is returned, in this case an instance of
+        WdArchiveTimespanBinder, which binds the database with the time period.
     """
 
     def __init__(self, db_lookup, report_time, formatter=weewx.units.Formatter(), converter=weewx.units.Converter(), **option_dict):
         """Initialize an instance of TaggedStats.
+
         db: The database the stats are to be extracted from.
 
         report_time: The time the stats are to be current to.
 
-        formatter: An instance of weewx.units.Formatter() holding the formatting
-        information to be used. [Optional. If not given, the default
-        Formatter will be used.]
+        formatter: An instance of weewx.units.Formatter() holding the
+                   formatting information to be used. [Optional. If not given,
+                   the default Formatter will be used.]
 
-        converter: An instance of weewx.units.Converter() holding the target unit
-        information to be used. [Optional. If not given, the default
-        Converter will be used.]
+        converter: An instance of weewx.units.Converter() holding the target
+                   unit information to be used. [Optional. If not given, the
+                   default Converter will be used.]
 
         option_dict: Other options which can be used to customize calculations.
-        [Optional.]
+                     [Optional.]
         """
         self.db_lookup   = db_lookup
         self.report_time = report_time
@@ -388,8 +407,7 @@ class WdArchiveTimeBinder(object):
         self.converter   = converter
         self.option_dict = option_dict
 
-    # What follows is the list of time period attributes:
-
+    # what follows is the list of time period attributes
     @property
     def minute(self, data_binding=None):
         return WdArchiveTimespanBinder((self.report_time - 3600, self.report_time),
@@ -417,52 +435,57 @@ class WdArchiveTimeBinder(object):
                                        self.formatter, self.converter,
                                        **self.option_dict)
 
+
 #===============================================================================
 #                    Class WdArchiveTimespanBinder
 #===============================================================================
 
 
 class WdArchiveTimespanBinder(object):
-    """Nearly stateless class that holds a binding to a stats database and a timespan.
+    """Title?
 
-    This class is the next class in the chain of helper classes.
+        Nearly stateless class that holds a binding to a stats database and a
+        timespan.
 
-    When a statistical type is given as an attribute to it (such as 'obj.outTemp'),
-    the next item in the chain is returned, in this case an instance of
-    StatsTypeHelper, which binds the stats database, the time period, and
-    the statistical type all together.
+        This class is the next class in the chain of helper classes.
 
-    It also includes a few "special attributes" that allow iteration over certain
-    time periods. Example:
+        When a statistical type is given as an attribute to it
+        (such as 'obj.outTemp'), the next item in the chain is returned, in
+        this case an instance of StatsTypeHelper, which binds the stats
+        database, the time period, and the statistical type all together.
 
-       # Iterate by month:
-       for monthStats in yearStats.months:
-           # Print maximum temperature for each month in the year:
-           print monthStats.outTemp.max
+        It also includes a few "special attributes" that allow iteration over
+        certain time periods. Example:
+
+        # Iterate by month:
+        for monthStats in yearStats.months:
+            # Print maximum temperature for each month in the year:
+            print monthStats.outTemp.max
     """
     def __init__(self, timespan, agg_intvl, db_lookup, data_binding=None, context='hour',
                  formatter=weewx.units.Formatter(),
                  converter=weewx.units.Converter(), **option_dict):
         """Initialize an instance of WdArchiveTimespanBinder.
 
-        timespan: An instance of weeutil.Timespan with the time span
-        over which the statistics are to be calculated.
+            timespan: An instance of weeutil.Timespan with the time span
+                      over which the statistics are to be calculated.
 
-        db: The database the stats are to be extracted from.
+            db: The database the stats are to be extracted from.
 
-        context: A tag name for the timespan. This is something like 'minute', 'hour',
-        'fifteenminute', etc. This is used to find an appropriate label, if necessary.
+            context: A tag name for the timespan. This is something like
+                     'minute', 'hour', 'fifteenminute', etc. This is used to
+                     find an appropriate label, if necessary.
 
-        formatter: An instance of weewx.units.Formatter() holding the formatting
-        information to be used. [Optional. If not given, the default
-        Formatter will be used.]
+            formatter: An instance of weewx.units.Formatter() holding the
+                       formatting information to be used. [Optional. If not
+                       given, the default Formatter will be used.]
 
-        converter: An instance of weewx.units.Converter() holding the target unit
-        information to be used. [Optional. If not given, the default
-        Converter will be used.]
+            converter: An instance of weewx.units.Converter() holding the
+                       target unit information to be used. [Optional. If not
+                       given, the default Converter will be used.]
 
-        option_dict: Other options which can be used to customize calculations.
-        [Optional.]
+            option_dict: Other options which can be used to customize
+                         calculations. [Optional.]
         """
 
         self.timespan = timespan
@@ -482,15 +505,16 @@ class WdArchiveTimespanBinder(object):
 
         returns: An instance of class WdArchiveObservationBinder."""
 
-        # The following is so the Python version of Cheetah's NameMapper doesn't think
-        # I'm a dictionary:
+        # the following is so the Python version of Cheetah's NameMapper
+        # doesn't think I'm a dictionary
         if obs_type == 'has_key':
             raise AttributeError
 
-        # Return the helper class, bound to the type:
+        # return the helper class, bound to the type
         return WdArchiveObservationBinder(obs_type, self.timespan, self.agg_intvl, self.db_lookup,
                                           self.data_binding, self.context, self.formatter, self.converter,
                                           **self.option_dict)
+
 
 #===============================================================================
 #                    Class WdArchiveObservationBinder
@@ -498,16 +522,23 @@ class WdArchiveTimespanBinder(object):
 
 
 class WdArchiveObservationBinder(object):
-    """This is the final class in the chain of helper classes. It binds the statistical
-    database, a time period, and a statistical type all together.
+    """Title?
 
-    When an aggregation type (eg, 'maxQuery') is given as an attribute to it, it runs the
-    query against the database, assembles the result, and returns it as a list of ValueHelpers.
-    For example 'maxQuery' will return a list of ValueHelpers each with the 'max' value of the
-    observation over the aggregateion period.
-    Whilst the aggregation types are similar to those in the WdArchiveObservationBinder class since we
-    are seeking a list of aggregates over a number of periods the aggregate types are 'maxQuery',
-    'minQuery' etc to distinguish them from the standard 'max, 'min' etc aggregagtes.
+        This is the final class in the chain of helper classes. It binds the
+        statistical database, a time period, and a statistical type all
+        together.
+
+        When an aggregation type (eg, 'maxQuery') is given as an attribute to
+        it, it runs the query against the database, assembles the result, and
+        returns it as a list of ValueHelpers. For example 'maxQuery' will
+        return a list of ValueHelpers each with the 'max' value of the
+        observation over the aggregation period.
+
+        Whilst the aggregation types are similar to those in the
+        WdArchiveObservationBinder class since we are seeking a list of
+        aggregates over a number of periods the aggregate types are 'maxQuery',
+        'minQuery' etc to distinguish them from the standard 'max, 'min' etc
+        aggregates.
     """
 
     def __init__(self, obs_type, timespan, agg_intvl, db_lookup, data_binding, context,
@@ -515,32 +546,34 @@ class WdArchiveObservationBinder(object):
                  **option_dict):
         """ Initialize an instance of WdArchiveObservationBinder.
 
-        In cases where the aggregate interval is greater than the archive interval it
-        is not possible to calculate accurate stats over the timespan concerned due
-        to the lack of granularity in the underlying archive data. In these cases the
-        results of the query are padded with additional extrapoloated data points.
+            In cases where the aggregate interval is greater than the archive
+            interval it is not possible to calculate accurate stats over the
+            timespan concerned due to the lack of granularity in the underlying
+            archive data. In these cases the results of the query are padded
+            with additional extrapolated data points.
 
-        obs_type: A string with the stats type (e.g., 'outTemp') for which the query is
-        to be done.
+            obs_type: A string with the stats type (e.g., 'outTemp') for which
+                      the query is to be done.
 
-        timespan: An instance of TimeSpan holding the time period over which the query is
-        to be run
+            timespan: An instance of TimeSpan holding the time period over
+                      which the query is to be run
 
-        db: The database the stats are to be extracted from.
+            db: The database the stats are to be extracted from.
 
-        context: A tag name for the timespan. This is something like 'hour', 'fifteenminute',
-        'sixhour', etc. This is used to find an appropriate label, if necessary.
+            context: A tag name for the timespan. This is something like
+                     'hour', 'fifteenminute', 'sixhour', etc. This is used to
+                     find an appropriate label, if necessary.
 
-        formatter: An instance of weewx.units.Formatter() holding the formatting
-        information to be used. [Optional. If not given, the default
-        Formatter will be used.]
+            formatter: An instance of weewx.units.Formatter() holding the
+                       formatting information to be used. [Optional. If not
+                       given, the default Formatter will be used.]
 
-        converter: An instance of weewx.units.Converter() holding the target unit
-        information to be used. [Optional. If not given, the default
-        Converter will be used.]
+            converter: An instance of weewx.units.Converter() holding the
+                       target unit information to be used. [Optional. If not
+                       given, the default Converter will be used.]
 
-        option_dict: Other options which can be used to customize calculations.
-        [Optional.]
+            option_dict: Other options which can be used to customize
+                         calculations. [Optional.]
         """
 
         self.obs_type = obs_type         # stat we are after eg 'outTemp', 'rain' etc
@@ -815,16 +848,22 @@ class WdArchiveObservationBinder(object):
     def __getattr__(self, aggregateType):
         """Return statistical summary using a given aggregateType.
 
-        aggregateType: The type of aggregation over which the summary is to be done.
-        This is normally something like 'sum', 'min', 'mintime', 'count', etc.
-        However, there are two special aggregation types that can be used to
-        determine the existence of data:
-          'exists':   Return True if the observation type exists in the database.
-          'has_data': Return True if the type exists and there is a non-zero
-                      number of entries over the aggregation period.
+            aggregateType: The type of aggregation over which the summary is to
+                           be done. This is normally something like 'sum',
+                           'min', 'mintime', 'count', etc.
+                           However, there are two special aggregation types
+                           that can be used to determine the existence of data:
 
-        returns: For special types 'exists' and 'has_data', returns a Boolean
-        value. Otherwise, a ValueHelper containing the aggregation data."""
+                           'exists': return True if the observation type exists
+                                     in the database
+                           'has_data': return True if the type exists and there
+                                       is a non-zero number of entries over the
+                                       aggregation period.
+
+            returns: For special types 'exists' and 'has_data', returns a
+                     Boolean value. Otherwise, a ValueHelper containing the
+                     aggregation data.
+        """
 
         return self._do_query(aggregateType)
 
@@ -837,12 +876,14 @@ class WdArchiveObservationBinder(object):
         return self.db_lookup(self.data_binding).has_data(self.obs_type, self.timespan)
 
     def _do_query(self, aggregateType, val=None):
-        """Run a query against the databases, using the given aggregation type."""
+        """Run a query against the databases, using the given aggregation type.
+        """
+
         db_manager = self.db_lookup(self.data_binding)
         getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
         (start_vt, stop_vt, result_vt) = db_manager.getSqlVectors(getSqlVectors_TS,
                                                                   self.obs_type,
                                                                   aggregateType,
                                                                   self.agg_intvl)
-        # Wrap the result in a ValueHelper:
+        # wrap the result in a ValueHelper
         return self.converter.convert(result_vt)
