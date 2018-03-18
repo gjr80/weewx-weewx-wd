@@ -11,9 +11,22 @@
 #
 #                          Installer for Weewx-WD
 #
-# Version: 1.0.3                                  Date: 31 March 2017
+# Version: 1.2.0a1                                      Date: 17 March 2018
 #
 # Revision History
+#   9 March 2018        v1.2.0a1
+#       - weeWX-WD now requires weeWX v3.5.0 or later
+#       - revised Databases and DataBindings config options to support wdSchema
+#         and wd supp database
+#       - added new WdSuppArchive service
+#       - skins now include the enabled config option
+#       - wdPWS skin disabled by default
+#       - added sunshine_threshold config option and Supplementary stanza to
+#         WeeWX-WD config stanza to support weeWX-WD supplementary data
+#       - added new file wdSchema.py
+#       - removed no longer used file wd_database
+#
+# Previous Bitbucket revision history
 #   31 March 2017       v1.0.3
 #       - no change, version number change only
 #   14 December 2016    v1.0.2
@@ -36,8 +49,8 @@ import weewx
 from distutils.version import StrictVersion
 from setup import ExtensionInstaller
 
-REQUIRED_VERSION = "3.4.0"
-WEEWX_WD_VERSION = "1.0.3"
+REQUIRED_VERSION = "3.5.0"
+WEEWX_WD_VERSION = "1.2.0.a1"
 
 def loader():
     return WeewxWdInstaller()
@@ -45,21 +58,23 @@ def loader():
 class WeewxWdInstaller(ExtensionInstaller):
     def __init__(self):
         if StrictVersion(weewx.__version__) < StrictVersion(REQUIRED_VERSION):
-            msg = "%s requires weewx %s or greater, found %s" % ('Weewx-WD ' + WEEWX_WD_VERSION,
+            msg = "%s requires weeWX %s or greater, found %s" % ('weeWX-WD ' + WEEWX_WD_VERSION,
                                                                  REQUIRED_VERSION,
                                                                  weewx.__version__)
             raise weewx.UnsupportedFeature(msg)
         super(WeewxWdInstaller, self).__init__(
             version=WEEWX_WD_VERSION,
             name='Weewx-WD',
-            description='weewx support for Weather Display Live, SteelSeries Gauges and Carter Lake/Saratoga weather web site templates.',
-            author="Gary Roderick/Oz Greg",
-            author_email="gjroderick@gmail.com ozgreg@gmail.com",
+            description='weeWX support for Weather Display Live, SteelSeries Gauges and Carter Lake/Saratoga weather web site templates.',
+            author="Gary Roderick",
+            author_email="gjroderick<@>gmail.com",
             process_services=['user.weewxwd3.WdWXCalculate'],
-            archive_services=['user.weewxwd3.WdArchive'],
+            archive_services=['user.weewxwd3.WdArchive',
+                              'user.weewxwd3.WdSuppArchive'],
             config={
                 'StdReport': {
                     'wdPWS': {
+                        'enabled': 'False',
                         'skin': 'PWS',
                         'HTML_ROOT': 'WD',
                         'Units': {
@@ -75,6 +90,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                     },
                     'wdStackedWindRose': {
                         'skin': 'StackedWindRose',
+                        'enabled': 'True',
                         'HTML_ROOT': 'WD',
                         'Units': {
                             'Groups': {
@@ -89,6 +105,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                     },
                     'wdTesttags': {
                         'skin': 'Testtags',
+                        'enabled': 'True',
                         'HTML_ROOT': 'WD',
                         'Units': {
                             'Groups': {
@@ -109,6 +126,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                     },
                     'wdSteelGauges': {
                         'skin': 'SteelGauges',
+                        'enabled': 'True',
                         'HTML_ROOT': 'WD',
                         'Units': {
                             'Groups': {
@@ -123,6 +141,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                     },
                     'wdClientraw': {
                         'skin': 'Clientraw',
+                        'enabled': 'True',
                         'HTML_ROOT': 'WD'
                     }
                 },
@@ -131,33 +150,60 @@ class WeewxWdInstaller(ExtensionInstaller):
                         'database': 'weewxwd_sqlite',
                         'table_name': 'archive',
                         'manager': 'weewx.manager.DaySummaryManager',
-                        'schema': 'user.weewxwd3.schema'
+                        'schema': 'user.wdSchema.weewxwd_schema'
+                    },
+                    'wdsupp_binding': {
+                        'database': 'wd_supp_sqlite',
+                        'table_name': 'supp',
+                        'manager': 'weewx.manager.Manager',
+                        'schema': 'user.wdSchema.wdsupp_schema'
                     }
                 },
                 'Databases': {
                     'weewxwd_sqlite': {
-                        'root': '%(WEEWX_ROOT)s',
-                        # SQLite database so just use the file name, relative
-                        # path will be added at install
-                        'database_name': 'weewxwd.sdb',
-                        'driver': 'weedb.sqlite'
+                        'database_type': 'SQLite',
+                        'database_name': 'weewxwd.sdb'
+                    },
+                    'wd_supp_sqlite': {
+                        'database_type': 'SQLite',
+                        'database_name': 'wdsupp.sdb'
                     },
                     'weewxwd_mysql': {
-                        'host': 'localhost',
-                        'user': 'weewx',
-                        'password': 'weewx',
-                        'database_name': 'weewxwd',
-                        'driver': 'weedb.mysql'
+                        'database_type': 'MySQL',
+                        'database_name': 'weewxwd'
+                    },
+                    'wd_supp_mysql': {
+                        'database_type': 'MySQL',
+                        'database_name': 'wdsupp'
                     }
                 },
                 'Weewx-WD': {
-                    'data_binding': 'wd_binding'}},
+                    'data_binding': 'wd_binding',
+                    'sunshine_threshold': '120',
+                    'Supplementary': {
+                        'data_binding': 'wdsupp_binding',
+                        'database_max_tries': '3',
+                        'max_age': '691200',
+                        'database_retry_wait': '10',
+                        'vacuum': '86400',
+                        'WU': {
+                            'apiKey': '***REMOVED***',
+                            'forecast_interval': '1800',
+                            'api_lockout_period': '60',
+                            'max_WU_tries': '3',
+                            'location': '***REMOVED***',
+                            'almanac_interval': '3600',
+                            'conditions_interval': '1800'
+                        }
+                    }
+                }
+            },
             files=[('bin/user', ['bin/user/imageStackedWindRose3.py',
                                  'bin/user/wdAstroSearchX3.py',
+                                 'bin/user/wdSchema.py',
                                  'bin/user/wdSearchX3.py',
                                  'bin/user/wdTaggedStats3.py',
-                                 'bin/user/weewxwd3.py',
-                                 'bin/user/wd_database']),
+                                 'bin/user/weewxwd3.py']),
                    ('skins/Clientraw', ['skins/Clientraw/clientraw.txt.tmpl',
                                         'skins/Clientraw/clientrawdaily.txt.tmpl',
                                         'skins/Clientraw/clientrawextra.txt.tmpl',
