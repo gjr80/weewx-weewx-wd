@@ -1,19 +1,20 @@
-##
-## This program is free software; you can redistribute it and/or modify it under
-## the terms of the GNU General Public License as published by the Free Software
-## Foundation; either version 2 of the License, or (at your option) any later
-## version.
-##
-## This program is distributed in the hope that it will be useful, but WITHOUT 
-## ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-## FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-## details.
-##
-## Version: 0.1                           Date: ?? January 2015 HH:MM GMT +10
-##
-## Revision History
-##  ?? January 2015     v0.1        -Initial implementation
-##
+# wdwu.py
+#  This program is free software; you can redistribute it and/or modify it under
+#  the terms of the GNU General Public License as published by the Free Software
+#  Foundation; either version 3 of the License, or (at your option) any later
+#  version.
+# 
+#  This program is distributed in the hope that it will be useful, but WITHOUT 
+#  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+#  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+#  details.
+# 
+#  Version: 1.2.0a1                                     Date: 8 March 2018
+# 
+#  Revision History
+#   8 March 2018    v1.2.0
+#       - initial implementation
+# 
 
 import syslog
 import threading
@@ -26,10 +27,10 @@ import weewx.manager
 import weeutil.Sun 
 from weewx.units import obs_group_dict
 
-WDWU3_VERSION = '0.1'
+WDWU3_VERSION = '1.2.0a1'
 
 def logmsg(level, msg):
-    syslog.syslog(level, 'wdWU3: %s' % msg)
+    syslog.syslog(level, 'wdwu: %s' % msg)
 
 def logdbg(msg):
     logmsg(syslog.LOG_DEBUG, msg)
@@ -63,15 +64,14 @@ def toint(label, value_tbc, default_value):
     return value_tbc
 
 def get_default_binding_dict():
-    """ Define a default binding dictionary.
-    """
+    """Define a default binding dictionary."""
     
     return {'database':   'weewxwd_sqlite',
             'manager':    'weewx.manager.Manager',
             'table_name': 'conditions',
-            'schema':     'user.wdWU3.schema'}
+            'schema':     'user.wdwu.schema'}
     
-# Define schema for conditions table
+# define schema for conditions table
 schema = [('dateTime',            'INTEGER NOT NULL UNIQUE PRIMARY KEY'),
           ('usUnits',             'INTEGER NOT NULL'),
           ('forecastIcon',        'INTEGER'),
@@ -90,8 +90,7 @@ schema = [('dateTime',            'INTEGER NOT NULL UNIQUE PRIMARY KEY'),
           ('stormRain',           'REAL'),
           ('stormStart',          'INTEGER')]
 
-# Define a dictionary to look up WU icon names and 
-# return corresponding Saratoga icon code
+# dict to look up WU icon names and return corresponding Saratoga icon code
 icon_dict = {
     'clear'             : 0,
     'cloudy'            : 18,
@@ -126,8 +125,7 @@ icon_dict = {
     'chancetstorms'     : 29
     }
 
-# Define a dictionary to look up Davis forecast rule
-# and return forecast text
+# dict to look up Davis forecast rule and return forecast text
 davis_fr_dict= {
         0   : 'Mostly clear and cooler.',
         1   : 'Mostly clear with little temperature change.',
@@ -328,9 +326,14 @@ davis_fr_dict= {
         196 : 'Mostly clear and cooler.'
         }
 
-class wdWUThread(threading.Thread):
-    """ Thread to run WdWUArchive service.
-    """
+        
+# ============================================================================
+#                              class WUThread
+# ============================================================================
+
+
+class WUThread(threading.Thread):
+    """Thread to run WUArchive service."""
     
     def __init__(self, target, *args):
         self._target = target
@@ -340,13 +343,17 @@ class wdWUThread(threading.Thread):
     def run(self):
         self._target(*self._args)
     
-class WdWUArchive(weewx.engine.StdService):
-    """ Service to store WeatherUnderground sourced data as well as Davis console
-        forecast data.
-    """
+
+# ============================================================================
+#                              class WUArchive
+# ============================================================================
+
+
+class WUArchive(weewx.engine.StdService):
+    """Service to store WU sourced data and Davis console forecast data."""
     
     def __init__(self, engine, config_dict):
-        super(WdWUArchive, self).__init__(engine, config_dict)
+        super(WUArchive, self).__init__(engine, config_dict)
 
         #
         # Setup for WU API calls/Vantage Console data
@@ -404,7 +411,7 @@ class WdWUArchive(weewx.engine.StdService):
         else:
             self.binding = 'wdwu_binding'
             
-        syslog.syslog(syslog.LOG_INFO, "engine: WdWUArchive will use data binding %s" % self.binding)
+        syslog.syslog(syslog.LOG_INFO, "engine: WUArchive will use data binding %s" % self.binding)
         
         # setup our database if needed
         self.setup_database(config_dict)
@@ -447,11 +454,10 @@ class WdWUArchive(weewx.engine.StdService):
                self.max_age, self.vacuum, 'xxxxxxxxxxxx'+self.api_key[-4:], self.location))
 
     def new_archive_record(self, event):
-        """ Kick off in a new thread.
-        """
+        """ Kick off in a new thread."""
         
-        t = wdWUThread(self.wdWU_main, event)
-        t.setName('wdWUThread')
+        t = WUThread(self.wdWU_main, event)
+        t.setName('WUThread')
         t.start()
 
     def wdWU_main(self, event):
@@ -504,7 +510,7 @@ class WdWUArchive(weewx.engine.StdService):
             default_binding_dict=get_default_binding_dict())
         with weewx.manager.open_manager(dbm_dict) as dbm:
             # save our responses
-            self.save_WU_responses(dbm, _data_packet, self.db_max_tries, self.db_retry_wait)
+            self.save_wu_response(dbm, _data_packet, self.db_max_tries, self.db_retry_wait)
             # set ts of last packet processed
             self.last_ts = _data_packet['dateTime']
             # prune older packets and vacuum if required
@@ -518,97 +524,98 @@ class WdWUArchive(weewx.engine.StdService):
                         self.last_vacuum = now
         return
         
-    def get_WU_response(self, _WUquery, max_WU_tries):
-        """ Construct and make a WU API call then return the response.
-        """
+    def get_WU_response(self, wu_query, max_wu_tries):
+        """Construct and make a WU API call and return the response."""
 
-        # Construct our API call URL
-        url = '%s/%s/%s/pws:1/q/%s.json' % (self.default_url, self.api_key, _WUquery, self.location)
-        # We will attempt the call max_WU_tries times
-        for count in range(max_WU_tries):
-            # Attempt the call
+        # construct our API call URL
+        url = '%s/%s/%s/pws:1/q/%s.json' % (self.default_url, 
+                                            self.api_key, wu_query, 
+                                            self.location)
+        # we will attempt the call max_wu_tries times
+        for count in range(max_wu_tries):
+            # attempt the call
             try:
                 w = urllib2.urlopen(url)
-                _WUresponse = w.read()
+                _wu_response = w.read()
                 w.close()
-                return _WUresponse
+                return _wu_response
             except:
-                loginf("Failed to get '%s' on attempt %d" % (_WUquery, count+1))
+                loginf("Failed to get '%s' on attempt %d" % (wu_query, count+1))
         else:
-            loginf("Failed to get Weather Underground '%s'" % (_WUquery, ))
+            loginf("Failed to get Weather Underground '%s'" % (wu_query, ))
         return None
 
     def parse_WU_responses(self, event):
-        """ Parse the WU response and construct a data packet from the required fields.
-        """
+        """Parse a WU API response and construct a data packet."""
         
-        # Create a holder for the data (lines) we will write to file
-        _data_packet = {}
-        _data_packet['dateTime'] = event.record['dateTime']
-        _data_packet['usUnits'] = event.record['usUnits']
-        # Step through each of the API calls
-        for _WUquery in self.WUqueryTypes:
-            # Deserialise our JSON response
-            _parsed_response = json.loads(self.response[_WUquery])
-            # Check for recognised format
-            if not 'response' in _parsed_response:
-                loginf("Unknown format in Weather Underground '%s'" % (_WUquery, ))
-                return _data_packet
-            _response = _parsed_response['response']
-            # Check for WU provided error otherwise start pulling in the fields/data we want
+        # create a holder for the data (lines) we will write to file
+        _packet = {}
+        _packet['dateTime'] = event.record['dateTime']
+        _packet['usUnits'] = event.record['usUnits']
+        # iterate over each of the API calls
+        for query in self.WUqueryTypes:
+            # deserialise our JSON response
+            _resp = json.loads(self.response[query])
+            # check for recognised format
+            if not 'response' in _resp:
+                loginf("Unknown format in Weather Underground '%s'" % (query, ))
+                return _packet
+            _response = _resp['response']
+            # check for WU provided error otherwise start pulling in the 
+            # fields/data we want
             if 'error' in _response:
-                loginf("Error in Weather Underground '%s' response" % (_WUquery, ))
-                return _data_packet
-            # Forecast data
-            elif _WUquery == 'forecast':
-                # Look up Saratoga icon number given WU icon name
-                _data_packet['forecastIcon'] = icon_dict[_parsed_response['forecast']['txt_forecast']['forecastday'][0]['icon']]
-                _data_packet['forecastText'] = _parsed_response['forecast']['txt_forecast']['forecastday'][0]['fcttext']
-                _data_packet['forecastTextMetric'] = _parsed_response['forecast']['txt_forecast']['forecastday'][0]['fcttext_metric']
-            # Conditions data
-            elif _WUquery == 'conditions':
-                # WU does not seem to provide day/night icon name in their 'conditions' response so we
-                # need to do. Just need to add 'nt_' to front of name before looking up in out Saratoga 
+                loginf("Error in Weather Underground '%s' response" % (query, ))
+                return _packet
+            # forecast data
+            elif query == 'forecast':
+                # look up Saratoga icon number given the WU icon name
+                _name = _resp['forecast']['txt_forecast']['forecastday'][0]['icon']
+                _packet['forecastIcon'] = icon_dict[_name]
+                _packet['forecastText'] = _resp['forecast']['txt_forecast']['forecastday'][0]['fcttext']
+                _packet['forecastTextMetric'] = _resp['forecast']['txt_forecast']['forecastday'][0]['fcttext_metric']
+            # conditions data
+            elif query == 'conditions':
+                # WU does not seem to provide day/night icon name in their 
+                # 'conditions' response so we need to add it. Just need to add 
+                # 'nt_' to front of name before looking up in out Saratoga 
                 # icons dictionary
                 if self.night:
-                    _data_packet['currentIcon'] = icon_dict['nt_' + _parsed_response['current_observation']['icon']]
+                    _packet['currentIcon'] = icon_dict['nt_%s' % (_resp['current_observation']['icon'],)]
                 else:
-                    _data_packet['currentIcon'] = icon_dict[_parsed_response['current_observation']['icon']]
-                _data_packet['currentText'] = _parsed_response['current_observation']['weather']
-            # Almanac data
-            elif _WUquery == 'almanac':
-                if _data_packet['usUnits'] is weewx.US:
-                    _data_packet['tempRecordHigh'] = _parsed_response['almanac']['temp_high']['record']['F']
-                    _data_packet['tempNormalHigh'] = _parsed_response['almanac']['temp_high']['normal']['F']
-                    _data_packet['tempRecordLow'] = _parsed_response['almanac']['temp_low']['record']['F']
-                    _data_packet['tempNormalLow'] = _parsed_response['almanac']['temp_low']['normal']['F']
+                    _packet['currentIcon'] = icon_dict[_resp['current_observation']['icon']]
+                _packet['currentText'] = _resp['current_observation']['weather']
+            # almanac data
+            elif query == 'almanac':
+                if _packet['usUnits'] is weewx.US:
+                    _packet['tempRecordHigh'] = _resp['almanac']['temp_high']['record']['F']
+                    _packet['tempNormalHigh'] = _resp['almanac']['temp_high']['normal']['F']
+                    _packet['tempRecordLow'] = _resp['almanac']['temp_low']['record']['F']
+                    _packet['tempNormalLow'] = _resp['almanac']['temp_low']['normal']['F']
                 else:
-                    _data_packet['tempRecordHigh'] = _parsed_response['almanac']['temp_high']['record']['C']
-                    _data_packet['tempNormalHigh'] = _parsed_response['almanac']['temp_high']['normal']['C']
-                    _data_packet['tempRecordLow'] = _parsed_response['almanac']['temp_low']['record']['C']
-                    _data_packet['tempNormalLow'] = _parsed_response['almanac']['temp_low']['normal']['C']
-                _data_packet['tempRecordHighYear'] = _parsed_response['almanac']['temp_high']['recordyear']
-                _data_packet['tempRecordLowYear'] = _parsed_response['almanac']['temp_low']['recordyear']
-        _data_packet['vantageForecastIcon'] = self.loop_packet['forecastIcon']
+                    _packet['tempRecordHigh'] = _resp['almanac']['temp_high']['record']['C']
+                    _packet['tempNormalHigh'] = _resp['almanac']['temp_high']['normal']['C']
+                    _packet['tempRecordLow'] = _resp['almanac']['temp_low']['record']['C']
+                    _packet['tempNormalLow'] = _resp['almanac']['temp_low']['normal']['C']
+                _packet['tempRecordHighYear'] = _resp['almanac']['temp_high']['recordyear']
+                _packet['tempRecordLowYear'] = _resp['almanac']['temp_low']['recordyear']
+        _packet['vantageForecastIcon'] = self.loop_packet['forecastIcon']
         try:
-            _data_packet['vantageForecastRule'] = davis_fr_dict[self.loop_packet['forecastRule']]
+            _packet['vantageForecastRule'] = davis_fr_dict[self.loop_packet['forecastRule']]
         except:
-            _data_packet['vantageForecastRule'] = ""
+            _packet['vantageForecastRule'] = ""
             loginf('parse_WU_responses: Could not decode Vantage forecast code.')
-        _data_packet['stormRain'] = self.loop_packet['stormRain']
-        _data_packet['stormStart'] = self.loop_packet['stormStart']
-        return _data_packet
+        _packet['stormRain'] = self.loop_packet['stormRain']
+        _packet['stormStart'] = self.loop_packet['stormStart']
+        return _packet
         
     @staticmethod
-    def save_WU_responses(dbm, _data_packet, max_tries=3, retry_wait=10):
-        """ Save the WU response to our database.
-        """
+    def save_wu_response(dbm, _data_packet, max_tries=3, retry_wait=10):
+        """Save the WU responses to our database."""
         
         for count in range(max_tries):
             try:
                 logdbg('saving WU response')
                 # save our data to the database
-# change following line to LOG_DEBUG
                 dbm.addRecord(_data_packet, log_level=syslog.LOG_DEBUG)
                 break
             except Exception, e:
@@ -621,34 +628,33 @@ class WdWUArchive(weewx.engine.StdService):
 
     @staticmethod
     def prune(dbm, ts, max_tries=3, retry_wait=10):
-        """ Remove records older than ts from the database.
-        """
+        """Remove records older than ts from the database."""
 
         sql = "delete from %s where dateTime < %d" % (dbm.table_name, ts)
         for count in range(max_tries):
             try:
-                logdbg('deleting Weather Underground data prior to %d' % (ts, ))
+                logdbg('deleting Weather Underground data before %d' % (ts, ))
                 dbm.getSql(sql)
-                logdbg('deleted Weather Underground prior to %d' % (ts))
+                logdbg('deleted Weather Underground before %d' % (ts))
                 break
             except Exception, e:
                 logerr('prune failed (attempt %d of %d): %s' % ((count+1), max_tries, e))
                 logerr('waiting %d seconds before retry' % (retry_wait, ))
                 time.sleep(retry_wait)
         else:
-            raise Exception('prune failed after %d attemps' % max_tries)
+            raise Exception('prune failed after %d attempts' % max_tries)
         return
 
     @staticmethod
     def vacuum_database(dbm):
-        """ Vacuum our database to save space.
-        """
+        """Vacuum our database to save space.
         
-        # SQLite databases need a little help to prevent them from continually 
-        # growing in size even though we prune records from the database. 
-        # Vacuum will only work on SQLite databases.  It will compact the 
-        # database file. It should be OK to run this on a MySQL database - it
-        # will silently fail.
+            SQLite databases need a little help to prevent them from 
+            continually growing in size even though we prune records from the 
+            database. Vacuum will only work on SQLite databases. It will 
+            compact the database file. It should be OK to run this on a MySQL 
+            database - it will silently fail.
+        """
         
 # remove timing code once we get a handle on how long this takes
         # Get time now as a ts
@@ -663,17 +669,17 @@ class WdWUArchive(weewx.engine.StdService):
         loginf("vacuum_database executed in %0.9f seconds" % (t2-t1))
         
     def setup_database(self, config_dict):
-        """ Setup the database table we will be using.
-        """
+        """Setup the database table we will be using."""
 
-        # This will create the database and/or table if either doesn't exist, 
-        # then return an opened instance of the database manager.
-        dbmanager = self.engine.db_binder.get_database(self.binding, initialize=True)
-        syslog.syslog(syslog.LOG_INFO, "engine: Using binding '%s' to database '%s'" % (self.binding, dbmanager.database_name))
+        # create the database and/or table if either doesn't exist, then return 
+        # an opened instance of the database manager
+        dbmanager = self.engine.db_binder.get_database(self.binding, 
+                                                       initialize=True)
+        loginf("Using binding '%s' to database '%s'" % (self.binding, 
+                                                        dbmanager.database_name))
         
     def new_loop_packet(self, event):
-        """ Save Davis Console forecast data that arrives in loop packets so 
-            we can save it to archive later.
+        """Save loop based Davis console forecast data.
         
             The Davis Console forecast data is published in each loop packet. 
             There is little benefit in saving this data to database each loop 
@@ -683,7 +689,6 @@ class WdWUArchive(weewx.engine.StdService):
         
         # update our stashed loop packet data
         try:
-            # We only need 2 fields
             self.loop_packet['forecastIcon'] = event.packet['forecastIcon']
             self.loop_packet['forecastRule'] = event.packet['forecastRule']
             self.loop_packet['stormRain'] = event.packet['stormRain']
