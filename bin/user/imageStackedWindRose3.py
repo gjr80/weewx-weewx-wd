@@ -209,8 +209,8 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                 # in a try block in case it already exists.
                 try:
                     os.makedirs(os.path.dirname(img_file))
-                except OSError as e:
-                    if e.errorno == 17:
+                except OSError, e:
+                    if e.errno == 17:
                         # file exists error, continue
                         pass
                     else:
@@ -435,7 +435,7 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                                       self.origin_y+pie_rad)
                                 # draw pie slice
                                 start = int(-90 + a * 22.5 - self.windrose_plot_petal_width / 2)
-                                int(-90 + a * 22.5 + self.windrose_plot_petal_width / 2)
+                                end = int(-90 + a * 22.5 + self.windrose_plot_petal_width / 2)
                                 draw.pieslice(xy, start, end,
                                               fill=speed_list[1][s],
                                               outline='black')
@@ -446,7 +446,7 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                         a += 1
                     # draw 'bullseye' to represent speed=0 or calm
                     # first produce the label
-                    label0 = "%d%" % int(round(100.0 * speed_bin[0]/sum(speed_bin), 0))
+                    label0 = "%d%%" % int(round(100.0 * speed_bin[0]/sum(speed_bin), 0))
                     # work out its size, particularly its width
                     text_w, text_h = draw.textsize(label0, font=self.plot_font)
                     # size the bound box
@@ -550,7 +550,7 @@ def WindRosePlotSetup(self, draw):
     speed_labels = list((0, 0, 0, 0, 0))
     i = 1
     while i < 6:
-        speed_labels[i - 1] = "%d%" % int(round(_label_inc * i * 100,0))
+        speed_labels[i - 1] = "%d%%" % int(round(_label_inc * i * 100,0))
         i += 1
     # calculate location of ring labels
     _angle = 7 * math.pi / 4 + int(self.label_dir / 4.0) * math.pi / 2
@@ -606,7 +606,7 @@ def LegendSetup(self, draw, speed_list, speed_bin):
     while i > 0:
         x0 = label_x
         y0 = label_y - (0.85 * self.rose_max_dia * self.speed_factor[i])
-        x1 = label_x + self.windrose_legend_bar_width,
+        x1 = label_x + self.windrose_legend_bar_width
         y1 = label_y
         draw.rectangle([x0, y0, x1, y1],
                        fill=speed_list[1][i], outline='black')
@@ -614,7 +614,7 @@ def LegendSetup(self, draw, speed_list, speed_bin):
                                        font=self.legend_font)
         xy = (label_x + 1.5 * self.windrose_legend_bar_width,
               label_y - text_h / 2 - (0.85 * self.rose_max_dia * self.speed_factor[i]))
-        _text = '%d (%d%)' % (int(round(speed_list[0][i], 0)),
+        _text = '%d (%d%%)' % (int(round(speed_list[0][i], 0)),
                              int(round(100 * speed_bin[i]/sum(speed_bin), 0)))
         draw.text(xy, _text,
                   fill=self.windrose_legend_font_color, font=self.legend_font)
@@ -624,8 +624,8 @@ def LegendSetup(self, draw, speed_list, speed_bin):
     # draw 'calm' or 0 speed label and %
     xy = (label_x + 1.5 * self.windrose_legend_bar_width,
           label_y - text_h / 2 - (0.85 * self.rose_max_dia * self.speed_factor[0]))
-    _text = '%d (%d%)' % (speed_list[0][0],
-                          int(round(100.0 * speed_bin[0]/sum(speed_bin), 0)))
+    _text = '%d (%d%%)' % (speed_list[0][0],
+                           int(round(100.0 * speed_bin[0]/sum(speed_bin), 0)))
     draw.text(xy, _text,
               fill=self.windrose_legend_font_color, font=self.legend_font)
     text_w, text_h = draw.textsize('Calm', font=self.legend_font)
