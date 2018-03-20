@@ -14,11 +14,11 @@
 ##                                                                            #
 ##                      WEEWX-WD CLIENTRAW.TXT TEMPLATE                       #
 ##                                                                            #
-## Version: 1.0.3                                      Date: 31 March 2017    #
+## Version: 1.2.0a1                                    Date: 20 March 2018    #
 ##                                                                            #
 ###############################################################################
 ##
-##Python code to calculate/convert WD tags from Weewx tags
+##Python code to calculate/convert WD tags from weeWX tags
 ##========================================================
 ##
 #import math
@@ -64,13 +64,17 @@
 #*WD|007*#$day.rain.sum.mm.toString($addLabel=False, $localize=False) #slurp
 #*WD|008*#$month.rain.sum.mm.toString($addLabel=False, $localize=False) #slurp
 #*WD|009*#$year.rain.sum.mm.toString($addLabel=False, $localize=False) #slurp
-#*WD|010*#$current.rainRate.mm_per_hour.toString($addLabel=False, $localize=False) #slurp
-#*WD|011*#$day.rainRate.max.mm_per_hour.toString($addLabel=False, $localize=False) #slurp
+#set $currentRainRateMinute = $current.rainRate.mm_per_hour.raw/60.0
+#*WD|010*#$currentRainRateMinute #slurp
+#set $dayMaxRainRateMinute = $day.rainRate.max.mm_per_hour.raw/60.0
+#*WD|011*#$dayMaxRainRateMinute #slurp
 #*WD|012*#$current.inTemp.degree_C.toString($addLabel=False, $localize=False) #slurp
 #*WD|013*#$current.inHumidity.toString($addLabel=False, $localize=False) #slurp
 #*WD|014*#$current.soilTemp1.degree_C.toString($addLabel=False, $NONE_string='-100', $localize=False) #slurp
 #if $varExists('forecast_icon') and $forecast_icon != '' and $forecast_icon != None
 #*WD|015*#$forecast_icon #slurp
+#elif $current($data_binding='wdsupp_binding', $max_delta=600).forecastIcon.exists
+#*WD|015*#$current($data_binding='wdsupp_binding', $max_delta=600).forecastIcon.nolabel("%d", "---") #slurp
 #else
 #*WD|015*#0 #slurp
 #end if
@@ -93,7 +97,16 @@
 #set $stationLocation = $station.location.replace(" ","")
 #*WD|032*#$stationLocation-$current.dateTime.format($timeLongFormat) #slurp
 #*WD|033*#0 #slurp
-#*WD|034*#$current.radiation.formatted #slurp
+#if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.exists and $current.radiation.exists
+#if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw > 0
+#set $percent = "%d" % (100.0 * $current.radiation.raw / $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw)
+#else
+#set $percent = 0
+#end if
+#*WD|034*#$percent #slurp
+#else
+#*WD|034*#--- #slurp
+#end if
 #*WD|035*#$current.dateTime.format($dayFormat) #slurp
 #*WD|036*#$current.dateTime.format($monthFormat) #slurp
 #*WD|037*#100 #slurp
@@ -109,11 +122,15 @@
 #*WD|047*#$day.outTemp.min.degree_C.toString($addLabel=False, $localize=False) #slurp
 #if $varExists('current_icon') and $current_icon != '' and $current_icon != None
 #*WD|048*#$current_icon #slurp
+#elif $current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.exists
+#*WD|048*#$current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.nolabel("%d", "--- ") #slurp
 #else
 #*WD|048*#0 #slurp
 #end if
 #if $varExists('current_text') and $current_text != '' and $current_text != None
 #*WD|049*#$current_text_underscore #slurp
+#elif $current($data_binding='wdsupp_binding', $max_delta=600).currentText.exists
+#*WD|049*#$current($data_binding='wdsupp_binding', $max_delta=600).currentText.nolabel("%s", "--- ").replace(' ', '_') #slurp
 #else
 #*WD|049*#--- #slurp
 #end if
