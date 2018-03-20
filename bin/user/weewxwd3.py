@@ -349,26 +349,31 @@ davis_fr_dict= {
         196 : 'Mostly clear and cooler.'
         }
 
+
 def logmsg(level, src, msg):
     syslog.syslog(level, '%s %s' % (src, msg))
 
+
 def logdbg(src, msg):
     logmsg(syslog.LOG_DEBUG, src, msg)
+
 
 def logdbg2(src, msg):
     if weewx.debug >= 2:
         logmsg(syslog.LOG_DEBUG, msg)
 
+
 def loginf(src, msg):
     logmsg(syslog.LOG_INFO, src, msg)
+
 
 def logerr(src, msg):
     logmsg(syslog.LOG_ERR, src, msg)
 
 
-#===============================================================================
+# ===============================================================================
 #                            Class WdWXCalculate
-#===============================================================================
+# ===============================================================================
 
 
 class WdWXCalculate(weewx.engine.StdService):
@@ -382,23 +387,26 @@ class WdWXCalculate(weewx.engine.StdService):
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
-    def new_loop_packet(self, event):
+    @staticmethod
+    def new_loop_packet(event):
         """Add outTempDay and outTempNight to the loop packet."""
 
         _x = {}
         _x['outTempDay'], _x['outTempNight'] = calc_day_night(event.packet)
         event.packet.update(_x)
 
-    def new_archive_record(self, event):
+    @staticmethod
+    def new_archive_record(event):
         """Add outTempDay and outTempNight to the archive record."""
 
         _x = {}
         _x['outTempDay'], _x['outTempNight'] = calc_day_night(event.record)
         event.record.update(_x)
 
-#===============================================================================
+# ===============================================================================
 #                              Class WdArchive
-#===============================================================================
+# ===============================================================================
+
 
 class WdArchive(weewx.engine.StdService):
     """Service to store Weewx-WD specific archive data."""
@@ -436,7 +444,6 @@ class WdArchive(weewx.engine.StdService):
 
         # bind ourselves to NEW_ARCHIVE_RECORD event
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
-
 
     def new_archive_record(self, event):
         """Save the weeWX-WD archive record.
@@ -481,9 +488,9 @@ class WdArchive(weewx.engine.StdService):
             loginf("WdArchive:", "Daily summaries up to date.")
 
 
-#===============================================================================
+# ===============================================================================
 #                           Class WdGenerateDerived
-#===============================================================================
+# ===============================================================================
 
 
 class WdGenerateDerived(object):
@@ -533,9 +540,9 @@ class WdGenerateDerived(object):
         return weewx.units.to_std_system(_mwx, _rec['usUnits'])
 
 
-#===============================================================================
+# ===============================================================================
 #                             Class wdSuppThread
-#===============================================================================
+# ===============================================================================
 
 
 class wdSuppThread(threading.Thread):
@@ -555,9 +562,9 @@ class wdSuppThread(threading.Thread):
         self._target(*self._args)
 
 
-#===============================================================================
+# ===============================================================================
 #                            Class WdSuppArchive
-#===============================================================================
+# ===============================================================================
 
 
 class WdSuppArchive(weewx.engine.StdService):
@@ -686,7 +693,7 @@ class WdSuppArchive(weewx.engine.StdService):
                            "Cannot find valid Weather Underground API key")
                     loginf("              ",
                            "**** Incomplete or missing config settings")
-            except:
+            except KeyError:
                 loginf("WdSuppArchive:",
                        "Cannot find Weather Underground API key")
                 loginf("              ",
@@ -741,11 +748,11 @@ class WdSuppArchive(weewx.engine.StdService):
             # almanac gives more accurate results with current temp and
             # pressure
             # first, initialise some defaults
-            temperature_C = 15.0
+            temperature_c = 15.0
             pressure_mbar = 1010.0
             # get current outTemp and barometer if they exist
             if 'outTemp' in event.record:
-                temperature_C = weewx.units.convert(weewx.units.as_value_tuple(event.record, 'outTemp'),
+                temperature_c = weewx.units.convert(weewx.units.as_value_tuple(event.record, 'outTemp'),
                                                     "degree_C").value
             if 'barometer' in event.record:
                 pressure_mbar = weewx.units.convert(weewx.units.as_value_tuple(event.record, 'barometer'),
@@ -755,7 +762,7 @@ class WdSuppArchive(weewx.engine.StdService):
                                                  self.latitude,
                                                  self.longitude,
                                                  self.altitude,
-                                                 temperature_C,
+                                                 temperature_c,
                                                  pressure_mbar)
             # Work out sunrise and sunset ts so we can determine if it is night
             # or day. Needed so we can set day or night icons when translating
@@ -848,7 +855,8 @@ class WdSuppArchive(weewx.engine.StdService):
             return (url, _feature_string)
         return (None, None)
 
-    def get_wu_response(self, url, max_tries):
+    @staticmethod
+    def get_wu_response(url, max_tries):
         """Make a WU API call and return the raw response."""
 
         # we will attempt the call max_tries times
@@ -913,7 +921,7 @@ class WdSuppArchive(weewx.engine.StdService):
                 if self.night:
                     _data['currentIcon'] = icon_dict['nt_' + _resp['icon']]
                 else:
-                    _data['currentIcon'] = icon_dict[__resp['icon']]
+                    _data['currentIcon'] = icon_dict[_resp['icon']]
                 _data['currentText'] = _resp['weather']
             # almanac data
             elif _q['name'] == 'almanac' and _resp is not None:
@@ -951,7 +959,7 @@ class WdSuppArchive(weewx.engine.StdService):
         if 'forecastRule' in self.loop_packet:
             try:
                 _data['vantageForecastRule'] = davis_fr_dict[self.loop_packet['forecastRule']]
-            except:
+            except KeyError:
                 _data['vantageForecastRule'] = ""
                 logdbg2("WdSuppArchive:",
                         "Could not decode Vantage forecast code")
@@ -1033,7 +1041,7 @@ class WdSuppArchive(weewx.engine.StdService):
         # This will create the database and/or table if either doesn't exist,
         # then return an opened instance of the database manager.
         dbmanager = self.engine.db_binder.get_database(self.binding,
-                                                       initialize = True)
+                                                       initialize=True)
         loginf("WdSuppArchive:",
                "Using binding '%s' to database '%s'" % (self.binding,
                                                         dbmanager.database_name))
@@ -1078,9 +1086,9 @@ class WdSuppArchive(weewx.engine.StdService):
         pass
 
 
-#===============================================================================
+# ===============================================================================
 #                                 Utilities
-#===============================================================================
+# ===============================================================================
 
 
 def toint(string, default):
@@ -1095,9 +1103,9 @@ def toint(string, default):
     """
 
     # is string None or do we have a string and is it some variation of 'None'
-    if  string is None or (isinstance(string, str) and string.lower() == 'none'):
+    if string is None or (isinstance(string, str) and string.lower() == 'none'):
         # we do so our result will be None
-        returm = None
+        return None
     # otherwise try to convert it
     else:
         try:
@@ -1105,6 +1113,7 @@ def toint(string, default):
         except ValueError:
             # we can't convert it so our result will be the default
             return default
+
 
 def calc_day_night(data_dict):
     """ 'Calculate' value for outTempDay and outTempNight.

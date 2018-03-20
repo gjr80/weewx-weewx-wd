@@ -72,22 +72,26 @@ from weeutil.weeutil import TimeSpan
 
 WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0.a1'
 
+
 def logmsg(level, msg):
     syslog.syslog(level, 'imageStackedWindRose: %s' % msg)
+
 
 def logdbg(msg):
     logmsg(syslog.LOG_DEBUG, msg)
 
+
 def loginf(msg):
     logmsg(syslog.LOG_INFO, msg)
+
 
 def logerr(msg):
     logmsg(syslog.LOG_ERR, msg)
 
 
-#=============================================================================
+# =============================================================================
 #                    Class ImageStackedWindRoseGenerator
-#=============================================================================
+# =============================================================================
 
 
 class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
@@ -195,12 +199,12 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                 # Get image file format. Can use any format PIL can write.
                 # Default to .png
                 if plot_options.has_key('format'):
-                    format = plot_options['format']
+                    image_format = plot_options['format']
                 else:
-                    format = "png"
+                    image_format = "png"
                 # get full file name and path for plot
                 img_file = os.path.join(image_root, '%s.%s' % (plotname,
-                                                               format))
+                                                               image_format))
                 # check whether this plot needs to be done at all
                 ai = plot_options.as_int('time_length') if plot_options.has_key('time_length') else None
                 if skipThisPlot(self.plotgen_ts, ai, img_file, plotname):
@@ -253,19 +257,19 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                     elif self.obs == 'windGust':
                         self.dirName = 'windGustDir'
                     else:
-                        self.obs == 'windSpeed'
+                        self.obs = 'windSpeed'
                         self.dirName = 'windDir'
                     # Get data tuples for speed and direction. Default to
-                    # 24 hour timeframe if time_length not specified
-                    _span = weeutil.weeutil.TimeSpan(self.plotgen_ts - int(plot_options.get('time_length', 86400)) + 1,
+                    # 24 hour time frame if time_length not specified
+                    _length = int(plot_options.get('time_length', 86400)) + 1
+                    _span = weeutil.weeutil.TimeSpan(self.plotgen_ts - _length,
                                                      self.plotgen_ts)
                     (_t_vec, _t_vec_stop, _sp_vec) = db_manager.getSqlVectors(_span,
                                                                               self.obs)
                     (_t_vec, _t_vec_d_stop, dir_data) = db_manager.getSqlVectors(_span,
                                                                                  self.dirName)
                     # convert the speeds to units to be used in the plot
-                    speed_data = weewx.units.convert(_sp_vec,
-                                                         self.units)
+                    speed_data = weewx.units.convert(_sp_vec, self.units)
                     # find maximum speed from our data
                     _max_speed = max(speed_data.value)
                     # set upper speed range for our plot, set to a multiple of
@@ -295,27 +299,27 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                     # and speed ranges for each direction as necessary. 'None'
                     # direction is counted as 'calm' (or 0 speed) and
                     # (by definition) no direction and are plotted in the
-                    # 'bullseye' on the plot.
+                    # 'bulls eye' on the plot.
                     i = 0
                     while i < samples:
                         if (speed_data.value[i] is None) or (dir_data.value[i] is None):
                             wind_bin[16][6] += 1
                         else:
-                            bin = int((dir_data.value[i] + 11.25) / 22.5) % 16
+                            _bin = int((dir_data.value[i] + 11.25) / 22.5) % 16
                             if speed_data.value[i] > speed_list[0][5]:
-                                wind_bin[bin][6] += 1
+                                wind_bin[_bin][6] += 1
                             elif speed_data.value[i] > speed_list[0][4]:
-                                wind_bin[bin][5] += 1
+                                wind_bin[_bin][5] += 1
                             elif speed_data.value[i] > speed_list[0][3]:
-                                wind_bin[bin][4] += 1
+                                wind_bin[_bin][4] += 1
                             elif speed_data.value[i] > speed_list[0][2]:
-                                wind_bin[bin][3] += 1
+                                wind_bin[_bin][3] += 1
                             elif speed_data.value[i] > speed_list[0][1]:
-                                wind_bin[bin][2] += 1
+                                wind_bin[_bin][2] += 1
                             elif speed_data.value[i] > 0:
-                                wind_bin[bin][1] += 1
+                                wind_bin[_bin][1] += 1
                             else:
-                                wind_bin[bin][0] += 1
+                                wind_bin[_bin][0] += 1
                         i += 1
                     # add 'None' obs to 0 speed count
                     speed_bin[0] += wind_bin[16][6]
@@ -366,7 +370,7 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                     # now set the label direction we are going to use
                     self.label_dir = label_dir
                     # get an image object to hold our plot
-                    image = WindRoseImageSetup(self)
+                    image = windrose_image_setup(self)
                     draw = ImageDraw.Draw(image)
                     # set fonts to be used
                     self.plot_font = get_font_handle(self.windrose_font_path,
@@ -413,7 +417,7 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                         self.origin_y = 2 * self.windrose_plot_border + self.rose_max_dia / 2
                     # Setup windrose plot. Plot circles, range rings, range
                     # labels, N-S and E-W centre lines and compass point labels
-                    WindRosePlotSetup(self, draw)
+                    wind_rose_plot_setup(self, draw)
                     # Plot the wind rose petals. Each petal is constructed from
                     # overlapping pie slices starting from outside (biggest)
                     # and working in (smallest).
@@ -444,7 +448,7 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                                 s -= 1
                         # next arm
                         a += 1
-                    # draw 'bullseye' to represent speed=0 or calm
+                    # draw 'bulls eye' to represent speed=0 or calm
                     # first produce the label
                     label0 = "%d%%" % int(round(100.0 * speed_bin[0]/sum(speed_bin), 0))
                     # work out its size, particularly its width
@@ -465,7 +469,7 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                               font=self.plot_font)
                     # Setup the legend. Draw label/title (if set), stacked bar,
                     # bar labels and units
-                    LegendSetup(self, draw, speed_list, speed_bin)
+                    legend_setup(self, draw, speed_list, speed_bin)
                 # save the file.
                 image.save(img_file)
                 # increment number of images generated
@@ -481,7 +485,7 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
 #=============================================================================
 
 
-def WindRoseImageSetup(self):
+def windrose_image_setup(self):
     """Create image object for us to draw on.
 
     image: Image object to be returned for us to draw on.
@@ -495,7 +499,8 @@ def WindRoseImageSetup(self):
                           self.image_background_box_color)
     return image
 
-def WindRosePlotSetup(self, draw):
+
+def wind_rose_plot_setup(self, draw):
     """Draw circular plot background, rings, axes and labels.
 
     draw: The Draw object on which we are drawing.
@@ -503,7 +508,7 @@ def WindRosePlotSetup(self, draw):
 
     # draw speed circles
     # First calculate the distance between the wind rose range rings. Note that
-    # 'calm' bullseye is at centre of plot with diameter equal to _min_radius.
+    # 'calm' bulls eye is at centre of plot with diameter equal to _min_radius.
     _min_radius = self.rose_max_dia/11
     # iterate over the range rings starting from the inside and working out
     i = 5
@@ -583,7 +588,8 @@ def WindRosePlotSetup(self, draw):
               speed_labels[i-1],
               fill=self.windrose_plot_font_color, font=self.plot_font)
 
-def LegendSetup(self, draw, speed_list, speed_bin):
+
+def legend_setup(self, draw, speed_list, speed_bin):
     """Draw plot title (if requested), legend and time stamp (if requested).
 
         draw: The Draw object on which we are drawing.

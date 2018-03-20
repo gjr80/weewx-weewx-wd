@@ -97,21 +97,27 @@ from weewx.units import ValueHelper, getStandardUnitType, ValueTuple
 
 WEEWXWD_SLE_VERSION = '1.2.0a1'
 
+
 def logmsg(level, msg):
     syslog.syslog(level, 'weewxWd: %s' % msg)
 
+
 def logdbg(msg):
     logmsg(syslog.LOG_DEBUG, msg)
+
 
 def logdbg2(msg):
    if weewx.debug >= 2:
         logmsg(syslog.LOG_DEBUG, msg)
 
+
 def loginf(msg):
     logmsg(syslog.LOG_INFO, msg)
 
+
 def logerr(msg):
     logmsg(syslog.LOG_ERR, msg)
+
 
 def get_first_day(dt, d_years=0, d_months=0):
     """Function to return date object holding 1st of month containing dt
@@ -124,6 +130,7 @@ def get_first_day(dt, d_years=0, d_months=0):
     _a, _m = divmod(_m-1, 12)
     # Calculate and return date object
     return date(_y+_a, _m+1, 1)
+
 
 def doygen(start_ts, stop_ts):
     """Generator function yielding a timestamp of midnight for a given date
@@ -183,6 +190,7 @@ def doygen(start_ts, stop_ts):
                     year +=4
             d1 = d1.replace(year=year)
 
+
 def get_date_ago(dt, d_months=1):
     """Function to return date object d_months before dt.
        If d_months ago is an invalid date (eg 30 February) then the end of the
@@ -190,7 +198,7 @@ def get_date_ago(dt, d_months=1):
        month concerned is returned.
     """
 
-    _one_day = datetime.timedelta(days = 1)
+    _one_day = datetime.timedelta(days=1)
     # Get year number and month number applying offset as required
     _y, _m, _d = dt.year, dt.month - d_months, dt.day
     # Calculate actual month number taking into account EOY rollover
@@ -340,7 +348,7 @@ class wdMonthStats(weewx.cheetahgenerator.SearchList):
                                                            formatter=self.generator.formatter,
                                                            converter=self.generator.converter)
             # do we have a 2nd month to process
-            if (_end_dt < datetime.datetime.combine(get_first_day(_start_dt,0,2), _mn_time)):
+            if _end_dt < datetime.datetime.combine(get_first_day(_start_dt, 0, 2), _mn_time):
                 # We do cross a month boundary. Process max/min for month
                 # containing _end_ts
                 m_tspan = archiveMonthSpan(_end_ts)
@@ -384,15 +392,18 @@ class wdMonthStats(weewx.cheetahgenerator.SearchList):
             # if this is not the 1st of the month or if its after
             # (archive interval) after midnight on 1st then we have a partial
             # month and we need to skip to next month.
-            if _date.day > 1 or _date.hour > 0 or _date.minute > (_interval):
-                _start_ts = int(time.mktime(datetime.datetime.combine(get_first_day(_date,0,1),_mn_time).timetuple()))
+            if _date.day > 1 or _date.hour > 0 or _date.minute > _interval:
+                _combined = datetime.datetime.combine(get_first_day(_date, 0, 1),
+                                                      _mn_time)
+                _start_ts = int(time.mktime(_combined.timetuple()))
             # if its midnight on the 1st of the month then leave it as is
             elif _date.day == 1 and _date.hour == 0 and _date.minute == 0:
                 pass
             # otherwise its (archive interval) past midnight on 1st so we have
             # the right day just need to set our timestamp to midnight.
             else:
-                _start_ts = int(time.mktime((_date.year, _date.month,_date.day,0,0,0,0,0,0)))
+                _start_ts = int(time.mktime((_date.year, _date.month,_date.day,
+                                             0, 0, 0, 0, 0, 0)))
             # Determine timestamp of last record we will use. Will be midnight
             # on last of a month. We are using stats data to calculate our
             # average and the stats datetime for each day is midnight. We have
@@ -406,7 +417,8 @@ class wdMonthStats(weewx.cheetahgenerator.SearchList):
             if _date.day == 1 and _date.hour == 0 and _date.minute == 0:
                 pass
             else:
-                _end_ts = int(time.mktime((_date.year, _date.month,1,0,0,0,0,0,0)))
+                _end_ts = int(time.mktime((_date.year, _date.month, 1,
+                                           0, 0, 0, 0, 0, 0)))
 
             # Determine timestamp to start our 'now' month stats ie stats for
             # the last 12 months. If we are part way though a month then want
@@ -417,12 +429,16 @@ class wdMonthStats(weewx.cheetahgenerator.SearchList):
             # at midnight on 1st of month we want midnight 12 months ago
 
             # we have a partial month so go back 11.something months
-            if _date.day > 1 or _date.hour > 0 or _date.minute >= (_interval):
-                _start_now_ts = int(time.mktime(datetime.datetime.combine(get_first_day(_date,0,-11),_mn_time).timetuple()))
+            if _date.day > 1 or _date.hour > 0 or _date.minute >= _interval:
+                _combined = datetime.datetime.combine(get_first_day(_date, 0, -11),
+                                                      _mn_time)
+                _start_now_ts = int(time.mktime(_combined.timetuple()))
             # otherwise its midnight on the 1st of the month and we just need
             # to go back 12 months
             else:
-                _start_now_ts = int(time.mktime(datetime.datetime.combine(get_first_day(_date,1,0),_mn_time).timetuple()))
+                _combined = datetime.datetime.combine(get_first_day(_date, 1, 0),
+                                                      _mn_time)
+                _start_now_ts = int(time.mktime(_combined.timetuple()))
             # iterate over each month timespan between our start and end
             # timestamps
             for m_tspan in genMonthSpans(_start_ts, timespan.stop):
@@ -455,8 +471,8 @@ class wdMonthStats(weewx.cheetahgenerator.SearchList):
                         m_rain_bin[_m_bin][1] += 1
                     if m_temp_tuple[0] is not None:
                         # update our 'total' temp for that month
-                        _date1 = get_first_day(datetime.datetime.fromtimestamp(m_tspan.start).date(),0,1)
-                        _date2 = get_first_day(datetime.datetime.fromtimestamp(m_tspan.start).date(),0,0)
+                        _date1 = get_first_day(datetime.datetime.fromtimestamp(m_tspan.start).date(), 0, 1)
+                        _date2 = get_first_day(datetime.datetime.fromtimestamp(m_tspan.start).date(), 0, 0)
                         _days = (_date1 - _date2).days
                         m_temp_bin[_m_bin][0] += m_temp_tuple[0] * _days
                         # increment our count, in this case by the number of
@@ -607,98 +623,98 @@ class wdMonthStats(weewx.cheetahgenerator.SearchList):
         # returned values are already ValueHelpers so can add each entry
         # straight to the search list
         # create a dictionary with the tag names (keys) we want to use
-        search_list = {'avrainjan' : m_r_a[0],
-                       'avrainfeb' : m_r_a[1],
-                       'avrainmar' : m_r_a[2],
-                       'avrainapr' : m_r_a[3],
-                       'avrainmay' : m_r_a[4],
-                       'avrainjun' : m_r_a[5],
-                       'avrainjul' : m_r_a[6],
-                       'avrainaug' : m_r_a[7],
-                       'avrainsep' : m_r_a[8],
-                       'avrainoct' : m_r_a[9],
-                       'avrainnov' : m_r_a[10],
-                       'avraindec' : m_r_a[11],
-                       'avrainjannow' : m_r_a_n[0],
-                       'avrainfebnow' : m_r_a_n[1],
-                       'avrainmarnow' : m_r_a_n[2],
-                       'avrainaprnow' : m_r_a_n[3],
-                       'avrainmaynow' : m_r_a_n[4],
-                       'avrainjunnow' : m_r_a_n[5],
-                       'avrainjulnow' : m_r_a_n[6],
-                       'avrainaugnow' : m_r_a_n[7],
-                       'avrainsepnow' : m_r_a_n[8],
-                       'avrainoctnow' : m_r_a_n[9],
-                       'avrainnovnow' : m_r_a_n[10],
-                       'avraindecnow' : m_r_a_n[11],
-                       'avtempjan' : m_t_a[0],
-                       'avtempfeb' : m_t_a[1],
-                       'avtempmar' : m_t_a[2],
-                       'avtempapr' : m_t_a[3],
-                       'avtempmay' : m_t_a[4],
-                       'avtempjun' : m_t_a[5],
-                       'avtempjul' : m_t_a[6],
-                       'avtempaug' : m_t_a[7],
-                       'avtempsep' : m_t_a[8],
-                       'avtempoct' : m_t_a[9],
-                       'avtempnov' : m_t_a[10],
-                       'avtempdec' : m_t_a[11],
-                       'avtempjannow' : m_t_a_n[0],
-                       'avtempfebnow' : m_t_a_n[1],
-                       'avtempmarnow' : m_t_a_n[2],
-                       'avtempaprnow' : m_t_a_n[3],
-                       'avtempmaynow' : m_t_a_n[4],
-                       'avtempjunnow' : m_t_a_n[5],
-                       'avtempjulnow' : m_t_a_n[6],
-                       'avtempaugnow' : m_t_a_n[7],
-                       'avtempsepnow' : m_t_a_n[8],
-                       'avtempoctnow' : m_t_a_n[9],
-                       'avtempnovnow' : m_t_a_n[10],
-                       'avtempdecnow' : m_t_a_n[11],
-                       'recordhighrainjan' : m_r_ma[0],
-                       'recordhighrainfeb' : m_r_ma[1],
-                       'recordhighrainmar' : m_r_ma[2],
-                       'recordhighrainapr' : m_r_ma[3],
-                       'recordhighrainmay' : m_r_ma[4],
-                       'recordhighrainjun' : m_r_ma[5],
-                       'recordhighrainjul' : m_r_ma[6],
-                       'recordhighrainaug' : m_r_ma[7],
-                       'recordhighrainsep' : m_r_ma[8],
-                       'recordhighrainoct' : m_r_ma[9],
-                       'recordhighrainnov' : m_r_ma[10],
-                       'recordhighraindec' : m_r_ma[11],
-                       'recordhightempjan' : m_t_ma[0],
-                       'recordhightempfeb' : m_t_ma[1],
-                       'recordhightempmar' : m_t_ma[2],
-                       'recordhightempapr' : m_t_ma[3],
-                       'recordhightempmay' : m_t_ma[4],
-                       'recordhightempjun' : m_t_ma[5],
-                       'recordhightempjul' : m_t_ma[6],
-                       'recordhightempaug' : m_t_ma[7],
-                       'recordhightempsep' : m_t_ma[8],
-                       'recordhightempoct' : m_t_ma[9],
-                       'recordhightempnov' : m_t_ma[10],
-                       'recordhightempdec' : m_t_ma[11],
-                       'recordlowtempjan' : m_t_mi[0],
-                       'recordlowtempfeb' : m_t_mi[1],
-                       'recordlowtempmar' : m_t_mi[2],
-                       'recordlowtempapr' : m_t_mi[3],
-                       'recordlowtempmay' : m_t_mi[4],
-                       'recordlowtempjun' : m_t_mi[5],
-                       'recordlowtempjul' : m_t_mi[6],
-                       'recordlowtempaug' : m_t_mi[7],
-                       'recordlowtempsep' : m_t_mi[8],
-                       'recordlowtempoct' : m_t_mi[9],
-                       'recordlowtempnov' : m_t_mi[10],
-                       'recordlowtempdec' : m_t_mi[11],
-                       'currentmonthavrain' : m_r_a[curr_month - 1],
-                       'currentmonthrecordrain' : m_r_a[curr_month - 1],
-                       'yearmaxmonthrain' : y_m_m_r,
-                       'yearmaxmonthrainmonth' : y_ma_r_m,
-                       'yearmaxmonthrainyear' : y_ma_r_y,
-                       'maxmonthrainmonth' : ma_m_r_m,
-                       'maxmonthrainyear' : ma_m_r_y
-                                }
+        search_list = {'avrainjan': m_r_a[0],
+                       'avrainfeb': m_r_a[1],
+                       'avrainmar': m_r_a[2],
+                       'avrainapr': m_r_a[3],
+                       'avrainmay': m_r_a[4],
+                       'avrainjun': m_r_a[5],
+                       'avrainjul': m_r_a[6],
+                       'avrainaug': m_r_a[7],
+                       'avrainsep': m_r_a[8],
+                       'avrainoct': m_r_a[9],
+                       'avrainnov': m_r_a[10],
+                       'avraindec': m_r_a[11],
+                       'avrainjannow': m_r_a_n[0],
+                       'avrainfebnow': m_r_a_n[1],
+                       'avrainmarnow': m_r_a_n[2],
+                       'avrainaprnow': m_r_a_n[3],
+                       'avrainmaynow': m_r_a_n[4],
+                       'avrainjunnow': m_r_a_n[5],
+                       'avrainjulnow': m_r_a_n[6],
+                       'avrainaugnow': m_r_a_n[7],
+                       'avrainsepnow': m_r_a_n[8],
+                       'avrainoctnow': m_r_a_n[9],
+                       'avrainnovnow': m_r_a_n[10],
+                       'avraindecnow': m_r_a_n[11],
+                       'avtempjan': m_t_a[0],
+                       'avtempfeb': m_t_a[1],
+                       'avtempmar': m_t_a[2],
+                       'avtempapr': m_t_a[3],
+                       'avtempmay': m_t_a[4],
+                       'avtempjun': m_t_a[5],
+                       'avtempjul': m_t_a[6],
+                       'avtempaug': m_t_a[7],
+                       'avtempsep': m_t_a[8],
+                       'avtempoct': m_t_a[9],
+                       'avtempnov': m_t_a[10],
+                       'avtempdec': m_t_a[11],
+                       'avtempjannow': m_t_a_n[0],
+                       'avtempfebnow': m_t_a_n[1],
+                       'avtempmarnow': m_t_a_n[2],
+                       'avtempaprnow': m_t_a_n[3],
+                       'avtempmaynow': m_t_a_n[4],
+                       'avtempjunnow': m_t_a_n[5],
+                       'avtempjulnow': m_t_a_n[6],
+                       'avtempaugnow': m_t_a_n[7],
+                       'avtempsepnow': m_t_a_n[8],
+                       'avtempoctnow': m_t_a_n[9],
+                       'avtempnovnow': m_t_a_n[10],
+                       'avtempdecnow': m_t_a_n[11],
+                       'recordhighrainjan': m_r_ma[0],
+                       'recordhighrainfeb': m_r_ma[1],
+                       'recordhighrainmar': m_r_ma[2],
+                       'recordhighrainapr': m_r_ma[3],
+                       'recordhighrainmay': m_r_ma[4],
+                       'recordhighrainjun': m_r_ma[5],
+                       'recordhighrainjul': m_r_ma[6],
+                       'recordhighrainaug': m_r_ma[7],
+                       'recordhighrainsep': m_r_ma[8],
+                       'recordhighrainoct': m_r_ma[9],
+                       'recordhighrainnov': m_r_ma[10],
+                       'recordhighraindec': m_r_ma[11],
+                       'recordhightempjan': m_t_ma[0],
+                       'recordhightempfeb': m_t_ma[1],
+                       'recordhightempmar': m_t_ma[2],
+                       'recordhightempapr': m_t_ma[3],
+                       'recordhightempmay': m_t_ma[4],
+                       'recordhightempjun': m_t_ma[5],
+                       'recordhightempjul': m_t_ma[6],
+                       'recordhightempaug': m_t_ma[7],
+                       'recordhightempsep': m_t_ma[8],
+                       'recordhightempoct': m_t_ma[9],
+                       'recordhightempnov': m_t_ma[10],
+                       'recordhightempdec': m_t_ma[11],
+                       'recordlowtempjan': m_t_mi[0],
+                       'recordlowtempfeb': m_t_mi[1],
+                       'recordlowtempmar': m_t_mi[2],
+                       'recordlowtempapr': m_t_mi[3],
+                       'recordlowtempmay': m_t_mi[4],
+                       'recordlowtempjun': m_t_mi[5],
+                       'recordlowtempjul': m_t_mi[6],
+                       'recordlowtempaug': m_t_mi[7],
+                       'recordlowtempsep': m_t_mi[8],
+                       'recordlowtempoct': m_t_mi[9],
+                       'recordlowtempnov': m_t_mi[10],
+                       'recordlowtempdec': m_t_mi[11],
+                       'currentmonthavrain': m_r_a[curr_month - 1],
+                       'currentmonthrecordrain': m_r_a[curr_month - 1],
+                       'yearmaxmonthrain': y_m_m_r,
+                       'yearmaxmonthrainmonth': y_ma_r_m,
+                       'yearmaxmonthrainyear': y_ma_r_y,
+                       'maxmonthrainmonth': ma_m_r_m,
+                       'maxmonthrainyear': ma_m_r_y
+                       }
 
         t2 = time.time()
         logdbg2("wdMonthStats SLE executed in %0.3f seconds" % (t2-t1))
@@ -848,7 +864,7 @@ class wdLastRainTags(weewx.cheetahgenerator.SearchList):
                                    formatter=self.generator.formatter,
                                    converter=self.generator.converter)
         # create a dictionary with the tag names (keys) we want to use
-        search_list = {'last_rain' : last_rain_vh}
+        search_list = {'last_rain': last_rain_vh}
 
         t2 = time.time()
         logdbg2("wdLastRainTags SLE executed in %0.3f seconds" % (t2-t1))
@@ -1059,9 +1075,9 @@ class wdMaxAvgWindTags(weewx.cheetahgenerator.SearchList):
         # first, get time obj for midnight
         midnight_t = datetime.time(0)
         # get datetime obj for now
-        today_dt = datetime.datetime.today()
+        today_d = datetime.date.today()
         # get datetime obj for midnight at start of today (our start time)
-        midnight_dt = datetime.datetime.combine(today_dt, midnight_t)
+        midnight_dt = datetime.datetime.combine(today_d, midnight_t)
         # get timestamp for midnight at start of today (our start time)
         midnight_ts = time.mktime(midnight_dt.timetuple())
         # our start is 1 day earlier than current (midnight today)
@@ -1120,12 +1136,12 @@ class wdMaxAvgWindTags(weewx.cheetahgenerator.SearchList):
         try:
             y_max_avg_wind = max(speed_vt.value)
             # find its location in the list
-            max_index = speed_vt.value.index(yest_max_avg_wind)
+            max_index = speed_vt.value.index(y_max_avg_wind)
             # get the corresponding direction
             y_max_avg_dir = dir_vt.value[max_index]
             # get the corresponding time
             y_max_avg_wind_time = wind_speed_time_vt.value[max_index]
-        except:
+        except (ValueError, KeyError):
             y_max_avg_wind = None
             y_max_avg_dir = None
             y_max_avg_wind_time = None
@@ -1225,18 +1241,18 @@ class wdMaxAvgWindTags(weewx.cheetahgenerator.SearchList):
                                  converter=self.generator.converter)
 
         # create a small dictionary with the tag names (keys) we want to use
-        search_list = {'max_avg_wind' : max_avg_wind_vh,
-                       'max_avg_wind_dir' : max_avg_wind_dir_vh,
-                       'max_avg_wind_time' : max_avg_wind_time_vh,
-                       'yest_max_avg_wind' : y_max_avg_wind_vh,
-                       'yest_max_avg_wind_dir' : y_max_avg_wind_dir_vh,
-                       'yest_max_avg_wind_time' : y_max_avg_wind_time_vh,
-                       'avwind120' : avwind120_vh,
-                       'avwind60' : avwind60_vh,
-                       'avwind30' : avwind30_vh,
-                       'avwind15' : avwind15_vh,
-                       'avwind10' : avwind10_vh,
-                       'avdir10' : avdir10_vh}
+        search_list = {'max_avg_wind': max_avg_wind_vh,
+                       'max_avg_wind_dir': max_avg_wind_dir_vh,
+                       'max_avg_wind_time': max_avg_wind_time_vh,
+                       'yest_max_avg_wind': y_max_avg_wind_vh,
+                       'yest_max_avg_wind_dir': y_max_avg_wind_dir_vh,
+                       'yest_max_avg_wind_time': y_max_avg_wind_time_vh,
+                       'avwind120': avwind120_vh,
+                       'avwind60': avwind60_vh,
+                       'avwind30': avwind30_vh,
+                       'avwind15': avwind15_vh,
+                       'avwind10': avwind10_vh,
+                       'avdir10': avdir10_vh}
 
         t2 = time.time()
         logdbg2("wdMaxAvgWindTags SLE executed in %0.3f seconds" % (t2-t1))
@@ -1415,7 +1431,7 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
         # get forecast file setting
         _file = self.generator.skin_dict['Extras']['Forecast'].get('Forecast_File_Location')
         # If the file exists open it, get the data and close it
-        if (_file):
+        if _file:
             f = open(_file, "r")
             raw_text = f.readline()
             forecast_text = raw_text.strip(' \t\n\r')
@@ -1483,7 +1499,7 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
             rain_vh = ValueHelper(ValueTuple(r_vt.value[0], r_type, r_group),
                                   formatter=self.generator.formatter,
                                   converter=self.generator.converter)
-        except:
+        except (ValueError, KeyError):
             rain_vh = ValueHelper(ValueTuple(None, r_type, r_group),
                                   formatter=self.generator.formatter,
                                   converter=self.generator.converter)
@@ -1549,20 +1565,20 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
         # feels like
         if outTemp_C is not None:
             if outTemp_C <= 16:
-                feelsLike_vt = ValueTuple(windchill_C,
-                                          'degree_C',
-                                          'group_temperature')
+                feels_like_vt = ValueTuple(windchill_C,
+                                           'degree_C',
+                                           'group_temperature')
             elif outTemp_C >= 27:
-                feelsLike_vt = ValueTuple(humidex_C,
-                                          'degree_C',
-                                          'group_temperature')
+                feels_like_vt = ValueTuple(humidex_C,
+                                           'degree_C',
+                                           'group_temperature')
             else:
-                feelsLike_vt = ValueTuple(outTemp_C,
-                                          'degree_C',
-                                          'group_temperature')
+                feels_like_vt = ValueTuple(outTemp_C,
+                                           'degree_C',
+                                           'group_temperature')
         else:
-            feelsLike_vt = ValueTuple(None, 'degree_C', 'group_temperature')
-        feelsLike_vh = ValueHelper(feelsLike_vt,
+            feels_like_vt = ValueTuple(None, 'degree_C', 'group_temperature')
+        feels_like_vh = ValueHelper(feels_like_vt,
                                    formatter=self.generator.formatter,
                                    converter=self.generator.converter)
 
@@ -1648,11 +1664,11 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
             RH = outHumidity
             P = Phpa
             Tdc = ((Tc - (14.55 + 0.114 * Tc) * (1 - (0.01 * RH)) -
-                  ((2.5 + 0.007 * Tc) * (1 - (0.01 * RH))) ** 3 -
-                  (15.9 + 0.117 * Tc) * (1 - (0.01 * RH)) ** 14))
+                   ((2.5 + 0.007 * Tc) * (1 - (0.01 * RH))) ** 3 -
+                   (15.9 + 0.117 * Tc) * (1 - (0.01 * RH)) ** 14))
             E = (6.11 * 10 ** (7.5 * Tdc / (237.7 + Tdc)))
             wb = ((((0.00066 * P) * Tc) + ((4098 * E) / ((Tdc + 237.7) ** 2) * Tdc)) /
-                 ((0.00066 * P) + (4098 * E) / ((Tdc + 237.7) ** 2)))
+                  ((0.00066 * P) + (4098 * E) / ((Tdc + 237.7) ** 2)))
             wb_vt = ValueTuple(wb, 'degree_C', 'group_temperature')
         else:
             wb_vt = ValueTuple(None, 'degree_C', 'group_temperature')
@@ -1666,21 +1682,21 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
                     (10.20 - outTemp_C)) *
                     (124 * 10 ** (-0.0142 * outHumidity)))/60,1))
         else:
-          cbi = 0.0
+            cbi = 0.0
         cbi_vt = ValueTuple(cbi, 'count', 'group_count')
         cbi_vh = ValueHelper(cbi_vt,
                              formatter=self.generator.formatter,
                              converter=self.generator.converter)
-        if (cbi > 97.5):
-          cbi_text = "EXTREME"
-        elif (cbi >="90"):
-          cbi_text = "VERY HIGH"
-        elif (cbi >= "75"):
-          cbi_text = "HIGH"
-        elif (cbi >= "50"):
-          cbi_text = "MODERATE"
+        if cbi_vh.raw > 97.5:
+            cbi_text = "EXTREME"
+        elif cbi_vh.raw >= 90:
+            cbi_text = "VERY HIGH"
+        elif cbi_vh.raw >= 75:
+            cbi_text = "HIGH"
+        elif cbi_vh.raw >= 50:
+            cbi_text = "MODERATE"
         else:
-          cbi_text="LOW"
+            cbi_text = "LOW"
 
         # cloud base
         alt_vt = weewx.units.convert(self.generator.stn_info.altitude_vt, 'foot')
@@ -1837,12 +1853,12 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
                        'start_time':     starttime_vh,
                        'nineamrain':     rain_vh,
                        'heatColorWord':  heat_color_word,
-                       'feelsLike':      feelsLike_vh,
+                       'feelsLike':      feels_like_vh,
                        'density':        density,
                        'beaufort':       beaufort,
                        'beaufortDesc':   beaufort_desc,
                        'wetBulb':        wb_vh,
-                       'cbi':            cbi,
+                       'cbi':            cbi_vh,
                        'cbitext':        cbi_text,
                        'cloudbase':      cloudbase_vh,
                        'Easter':         Easter_vh,
@@ -1929,8 +1945,8 @@ class wdTaggedStats(weewx.cheetahgenerator.SearchList):
         # WDstats.monthdaily.outTemp.max
         _stats = user.wdTaggedStats3.WdTimeBinder(db_lookup,
                                                   timespan.stop,
-                                                  formatter = self.generator.formatter,
-                                                  converter = self.generator.converter)
+                                                  formatter=self.generator.formatter,
+                                                  converter=self.generator.converter)
 
         t2 = time.time()
         logdbg2("wdTaggedStats SLE executed in %0.3f seconds" % (t2-t1))
@@ -2014,8 +2030,8 @@ class wdTaggedArchiveStats(weewx.cheetahgenerator.SearchList):
         # WDstats.minute.outTemp.max
         _stats = user.wdTaggedStats3.WdArchiveTimeBinder(db_lookup,
                                                          timespan.stop,
-                                                         formatter = self.generator.formatter,
-                                                         converter = self.generator.converter)
+                                                         formatter=self.generator.formatter,
+                                                         converter=self.generator.converter)
 
         t2 = time.time()
         logdbg2("wdTaggedArchiveStats SLE executed in %0.3f seconds" % (t2-t1))
@@ -2232,7 +2248,7 @@ class wdWindroseTags(weewx.cheetahgenerator.SearchList):
         # separated, no spaces and bounded by [ and ]
         data = '[%s]' % ','.join(['%s' % z for z in windrose])
         # create a small dictionary with the tag names (keys) we want to use
-        search_list = {'windroseData' : data}
+        search_list = {'windroseData': data}
 
         t2 = time.time()
         logdbg2("wdWindroseTags SLE executed in %0.3f seconds" % (t2-t1))
@@ -2294,9 +2310,9 @@ class wdWindRunTags(weewx.cheetahgenerator.SearchList):
 
         t1 = time.time()
 
-        ##
-        ## Get windSpeed units for use later
-        ##
+        #
+        # Get windSpeed units for use later
+        #
 
         # Get current record from the archive
         if not self.generator.gen_ts:
@@ -2306,8 +2322,10 @@ class wdWindRunTags(weewx.cheetahgenerator.SearchList):
         _usUnits = current_rec['usUnits']
         (windrun_type, windrun_group) = getStandardUnitType(_usUnits,
                                                             'windrun')
+###Unused variables?
         (windSpeed_type, windSpeed_group) = getStandardUnitType(_usUnits,
                                                                 'windSpeed')
+###Unused variables?
         (dateTime_type, dateTime_group) = getStandardUnitType(_usUnits,
                                                               'dateTime')
 
@@ -2315,9 +2333,9 @@ class wdWindRunTags(weewx.cheetahgenerator.SearchList):
         _first_ts = db_lookup().firstGoodStamp()
         _last_ts = timespan.stop
 
-        ##
-        ## Get timestamps for midnight at the start of our various periods
-        ##
+        #
+        # Get timestamps for midnight at the start of our various periods
+        #
         # Get time obj for midnight
         _mn_t = datetime.time(0)
         # Get date obj for now
@@ -2931,9 +2949,9 @@ class wdHourRainTags(weewx.cheetahgenerator.SearchList):
         # get time obj for midnight
         midnight_t = datetime.time(0)
         # get datetime obj for now
-        today_dt = datetime.datetime.today()
+        today_d = datetime.date.today()
         # get datetime obj for midnight at start of today
-        midnight_dt = datetime.datetime.combine(today_dt, midnight_t)
+        midnight_dt = datetime.datetime.combine(today_d, midnight_t)
         # our start is 23:00:01 yesterday so go back 0:59:59
         start_dt = midnight_dt - datetime.timedelta(minutes=59, seconds=59)
         # get it as a timestamp
@@ -2988,7 +3006,7 @@ class wdHourRainTags(weewx.cheetahgenerator.SearchList):
         # create a small dictionary with the tag names (keys) we want to use
         search_list = {'maxHourRainToday': max_hour_rain_vh,
                        'maxHourRainTodayTime': max_hour_rain_time_vh
-                      }
+                       }
 
         t2 = time.time()
         logdbg2("wdHourRainTags SLE executed in %0.3f seconds" % (t2-t1))
@@ -3120,7 +3138,7 @@ class wdGdDays(weewx.cheetahgenerator.SearchList):
                         _month_gdd = round(_month_gdd * 5 / 9, 1)
                     if _month_gdd < 0.0:
                         _month_gdd = 0.0
-                except:
+                except ValueError:
                     _month_gdd = None
         else:
             _month_gdd = None
@@ -3151,7 +3169,7 @@ class wdGdDays(weewx.cheetahgenerator.SearchList):
                         _year_gdd = round(_year_gdd * 5 / 9, 1)
                     if _year_gdd < 0.0:
                         _year_gdd = 0.0
-                except:
+                except ValueError:
                     _year_gdd = None
         else:
             _year_gdd = None
@@ -3413,7 +3431,7 @@ class wdRainThisDay(weewx.cheetahgenerator.SearchList):
         # get a timestamp for midnight of that day
         _mn_first_year_ago_td = _mn_first_year_ago_dt - datetime.datetime.fromtimestamp(0)
         _mn_first_year_ago_ts = _mn_first_year_ago_td.days * 86400 + _mn_first_year_ago_td.seconds
-        # get todays elapsed seconds
+        # get today's elapsed seconds
         today_s = _stop_dt.hour * 3600 + _stop_dt.minute * 60 + _stop_dt.second
 
         # Month ago queries. Month ago results are derived from 2 queries,
@@ -3468,7 +3486,7 @@ class wdRainThisDay(weewx.cheetahgenerator.SearchList):
         # Add our two query results being careful in case one or both is None.
         # Filter is slower than nested if..else but what's a few milliseconds
         # for the sake of neater code
-        if rain_vt.value != []:
+        if rain_vt.value:
             filtered = filter(None, [rain_vt.value[0],_row[0]])
             no_none = not (rain_vt.value[0] is None or _row[0] is None)
             month_rain_vt = ValueTuple(sum(filtered), r_type, r_group) if no_none else none_vt
@@ -3532,7 +3550,7 @@ class wdRainThisDay(weewx.cheetahgenerator.SearchList):
         # Add our two query results being careful in case one or both is None.
         # Filter is slower than nested if..else but what's a few milliseconds
         # for the sake of neater code
-        if rain_vt.value != []:
+        if rain_vt.value:
             filtered = filter(None, [rain_vt.value[0],_row[0]])
             no_none = not (rain_vt.value[0] is None or _row[0] is None)
             year_rain_vt = ValueTuple(sum(filtered),r_type, r_group) if no_none else none_vt
@@ -3683,7 +3701,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
             # we found one or more runs so get our result, we want the longest
             # run
             (_temp, _m_dry_run, _pos) = max(_interim,
-                                                     key=lambda a:a[1])
+                                            key=lambda a: a[1])
             # our 'time' is the day the run ends so we need to add on run-1
             # days
             _m_dry_time_ts = _time_vector[_pos] + (_m_dry_run - 1) * 86400
@@ -3699,7 +3717,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         _index = 0
         # use itertools groupby method to make our search for a run easier
         # iterate over the groups itertools has found
-        for k,g in itertools.groupby(_rain_vector, key=lambda r:1 if r > 0 else 0):
+        for k, g in itertools.groupby(_rain_vector, key=lambda r: 1 if r > 0 else 0):
             _length = len(list(g))
             # do we have a run of something > 0 (ie some rain)?
             if k > 0:
@@ -3709,7 +3727,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         if _interim:
             # we found one or more runs so get our result, we want the longest
             # run
-            (_temp, _m_wet_run, _pos) = max(_interim, key=lambda a:a[1])
+            (_temp, _m_wet_run, _pos) = max(_interim, key=lambda a: a[1])
             # our 'time' is the day the run ends so we need to add on run-1
             # days
             _m_wet_time_ts = _time_vector[_pos] + (_m_wet_run - 1) * 86400
@@ -3739,7 +3757,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         _index = 0
         # use itertools groupby method to make our search for a run easier
         # iterate over the groups itertools has found
-        for k,g in itertools.groupby(_rain_vector):
+        for k, g in itertools.groupby(_rain_vector):
             _length = len(list(g))
             # do we have a run of 0s (ie no rain)?
             if k == 0:
@@ -3749,7 +3767,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         if _interim:
             # we found one or more runs so get our result, we want the longest
             # run
-            (_temp, _y_dry_run, _pos) = max(_interim, key=lambda a:a[1])
+            (_temp, _y_dry_run, _pos) = max(_interim, key=lambda a: a[1])
             # our 'time' is the day the run ends so we need to add on run-1
             # days
             _y_dry_time_ts = _time_vector[_pos] + (_y_dry_run - 1) * 86400
@@ -3765,7 +3783,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         _index = 0
         # use itertools groupby method to make our search for a run easier
         # iterate over the groups itertools has found
-        for k,g in itertools.groupby(_rain_vector, key=lambda r:1 if r > 0 else 0):
+        for k, g in itertools.groupby(_rain_vector, key=lambda r: 1 if r > 0 else 0):
             _length = len(list(g))
             # do we have a run of something > 0 (ie some rain)?
             if k > 0:
@@ -3775,7 +3793,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         if _interim:
             # we found one or more runs so get our result, we want the longest
             # run
-            (_temp, _y_wet_run, _pos) = max(_interim, key=lambda a:a[1])
+            (_temp, _y_wet_run, _pos) = max(_interim, key=lambda a: a[1])
             # our 'time' is the day the run ends so we need to add on run-1
             # days
             _y_wet_time_ts = _time_vector[_pos] + (_y_wet_run - 1) * 86400
@@ -3804,7 +3822,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         _index = 0
         # use itertools groupby method to make our search for a run easier
         # iterate over the groups itertools has found
-        for k,g in itertools.groupby(_rain_vector):
+        for k, g in itertools.groupby(_rain_vector):
             _length = len(list(g))
             # do we have a run of 0s (ie no rain)?
             if k == 0:
@@ -3814,7 +3832,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         if _interim:
             # we found one or more runs so get our result, we want the longest
             # run
-            (_temp, _a_dry_run, _pos) = max(_interim, key=lambda a:a[1])
+            (_temp, _a_dry_run, _pos) = max(_interim, key=lambda a: a[1])
             # our 'time' is the day the run ends so we need to add on run-1
             # days
             _a_dry_time_ts = _time_vector[_pos] + (_a_dry_run - 1) * 86400
@@ -3830,7 +3848,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         _index = 0
         # use itertools groupby method to make our search for a run easier
         # iterate over the groups itertools has found
-        for k,g in itertools.groupby(_rain_vector, key=lambda r:1 if r > 0 else 0):
+        for k, g in itertools.groupby(_rain_vector, key=lambda r: 1 if r > 0 else 0):
             _length = len(list(g))
             # do we have a run of something > 0 (ie some rain)?
             if k > 0:
@@ -3839,7 +3857,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
             _index += _length
         if _interim:
             # if we found a run (we want the longest one) then get our results
-            (_temp, _a_wet_run, _pos) = max(_interim, key=lambda a:a[1])
+            (_temp, _a_wet_run, _pos) = max(_interim, key=lambda a: a[1])
             # our 'time' is the day the run ends so we need to add on run-1
             # days
             _a_wet_time_ts = _time_vector[_pos] + (_a_wet_run - 1) * 86400

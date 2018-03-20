@@ -45,21 +45,27 @@ from weewx.units import ValueHelper
 
 WEEWXWD_ASTRO_SLE_VERSION = '1.2.0a1'
 
+
 def logmsg(level, msg):
     syslog.syslog(level, 'weewxwd: %s' % msg)
 
+
 def logdbg(msg):
     logmsg(syslog.LOG_DEBUG, msg)
+
 
 def logdbg2(msg):
     if weewx.debug >= 2:
         logmsg(syslog.LOG_DEBUG, msg)
 
+
 def loginf(msg):
     logmsg(syslog.LOG_INFO, msg)
 
+
 def logerr(msg):
     logmsg(syslog.LOG_ERR, msg)
+
 
 class wdMoonApsis(SearchList):
     """WeeWX SLE to provide various lunar apogee/perigee details.
@@ -73,32 +79,32 @@ class wdMoonApsis(SearchList):
         self.periarg = array('f', [2,  0,  0,  4,  0,  0,  6,  0,  0,  8,  0,  0,
                                    2, -1,  0,  0,  1,  0, 10,  0,  0,  4, -1,  0,
                                    6, -1,  0, 12,  0,  0,  1,  0,  0,  8, -1,  0,
-                                  14,  0,  0,  0,  0,  2,  3,  0,  0, 10, -1,  0,
-                                  16,  0,  0, 12, -1,  0,  5,  0,  0,  2,  0,  2,
-                                  18,  0,  0, 14, -1,  0,  7,  0,  0,  2,  1,  0,
-                                  20,  0,  0,  1,  1,  0, 16, -1,  0,  4,  1,  0,
+                                   14,  0,  0,  0,  0,  2,  3,  0,  0, 10, -1,  0,
+                                   16,  0,  0, 12, -1,  0,  5,  0,  0,  2,  0,  2,
+                                   18,  0,  0, 14, -1,  0,  7,  0,  0,  2,  1,  0,
+                                   20,  0,  0,  1,  1,  0, 16, -1,  0,  4,  1,  0,
                                    9,  0,  0,  4,  0,  2,  2, -2,  0,  4, -2,  0,
                                    6, -2,  0, 22,  0,  0, 18, -1,  0,  6,  1,  0,
-                                  11,  0,  0,  8,  1,  0,  4,  0, -2,  6,  0,  2,
+                                   11,  0,  0,  8,  1,  0,  4,  0, -2,  6,  0,  2,
                                    3,  1,  0,  5,  1,  0, 13,  0,  0, 20, -1,  0,
                                    3,  2,  0,  4, -2,  2,  1,  2,  0, 22, -1,  0,
                                    0,  0,  4,  6,  0, -2,  2,  1, -2,  0,  2,  0,
                                    0, -1,  2,  2,  0,  4,  0, -2,  2,  2,  2, -2,
-                                  24,  0,  0,  4,  0, -4,  2,  2,  0, 1, -1,  0])
+                                   24,  0,  0,  4,  0, -4,  2,  2,  0, 1, -1,  0])
 
         self.pericoeff = array('f', [-1.6769,  0.4589, -0.1856,  0.0883, -0.0773,
-                                      0.0502, -0.0460,  0.0422, -0.0256,  0.0253,
-                                      0.0237,  0.0162, -0.0145,  0.0129, -0.0112,
+                                     0.0502, -0.0460,  0.0422, -0.0256,  0.0253,
+                                     0.0237,  0.0162, -0.0145,  0.0129, -0.0112,
                                      -0.0104,  0.0086,  0.0069,  0.0066, -0.0053,
                                      -0.0052, -0.0046, -0.0041,  0.0040,  0.0032,
                                      -0.0032,  0.0031, -0.0029,  0.0027,  0.0027,
                                      -0.0027,  0.0024, -0.0021, -0.0021, -0.0021,
-                                      0.0019, -0.0018, -0.0014, -0.0014, -0.0014,
-                                      0.0014, -0.0014,  0.0013,  0.0013,  0.0011,
+                                     0.0019, -0.0018, -0.0014, -0.0014, -0.0014,
+                                     0.0014, -0.0014,  0.0013,  0.0013,  0.0011,
                                      -0.0011, -0.0010, -0.0009, -0.0008,  0.0008,
-                                      0.0008,  0.0007,  0.0007,  0.0007, -0.0006,
+                                     0.0008,  0.0007,  0.0007,  0.0007, -0.0006,
                                      -0.0006,  0.0006,  0.0005,  0.0005, -0.0004,
-                                      0])
+                                     0])
 
         self.peritft = array('f', [4, 5, 7, -1])
 
@@ -114,7 +120,7 @@ class wdMoonApsis(SearchList):
                                   0,  1,  2, 12,  0,  0,  2, -1,  2,  1, -1,  0])
 
         self.apocoeff = array('f', [0.4392,  0.0684,  0.0456, 0.0426,  0.0212,
-                                   -0.0189,  0.0144,  0.0113, 0.0047,  0.0036,
+                                    -0.0189,  0.0144,  0.0113, 0.0047,  0.0036,
                                     0.0035,  0.0034, -0.0034, 0.0022, -0.0017,
                                     0.0013,  0.0011,  0.0010, 0.0009,  0.0007,
                                     0.0006,  0.0005,  0.0005, 0.0004,  0.0004,
@@ -129,25 +135,25 @@ class wdMoonApsis(SearchList):
                                     6,  0,  0,  1,  0,  0,  8,  0,  0,  0,  1,  0,
                                     0,  0,  2,  4, -1,  0,  2,  0, -2, 10,  0,  0,
                                     6, -1,  0,  3,  0,  0,  2,  1,  0,  1,  1,  0,
-                                   12,  0,  0,  8, -1,  0,  2,  0,  2,  2, -2,  0,
+                                    12,  0,  0,  8, -1,  0,  2,  0,  2,  2, -2,  0,
                                     5,  0,  0, 14,  0,  0, 10, -1,  0,  4,  1,  0,
-                                   12, -1,  0,  4, -2,  0,  7,  0,  0,  4,  0,  2,
-                                   16,  0,  0,  3,  1,  0,  1, -1,  0,  6,  1,  0,
+                                    12, -1,  0,  4, -2,  0,  7,  0,  0,  4,  0,  2,
+                                    16,  0,  0,  3,  1,  0,  1, -1,  0,  6,  1,  0,
                                     0,  2,  0, 14, -1,  0,  2,  2,  0,  6, -2,  0,
                                     2, -1, -2,  9,  0,  0, 18,  0,  0,  6,  0,  2,
                                     0, -1,  2, 16, -1,  0,  4,  0, -2,  8,  1,  0,
-                                   11,  0,  0,  5,  1,  0, 20,  0,  0])
+                                    11,  0,  0,  5,  1,  0, 20,  0,  0])
 
         self.peripcoeff = array('f', [3629.215, 63.224, -6.990,  2.834,  1.927,
-                                        -1.263, -0.702,  0.696, -0.690, -0.629,
-                                        -0.392,  0.297,  0.260,  0.201, -0.161,
-                                         0.157, -0.138, -0.127,  0.104,  0.104,
-                                        -0.079,  0.068,  0.067,  0.054, -0.038,
-                                        -0.038,  0.037, -0.037, -0.035, -0.030,
-                                         0.029, -0.025,  0.023,  0.023, -0.023,
-                                         0.022, -0.021, -0.020,  0.019,  0.017,
-                                         0.014, -0.014,  0.013,  0.012,  0.011,
-                                         0.010, -0.010,  0])
+                                      -1.263, -0.702,  0.696, -0.690, -0.629,
+                                      -0.392,  0.297,  0.260,  0.201, -0.161,
+                                      0.157, -0.138, -0.127,  0.104,  0.104,
+                                      -0.079,  0.068,  0.067,  0.054, -0.038,
+                                      -0.038,  0.037, -0.037, -0.035, -0.030,
+                                      0.029, -0.025,  0.023,  0.023, -0.023,
+                                      0.022, -0.021, -0.020,  0.019,  0.017,
+                                      0.014, -0.014,  0.013,  0.012,  0.011,
+                                      0.010, -0.010,  0])
 
         self.periptft = array('f', [3, 7, 9, -1])
 
@@ -160,19 +166,20 @@ class wdMoonApsis(SearchList):
                                    0,  0,  2,  0,  6, -1,  0,  8,  0,  0])
 
         self.apopcoeff = array('f', [3245.251, -9.147, -0.841,  0.697, -0.656,
-                                        0.355,  0.159,  0.127,  0.065,  0.052,
-                                        0.043,  0.031, -0.023,  0.022,  0.019,
-                                       -0.016,  0.014,  0.010,  0])
+                                     0.355,  0.159,  0.127,  0.065,  0.052,
+                                     0.043,  0.031, -0.023,  0.022,  0.019,
+                                     -0.016,  0.014,  0.010,  0])
 
         self.apoptft = array('f', [4, -1])
 
         self.apoptfc = array('f', [0.0016, -1])
         self.apsis_type_lookup = {'p': 'perigee', 'a': 'apogee'}
 
-    def fixangle(self, a):
+    @staticmethod
+    def fixangle(a):
         """Range reduce angle in degrees."""
 
-        return a - 360.0 * (math.floor((a) / 360.0))
+        return a - 360.0 * (math.floor(a / 360.0))
 
     def sumser(self, trig, D, M, F, T, argtab, coeff, tfix, tfixc):
         """Sum the series of periodic terms."""
@@ -200,12 +207,12 @@ class wdMoonApsis(SearchList):
     def moonpa(self, k):
         """Calculate perigee or apogee from index number."""
 
-        EarthRad = 6378.14;
+        earth_radius = 6378.14
 
         t = k - math.floor(k)
-        if (t > 0.499 and t < 0.501):
+        if 0.499 < t < 0.501:
             apg = True
-        elif (t > 0.999 or t < 0.001):
+        elif t > 0.999 or t < 0.001:
             apg = False
         else:
             return
@@ -216,26 +223,26 @@ class wdMoonApsis(SearchList):
         t4 = t3 * t
 
         # Mean time of perigee or apogee
-        JDE = 2451534.6698 + 27.55454989 * k - 0.0006691 * t2 - 0.000001098 * t3 + 0.0000000052 * t4
+        jde = 2451534.6698 + 27.55454989 * k - 0.0006691 * t2 - 0.000001098 * t3 + 0.0000000052 * t4
         # Mean elongation of the Moon
-        D = 171.9179 + 335.9106046 * k - 0.0100383 * t2 - 0.00001156 * t3 + 0.000000055 * t4
+        d = 171.9179 + 335.9106046 * k - 0.0100383 * t2 - 0.00001156 * t3 + 0.000000055 * t4
         # Mean anomaly of the Sun
-        M = 347.3477 + 27.1577721 * k - 0.0008130 * t2 - 0.0000010 * t3
+        m = 347.3477 + 27.1577721 * k - 0.0008130 * t2 - 0.0000010 * t3
         # Moon's argument of latitude
-        F = 316.6109 + 364.5287911 * k - 0.0125053 * t2 - 0.0000148 * t3
-        JDE += self.sumser(math.sin, D, M, F, t,
+        f = 316.6109 + 364.5287911 * k - 0.0125053 * t2 - 0.0000148 * t3
+        jde += self.sumser(math.sin, d, m, f, t,
                            self.apoarg if apg else self.periarg,
                            self.apocoeff if apg else self.pericoeff,
                            self.apotft if apg else self.peritft,
-                           self.apotfc if apg else self.peritfc);
+                           self.apotfc if apg else self.peritfc)
         par = self.sumser(math.cos, D, M, F, t,
                           self.apoparg if apg else self.periparg,
                           self.apopcoeff if apg else self.peripcoeff,
                           self.apoptft if apg else self.periptft,
-                          self.apoptfc if apg else self.periptfc);
+                          self.apoptfc if apg else self.periptfc)
         par = math.radians(par / 3600.0)
 
-        return array('d', [JDE, par, EarthRad / math.sin(par)])
+        return array('d', [jde, par, earth_radius / math.sin(par)])
 
     def get_extension_list(self, timespan, db_lookup):
         """Create a search list with various lunar perigee and apogee details.
@@ -289,7 +296,7 @@ class wdMoonApsis(SearchList):
         # Get our list of apogees/perigees for the current year. List will
         # include last apogee/perigee from previous year and first
         # apogee/perigee from next year
-        for z in range(0,40):
+        for z in range(0, 40):
             sk = ssk + z * 0.5
             apsis = 'p' if (sk - math.floor(sk)) < 0.25 else 'a'
             pa = self.moonpa(sk)
@@ -325,11 +332,11 @@ class wdMoonApsis(SearchList):
         _ts_y = time.mktime((_tt.tm_year + 1, 1, 1, 0, 0, 0, 0, 0, -1))
         # get max apogee for the year (ie greatest distance to moon)
         max_apogee = max(apsis_list, 
-                         key=lambda ap: ap[2] if ap[1].raw >= _ts and ap[1].raw < _ts_y else 0)
+                         key=lambda ap: ap[2] if _ts <= ap[1].raw < _ts_y else 0)
         max_apogee = (max_apogee[1], max_apogee[2])
         # get min perigee for the year (ie least distance to moon)
         min_perigee = min(apsis_list, 
-                          key=lambda ap: ap[2] if ap[1].raw >= _ts and ap[1].raw < _ts_y else 1000000)
+                          key=lambda ap: ap[2] if _ts <= ap[1].raw < _ts_y else 1000000)
         min_perigee = (min_perigee[1], min_perigee[2])
 
         # split our apsis list into individual components so we can find the
@@ -352,7 +359,7 @@ class wdMoonApsis(SearchList):
                 next_perigee_dist = apsis_dist_list[next_apsis_idx]
                 next_apogee_ts_vh = apsis_ts_vh_list[next_apsis_idx + 1]
                 next_apogee_dist = apsis_dist_list[next_apsis_idx + 1]
-        except:
+        except ValueError:
             # if we had an error then set everything to None
             next_apogee_ts_vh = ValueHelper((None, 'unix_epoch', 'group_time'),
                                             formatter=self.generator.formatter,
@@ -376,6 +383,7 @@ class wdMoonApsis(SearchList):
         logdbg2("wdMoonApsis SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
+
 
 class wdEclipse(SearchList):
 
@@ -413,7 +421,7 @@ class wdEclipse(SearchList):
                                (2220320582, 'P'))
         self.solar_eclipse_type_lookup = {'A': 'Annular', 'H': 'Hybrid', 
                                           'P': 'Partial', 'T': 'Total'
-                                         }
+                                          }
         self.lunar_eclipses = ((1308168823, 'T'), (1323527576, 'T'),
                                (1338807860, 'P'), (1354113247, 'Pe'),
                                (1366920518, 'P'), (1369455066, 'Pe'),
@@ -474,13 +482,13 @@ class wdEclipse(SearchList):
 
         try:
             dt = datetime.datetime.fromtimestamp(ts)
-            if 2005 < dt.year  < 2050:
+            if 2005 < dt.year < 2050:
                 y = dt.year + (dt.month - 0.5)/12
                 t = y - 2000
                 result = 62.92 + 0.32217 * t + 0.00589 * t ** 2
             else:
                 result = None
-        except:
+        except ValueError:
             result = None
         return result
 
@@ -546,7 +554,7 @@ class wdEclipse(SearchList):
             next_solar_eclipse_ts = solar_eclipse_ts_list[next_solar_eclipse_idx] - self.deltaT(solar_eclipse_ts_list[next_solar_eclipse_idx])
             # get the type code of next solar eclipse
             next_solar_eclipse_type = solar_eclipse_type_list[next_solar_eclipse_idx]
-        except:
+        except ValueError:
             # if an error then set them to None
             next_solar_eclipse_ts = None
             next_solar_eclipse_type = None
@@ -569,7 +577,7 @@ class wdEclipse(SearchList):
             next_lunar_eclipse_ts = lunar_eclipse_ts_list[next_lunar_eclipse_idx] - self.deltaT(lunar_eclipse_ts_list[next_lunar_eclipse_idx])
             # get the type code of next lunar eclipse
             next_lunar_eclipse_type = lunar_eclipse_data_list[next_lunar_eclipse_idx]
-        except:
+        except ValueError:
             # if an error then set them to None
             next_lunar_eclipse_ts = None
             next_lunar_eclipse_type = None
@@ -604,7 +612,7 @@ class wdEarthApsis(SearchList):
                            1893677520, 1925343780, 1956710760, 1988427180,
                            2019967080, 2051406300, 2083146360, 2114556240,
                            2146121040, 2177834400, 2209189740
-                          )
+                           )
         self.aphelion = (1404429000, 1436187180, 1467647760, 1499129700,
                          1530893640, 1562265180, 1593874200, 1625538660,
                          1656902640, 1688634060, 1720158900, 1751581080,
@@ -612,7 +620,7 @@ class wdEarthApsis(SearchList):
                          1909383600, 1941064140, 1972653000, 2004036600,
                          2035802580, 2067270060, 2098750260, 2130495180,
                          2161871520, 2193490500, 2225143020
-                        )
+                         )
 
     def get_extension_list(self, timespan, db_lookup):
         """Create a search list with date-time of next perihelion and aphelion.
@@ -648,7 +656,7 @@ class wdEarthApsis(SearchList):
             next_aphelion_ts = self.aphelion[next_aphelion_idx]
         except:
             # if an error then set them to None
-            next_perhelion_ts = None
+            next_perihelion_ts = None
             next_aphelion_ts = None
 
         # make our ts into ValueHelpers
@@ -670,6 +678,7 @@ class wdEarthApsis(SearchList):
 
         return [search_list_extension]
 
+
 class wdChineseNewYear(SearchList):
 
     def __init__(self, generator):
@@ -683,7 +692,7 @@ class wdChineseNewYear(SearchList):
                          2032: (11, 2), 2033: (31, 1), 2034: (19, 2),
                          2035: (8,  2), 2036: (28, 1), 2037: (15, 2),
                          2038: (4,  2), 2039: (24, 1), 2040: (12, 2)
-                        }
+                         }
 
     def get_extension_list(self, timespan, db_lookup):
         """Create a search list with the date of the next Chinese New Year.
@@ -716,12 +725,12 @@ class wdChineseNewYear(SearchList):
             if _date > datetime.date(_y, _m, _d):
                 # if it has passed then get construct next year's
                 cny = self.cny_dict[_year + 1] + (_year + 1, )
-        except:
+        except ValueError:
             # if we strike an error then return None
             cny = None
 
         # now create a small dictionary with suitable keys
-        search_list_extension = {'next_cny' : cny}
+        search_list_extension = {'next_cny': cny}
 
         t2 = time.time()
         logdbg2("wdChineseNewYear SLE executed in %0.3f seconds" % (t2-t1))

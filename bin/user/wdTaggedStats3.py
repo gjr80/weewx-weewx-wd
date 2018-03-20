@@ -57,9 +57,9 @@ WEEWXWD_TAGGED_STATS_VERSION = '1.2.0a1'
 # to answer aggregation queries:
 day_multiples = ['weekdaily', 'monthdaily', 'yearmonthly']
 
-#===============================================================================
+# ===============================================================================
 #                    Class WdTimeBinder
-#===============================================================================
+# ==============================================================================
 
 
 class WdTimeBinder(object):
@@ -99,7 +99,10 @@ class WdTimeBinder(object):
         WDTimeSpanStats, which binds the database with the time period.
     """
 
-    def __init__(self, db_lookup, report_time, formatter=weewx.units.Formatter(), converter=weewx.units.Converter(), **option_dict):
+    def __init__(self, db_lookup, report_time,
+                 formatter=weewx.units.Formatter(),
+                 converter=weewx.units.Converter(),
+                 **option_dict):
         """Initialize an instance of WdDatabaseBinder.
 
         db_lookup: A function with call signature db_lookup(data_binding),
@@ -133,12 +136,14 @@ class WdTimeBinder(object):
                                 weeutil.weeutil.genDaySpans, self.db_lookup,
                                 data_binding, 'weekdaily',
                                 self.formatter, self.converter, **self.option_dict)
+
     @property
     def monthdaily(self, data_binding=None):
         return WdTimespanBinder((self.report_time - 2678400, self.report_time),
                                 weeutil.weeutil.genDaySpans, self.db_lookup,
                                 data_binding, 'monthdaily',
                                 self.formatter, self.converter, **self.option_dict)
+
     @property
     def yearmonthly(self, data_binding=None):
         _now_dt = datetime.datetime.fromtimestamp(self.report_time)
@@ -149,9 +154,9 @@ class WdTimeBinder(object):
                                 self.formatter, self.converter, **self.option_dict)
 
 
-#===============================================================================
+# ===============================================================================
 #                    Class WdTimespanBinder
-#===============================================================================
+# ===============================================================================
 
 
 class WdTimespanBinder(object):
@@ -217,9 +222,9 @@ class WdTimespanBinder(object):
                                    self.context, self.genspans, self.formatter, self.converter,
                                    **self.option_dict)
 
-#===============================================================================
+# ===============================================================================
 #                    Class WdObservationBinder
-#===============================================================================
+# ===============================================================================
 
 
 class WdObservationBinder(object):
@@ -336,17 +341,17 @@ class WdObservationBinder(object):
         """Run a query against the databases, using the given aggregation type."""
         db_manager = self.db_lookup(self.data_binding)
         result = db_manager.getAggregate(self.timespan, self.obs_type, aggregateType,
-                                            val=val, **self.option_dict)
+                                         val=val, **self.option_dict)
         # Wrap the result in a ValueHelper:
         return weewx.units.ValueHelper(result, self.context, self.formatter, self.converter)
 
-#===============================================================================
+# ===============================================================================
 #                    Class WdArchiveTimeBinder
-#===============================================================================
+# ===============================================================================
 
 
 class WdArchiveTimeBinder(object):
-    """Titel?
+    """Title?
 
         This class allows custom tagged stats drawn from the archive database
         in support of the Weewx-WD templates. This class along with the
@@ -383,7 +388,10 @@ class WdArchiveTimeBinder(object):
         WdArchiveTimespanBinder, which binds the database with the time period.
     """
 
-    def __init__(self, db_lookup, report_time, formatter=weewx.units.Formatter(), converter=weewx.units.Converter(), **option_dict):
+    def __init__(self, db_lookup, report_time,
+                 formatter=weewx.units.Formatter(),
+                 converter=weewx.units.Converter(),
+                 **option_dict):
         """Initialize an instance of TaggedStats.
 
         db: The database the stats are to be extracted from.
@@ -401,10 +409,10 @@ class WdArchiveTimeBinder(object):
         option_dict: Other options which can be used to customize calculations.
                      [Optional.]
         """
-        self.db_lookup   = db_lookup
+        self.db_lookup = db_lookup
         self.report_time = report_time
-        self.formatter   = formatter
-        self.converter   = converter
+        self.formatter = formatter
+        self.converter = converter
         self.option_dict = option_dict
 
     # what follows is the list of time period attributes
@@ -436,9 +444,9 @@ class WdArchiveTimeBinder(object):
                                        **self.option_dict)
 
 
-#===============================================================================
+# ===============================================================================
 #                    Class WdArchiveTimespanBinder
-#===============================================================================
+# ===============================================================================
 
 
 class WdArchiveTimespanBinder(object):
@@ -592,20 +600,23 @@ class WdArchiveObservationBinder(object):
     def maxQuery(self):
         final = []
         if self.interval <= self.agg_intvl or self.context != 'minute':
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'max',
                                                                             self.agg_intvl)
             for elm in result_vt[0]:
                 final.append(weewx.units.ValueHelper((elm, result_vt[1], result_vt[2]),
-                                                     self.context, self.formatter, self.converter))
+                                                     self.context,
+                                                     self.formatter,
+                                                     self.converter))
         else:
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0]-self.interval, self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0]-self.interval, self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'max',
                                                                             self.agg_intvl)
+### unused variable vector_ts?
             vector_ts = self.timespan[0] + self.interval
             vec_counter = 1
             for i in range(60):
@@ -617,10 +628,15 @@ class WdArchiveObservationBinder(object):
                             res = result_vt[0][vec_counter] - (curr_vector_ts - min_time)/float(self.interval) * (result_vt[0][vec_counter] - result_vt[0][vec_counter-1])
                         except:
                             res = 0
-                        final.append(weewx.units.ValueHelper((res,result_vt[1],result_vt[2]), 'minute', self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                     elif min_time == curr_vector_ts:
                         final.append(weewx.units.ValueHelper((result_vt[0][vec_counter], result_vt[1], result_vt[2]),
-                                                             'minute', self.formatter, self.converter))
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                         vec_counter += 1
                     else:
                         vec_counter += 1
@@ -628,28 +644,37 @@ class WdArchiveObservationBinder(object):
                             res = result_vt[0][vec_counter] + (min_time - curr_vector_ts)/float(self.interval) * (result_vt[0][vec_counter] - result_vt[0][vec_counter-1])
                         except:
                             res = 0
-                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]), 'minute', self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                 except:
-                    final.append(weewx.units.ValueHelper((0, result_vt[1], result_vt[2]), 'minute', self.formatter, self.converter))
+                    final.append(weewx.units.ValueHelper((0, result_vt[1], result_vt[2]),
+                                                         'minute',
+                                                         self.formatter,
+                                                         self.converter))
         return final
 
     def minQuery(self):
         final = []
         if self.interval <= self.agg_intvl or self.context != 'minute':
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'min',
                                                                             self.agg_intvl)
             for elm in result_vt[0]:
-                final.append(weewx.units.ValueHelper((elm, result_vt[1], result_vt[2]), self.context,
-                                                     self.formatter, self.converter))
+                final.append(weewx.units.ValueHelper((elm, result_vt[1], result_vt[2]),
+                                                     self.context,
+                                                     self.formatter,
+                                                     self.converter))
         else:
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0] - self.interval, self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0] - self.interval, self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'min',
                                                                             self.agg_intvl)
+### unused variable vector_ts?
             vector_ts = self.timespan[0]+self.interval
             vec_counter = 1
             for i in range(60):
@@ -661,9 +686,12 @@ class WdArchiveObservationBinder(object):
                             res = result_vt[0][vec_counter] - (curr_vector_ts - min_time)/float(self.interval) * (result_vt[0][vec_counter] - result_vt[0][vec_counter - 1])
                         except:
                             res = 0
-                        final.append(weewx.units.ValueHelper((res,result_vt[1],result_vt[2]), 'minute', self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                     elif min_time == curr_vector_ts:
-                        final.append(weewx.units.ValueHelper((result_vt[0][vec_counter],result_vt[1],result_vt[2]),
+                        final.append(weewx.units.ValueHelper((result_vt[0][vec_counter], result_vt[1], result_vt[2]),
                                                              'minute', self.formatter, self.converter))
                         vec_counter += 1
                     else:
@@ -672,16 +700,22 @@ class WdArchiveObservationBinder(object):
                             res=result_vt[0][vec_counter]+(min_time - curr_vector_ts)/float(self.interval) * (result_vt[0][vec_counter] - result_vt[0][vec_counter - 1])
                         except:
                             res = 0
-                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]), 'minute', self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                 except:
-                    final.append(weewx.units.ValueHelper((0, result_vt[1], result_vt[2]), 'minute', self.formatter, self.converter))
+                    final.append(weewx.units.ValueHelper((0, result_vt[1], result_vt[2]),
+                                                         'minute',
+                                                         self.formatter,
+                                                         self.converter))
         return final
 
     def avgQuery(self):
         final = []
         if self.interval <= self.agg_intvl or self.context != 'minute':
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'avg',
                                                                             self.agg_intvl)
@@ -689,11 +723,12 @@ class WdArchiveObservationBinder(object):
                 final.append(weewx.units.ValueHelper((elm, result_vt[1], result_vt[2]), self.context,
                                                      self.formatter, self.converter))
         else:
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0] - self.interval, self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0] - self.interval, self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'avg',
                                                                             self.agg_intvl)
+### unused variable vector_ts?
             vector_ts = self.timespan[0] + self.interval
             vec_counter = 1
             for i in range(60):
@@ -705,11 +740,15 @@ class WdArchiveObservationBinder(object):
                             res=result_vt[0][vec_counter] - (curr_vector_ts - min_time)/float(self.interval) * (result_vt[0][vec_counter] - result_vt[0][vec_counter - 1])
                         except:
                             res = 0
-                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]), 'minute',
-                                                             self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                     elif min_time == curr_vector_ts:
                         final.append(weewx.units.ValueHelper((result_vt[0][vec_counter], result_vt[1], result_vt[2]),
-                                                             'minute', self.formatter, self.converter))
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                         vec_counter += 1
                     else:
                         vec_counter += 1
@@ -717,11 +756,15 @@ class WdArchiveObservationBinder(object):
                             res = result_vt[0][vec_counter] + (min_time - curr_vector_ts)/float(self.interval) * (result_vt[0][vec_counter] - result_vt[0][vec_counter - 1])
                         except:
                             res = 0
-                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]), 'minute',
-                                                             self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                 except:
-                    final.append(weewx.units.ValueHelper((0, result_vt[1], result_vt[2]), 'minute',
-                                                         self.formatter, self.converter))
+                    final.append(weewx.units.ValueHelper((0, result_vt[1], result_vt[2]),
+                                                         'minute',
+                                                         self.formatter,
+                                                         self.converter))
         return final
 
     def sumQuery(self):
@@ -732,20 +775,22 @@ class WdArchiveObservationBinder(object):
         # easy - just do the aggregate query
         if self.interval <= self.agg_intvl or self.context != 'minute':
             # get our results
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'sum',
                                                                             self.agg_intvl)
             # step through each element and add to our result as a ValueHelper
             for elm in result_vt[0]:
-                final.append(weewx.units.ValueHelper((elm,result_vt[1],result_vt[2]), self.context,
-                                                     self.formatter, self.converter))
+                final.append(weewx.units.ValueHelper((elm, result_vt[1], result_vt[2]),
+                                                     self.context,
+                                                     self.formatter,
+                                                     self.converter))
         else:
             # otherwise it takes a bit more effort! Get our vector of data over
             # the timespan concerned
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0]-self.interval, self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0]-self.interval, self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'sum',
                                                                             self.agg_intvl)
@@ -766,8 +811,10 @@ class WdArchiveObservationBinder(object):
                         except:
                             res = 0
                         # add our extrapolated result as a ValueHelper
-                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]), 'minute',
-                                                             self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                     elif min_time == curr_vector_ts:
                         # if 'minute' ts is the same as that of our current
                         # vector element we need to extrapolate and advance
@@ -777,8 +824,10 @@ class WdArchiveObservationBinder(object):
                         except:
                             res = 0
                         # add our extrapolated result as a ValueHelper
-                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]), 'minute',
-                                                             self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                         # and we also need to move to the next vector
                         vec_counter += 1
                     else:
@@ -789,33 +838,38 @@ class WdArchiveObservationBinder(object):
                         except:
                             res=0
                         # add our extrapolated result as a ValueHelper
-                        final.append(weewx.units.ValueHelper((res,result_vt[1],result_vt[2]), 'minute',
-                                                             self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, result_vt[1], result_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                         # and we also need to move to the next vector
                         vec_counter += 1
                 except:
                     # if we run into an error set our result for this 'minute' to 0
-                    final.append(weewx.units.ValueHelper((0,result_vt[1],result_vt[2]), 'minute',
-                                                         self.formatter, self.converter))
+                    final.append(weewx.units.ValueHelper((0, result_vt[1], result_vt[2]),
+                                                         'minute',
+                                                         self.formatter,
+                                                         self.converter))
         return final    # return our result
 
     def datetimeQuery(self):
         final = []
         if self.interval <= self.agg_intvl or self.context != 'minute':
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'max',
                                                                             self.agg_intvl)
             for elm in stop_vt[0]:
-                final.append(weewx.units.ValueHelper((elm,stop_vt[1],stop_vt[2]), self.context,
+                final.append(weewx.units.ValueHelper((elm, stop_vt[1], stop_vt[2]), self.context,
                                                      self.formatter, self.converter))
         else:
-            getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0]-self.interval, self.timespan[1])
-            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(getSqlVectors_TS,
+            _tspan = weeutil.weeutil.TimeSpan(self.timespan[0]-self.interval, self.timespan[1])
+            (start_vt, stop_vt, result_vt) = self.db_lookup().getSqlVectors(_tspan,
                                                                             self.obs_type,
                                                                             'max',
                                                                             self.agg_intvl)
+### unused variable vector_ts?
             vector_ts = self.timespan[0]+self.interval
             vec_counter = 1
             for i in range(60):
@@ -827,10 +881,15 @@ class WdArchiveObservationBinder(object):
                             res = stop_vt[0][vec_counter] - (curr_vector_ts - min_time)/float(self.interval) * (stop_vt[0][vec_counter] - stop_vt[0][vec_counter-1])
                         except:
                             res = 0
-                        final.append(weewx.units.ValueHelper((res,stop_vt[1],stop_vt[2]), 'minute', self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, stop_vt[1], stop_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                     elif min_time == curr_vector_ts:
-                        final.append(weewx.units.ValueHelper((stop_vt[0][vec_counter],stop_vt[1],stop_vt[2]), 'minute',
-                                                             self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((stop_vt[0][vec_counter], stop_vt[1], stop_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                         vec_counter += 1
                     else:
                         vec_counter += 1
@@ -838,11 +897,15 @@ class WdArchiveObservationBinder(object):
                             res = stop_vt[0][vec_counter] + (min_time - curr_vector_ts)/float(self.interval) * (stop_vt[0][vec_counter] - stop_vt[0][vec_counter - 1])
                         except:
                             res = 0
-                        final.append(weewx.units.ValueHelper((res,stop_vt[1],stop_vt[2]), 'minute',
-                                                             self.formatter, self.converter))
+                        final.append(weewx.units.ValueHelper((res, stop_vt[1], stop_vt[2]),
+                                                             'minute',
+                                                             self.formatter,
+                                                             self.converter))
                 except:
-                    final.append(weewx.units.ValueHelper((self.timespan[1],stop_vt[1],stop_vt[2]), 'minute',
-                                                         self.formatter, self.converter))
+                    final.append(weewx.units.ValueHelper((self.timespan[1], stop_vt[1], stop_vt[2]),
+                                                         'minute',
+                                                         self.formatter,
+                                                         self.converter))
         return final
 
     def __getattr__(self, aggregateType):
@@ -876,12 +939,11 @@ class WdArchiveObservationBinder(object):
         return self.db_lookup(self.data_binding).has_data(self.obs_type, self.timespan)
 
     def _do_query(self, aggregateType, val=None):
-        """Run a query against the databases, using the given aggregation type.
-        """
+        """Run a query against the databases, using the given aggregation type."""
 
         db_manager = self.db_lookup(self.data_binding)
-        getSqlVectors_TS = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
-        (start_vt, stop_vt, result_vt) = db_manager.getSqlVectors(getSqlVectors_TS,
+        _tspan = weeutil.weeutil.TimeSpan(self.timespan[0], self.timespan[1])
+        (start_vt, stop_vt, result_vt) = db_manager.getSqlVectors(_tspan,
                                                                   self.obs_type,
                                                                   aggregateType,
                                                                   self.agg_intvl)
