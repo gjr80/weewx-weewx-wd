@@ -235,7 +235,7 @@ class wdMoonApsis(SearchList):
                            self.apocoeff if apg else self.pericoeff,
                            self.apotft if apg else self.peritft,
                            self.apotfc if apg else self.peritfc)
-        par = self.sumser(math.cos, D, M, F, t,
+        par = self.sumser(math.cos, d, m, f, t,
                           self.apoparg if apg else self.periparg,
                           self.apopcoeff if apg else self.peripcoeff,
                           self.apoptft if apg else self.periptft,
@@ -248,10 +248,10 @@ class wdMoonApsis(SearchList):
         """Create a search list with various lunar perigee and apogee details.
 
         Parameters:
-          timespan: An instance of weeutil.weeutil.TimeSpan. This will hold the 
+          timespan: An instance of weeutil.weeutil.TimeSpan. This will hold the
                     start and stop times of the domain of valid times.
 
-          db_lookup: This is a function that, given a data binding as its only 
+          db_lookup: This is a function that, given a data binding as its only
                      parameter, will return a database manager object.
 
         Returns:
@@ -264,12 +264,12 @@ class wdMoonApsis(SearchList):
                           apsis
                         apsis_distance is the distance in km of the moon from
                           earth at apsis.
-          next_apogee_ts: ValueHelper containing date-time of next apogee 
+          next_apogee_ts: ValueHelper containing date-time of next apogee
                           (could be next year)
           next_apogee_dist_km: Earth to Moon distance in km at next apogee
                                (weeWX has no notion of km/mi so cannot use a
                                ValueHelper)
-          next_perigee_ts: ValueHelper containing date-time of next apogee 
+          next_perigee_ts: ValueHelper containing date-time of next apogee
                            (could be next year)
           next_perigee_dist_km: Earth to Moon distance in km at next perigee
                                 (Weewx has no notion of km/mi so cannot use a
@@ -283,7 +283,7 @@ class wdMoonApsis(SearchList):
                        Earth (ie min apogee) this year.
                        Format is:
                          (apsis_ts, apsis_distance)
-                       where apsis_ts and apsis_distance as per moon_apsis 
+                       where apsis_ts and apsis_distance as per moon_apsis
                        above
         """
 
@@ -325,17 +325,17 @@ class wdMoonApsis(SearchList):
         # make sure our list is in date order
         apsis_list.sort(key=lambda ts: ts[1].raw)
 
-        # get timestamps for start of this year and start of next year, 
+        # get timestamps for start of this year and start of next year,
         # necessary so we can identify which events occur this year
         _tt = time.localtime(timespan.stop)
         _ts = time.mktime((_tt.tm_year, 1, 1, 0, 0, 0, 0, 0, -1))
         _ts_y = time.mktime((_tt.tm_year + 1, 1, 1, 0, 0, 0, 0, 0, -1))
         # get max apogee for the year (ie greatest distance to moon)
-        max_apogee = max(apsis_list, 
+        max_apogee = max(apsis_list,
                          key=lambda ap: ap[2] if _ts <= ap[1].raw < _ts_y else 0)
         max_apogee = (max_apogee[1], max_apogee[2])
         # get min perigee for the year (ie least distance to moon)
-        min_perigee = min(apsis_list, 
+        min_perigee = min(apsis_list,
                           key=lambda ap: ap[2] if _ts <= ap[1].raw < _ts_y else 1000000)
         min_perigee = (min_perigee[1], min_perigee[2])
 
@@ -419,7 +419,7 @@ class wdEclipse(SearchList):
                                (2161690375, 'A'), (2176938010, 'T'),
                                (2192289174, 'A'), (2207579026, 'T'),
                                (2220320582, 'P'))
-        self.solar_eclipse_type_lookup = {'A': 'Annular', 'H': 'Hybrid', 
+        self.solar_eclipse_type_lookup = {'A': 'Annular', 'H': 'Hybrid',
                                           'P': 'Partial', 'T': 'Total'
                                           }
         self.lunar_eclipses = ((1308168823, 'T'), (1323527576, 'T'),
@@ -456,8 +456,8 @@ class wdEclipse(SearchList):
                                (2162892956, 'Pe'), (2175702300, 'Pe'),
                                (2190999265, 'P'), (2206284988, 'P'),
                                (2221645582, 'T'), (2236878281, 'T'))
-        self.lunar_eclipse_type_lookup = {'P': 'Partial', 
-                                          'Pe': 'Penumbral', 
+        self.lunar_eclipse_type_lookup = {'P': 'Partial',
+                                          'Pe': 'Penumbral',
                                           'T': 'Total'
                                           }
 
@@ -548,7 +548,7 @@ class wdEclipse(SearchList):
         solar_eclipse_ts_list, solar_eclipse_type_list = zip(*self.solar_eclipses)
         try:
             # find the index of the next solar eclipse
-            next_solar_eclipse_idx = bisect.bisect_left(solar_eclipse_ts_list, 
+            next_solar_eclipse_idx = bisect.bisect_left(solar_eclipse_ts_list,
                                                         search_ts)
             # get ts of next solar eclipse
             next_solar_eclipse_ts = solar_eclipse_ts_list[next_solar_eclipse_idx] - self.deltaT(solar_eclipse_ts_list[next_solar_eclipse_idx])
@@ -571,7 +571,7 @@ class wdEclipse(SearchList):
         lunar_eclipse_ts_list, lunar_eclipse_data_list = zip(*self.lunar_eclipses)
         try:
             # find the index of the next lunar eclipse
-            next_lunar_eclipse_idx = bisect.bisect_left(lunar_eclipse_ts_list, 
+            next_lunar_eclipse_idx = bisect.bisect_left(lunar_eclipse_ts_list,
                                                         search_ts)
             # get ts of next lunar eclipse
             next_lunar_eclipse_ts = lunar_eclipse_ts_list[next_lunar_eclipse_idx] - self.deltaT(lunar_eclipse_ts_list[next_lunar_eclipse_idx])
@@ -632,7 +632,7 @@ class wdEarthApsis(SearchList):
             timespan: An instance of weeutil.weeutil.TimeSpan. This will hold
                       the start and stop times of the domain of valid times.
 
-          db_lookup: This is a function that, given a data binding as its only 
+          db_lookup: This is a function that, given a data binding as its only
                      parameter, will return a database manager object.
 
         Returns:
