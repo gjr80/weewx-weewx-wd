@@ -52,8 +52,10 @@ from setup import ExtensionInstaller
 REQUIRED_VERSION = "3.5.0"
 WEEWX_WD_VERSION = "1.2.0.a1"
 
+
 def loader():
     return WeewxWdInstaller()
+
 
 class WeewxWdInstaller(ExtensionInstaller):
     def __init__(self):
@@ -216,5 +218,5 @@ class WeewxWdInstaller(ExtensionInstaller):
                                           'skins/SteelGauges/skin.conf']),
                    ('skins/Testtags', ['skins/Testtags/skin.conf',
                                        'skins/Testtags/testtags.php.tmpl']),
-                  ]
+                   ]
             )
