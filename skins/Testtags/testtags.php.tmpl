@@ -1,21 +1,22 @@
 ##errorCatcher Echo
-##
-##This program is free software; you can redistribute it and/or modify it under
-##the terms of the GNU General Public License as published by the Free Software
-##Foundation; either version 2 of the License, or (at your option) any later
-##version.
-##
-##This program is distributed in the hope that it will be useful, but WITHOUT
-##ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-##FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-##
+#*
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
 ###############################################################################
-##                                                                            #
-##                       WEEWX-WD TESTTAGS.PHP TEMPLATE                       #
-##                                                                            #
-## Version: 1.0.3                                      Date: 31 March 2017    #
-##                                                                            #
+#                                                                             #
+#                        WEEWX-WD TESTTAGS.PHP TEMPLATE                       #
+#                                                                             #
+# Version: 1.2.0a1                                      Date: 24 March 2018   #
+#                                                                             #
 ###############################################################################
+*#
 #raw
 <?php
 //
@@ -560,19 +561,37 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $apparentsolartempc = #end raw '$apptempRadiation';    // Apparent temperature in the sun, oC (you need a solar sensor)
 #raw $apparentsolartempf = #end raw '$apptempRadiationF';   // Apparent temperature in the sun, oF (you need a solar sensor)
 //
-### FIXME
+#if $current($data_binding='wdsupp_binding', $max_delta=60).tempNormalHigh.exists
+#raw $WUmaxtemp = #end raw '$current($data_binding='wdsupp_binding', $max_delta=60).tempNormalHigh.nolabel("%.0f", $naString)'; // Todays average max temperature from the selected Wunderground almanac station
+#else
 #raw $WUmaxtemp = #end raw '0'; // Todays average max temperature from the selected Wunderground almanac station
-### FIXME
+#end if
+#if $current($data_binding='wdsupp_binding', $max_delta=60).tempNormalLow.exists
+#raw $WUmintemp = #end raw '$current($data_binding='wdsupp_binding', $max_delta=60).tempNormalLow.nolabel("%.0f", $naString)'; // Todays average min temperature from the selected Wunderground almanac station
+#else
 #raw $WUmintemp = #end raw '0'; // Todays average min temperature from the selected Wunderground almanac station
+#end if
 //
-### FIXME
+#if $current($data_binding='wdsupp_binding', $max_delta=60).tempRecordHigh.exists
+#raw $WUmaxtempr = #end raw '$current($data_binding='wdsupp_binding', $max_delta=60).tempRecordHigh.nolabel("%.0f", $naString)';    // Todays record max temperature from the selected Wunderground almanac station
+#else
 #raw $WUmaxtempr = #end raw '0';    // Todays record max temperature from the selected Wunderground almanac station
-### FIXME
+#end if
+#if $current($data_binding='wdsupp_binding', $max_delta=60).tempRecordLow.exists
+#raw $WUmintempr = #end raw '$current($data_binding='wdsupp_binding', $max_delta=60).tempRecordLow.nolabel("%.0f", $naString)';    // Todays record min temperature from the selected Wunderground almanac station
+#else
 #raw $WUmintempr = #end raw '0';    // Todays record min temperature from the selected Wunderground almanac station
-### FIXME
+#end if
+#if $current($data_binding='wdsupp_binding', $max_delta=60).tempRecordHighYear.exists
+#raw $WUmaxtempryr = #end raw '$current($data_binding='wdsupp_binding', $max_delta=60).tempRecordHighYear.nolabel("%d", $naString)';  // Year that it occured
+#else
 #raw $WUmaxtempryr = #end raw '$naString';  // Year that it occured
-### FIXME
-#raw $WUmintempryr = #end raw '$naString';  // year that it occured
+#end if
+#if $current($data_binding='wdsupp_binding', $max_delta=60).tempRecordLowYear.exists
+#raw $WUmintempryr = #end raw '$current($data_binding='wdsupp_binding', $max_delta=60).tempRecordLowYear.nolabel("%d", $naString)';  // Year that it occured
+#else
+#raw $WUmintempryr = #end raw '$naString';  // Year that it occured
+#end if
 //
 // Yesterday:
 // ----------
@@ -626,9 +645,9 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 // ----
 // Current:
 // --------
-#raw $dayrn = #end raw '$day.rain.sum.formatted';
-#raw $monthrn = #end raw '$month.rain.sum.formatted'; // rain so far this month
-#raw $yearrn = #end raw '$year.rain.sum.formatted';   // rain so far this year
+#raw $dayrn = #end raw '$day.rain.sum.string('0.0')';
+#raw $monthrn = #end raw '$month.rain.sum.string('0.0')'; // rain so far this month
+#raw $yearrn = #end raw '$year.rain.sum.string('0.0')';   // rain so far this year
 #try
 #set $datelastrain = date.fromtimestamp($last_rain.raw)
 #set $datenow=date.today()
@@ -647,19 +666,33 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $maxrainratetime = #end raw '$day.rainRate.maxtime.format($timeFormat)';   // Time that occurred
 // Yesterday:
 // ----------
-#raw $yesterdayrain = #end raw '$yesterday.rain.sum.formatted';   // Yesterday rain
-### FIXME
-#raw $vpstormrainstart = #end raw '$naString';  //Davis VP Storm rain start date
-### FIXME
+#raw $yesterdayrain = #end raw '$yesterday.rain.sum.string('0.0')';   // Yesterday rain
+#if $current($data_binding='wdsupp_binding', $max_delta=600).stormStart.exists
+#raw $vpstormrainstart = #end raw '$current($data_binding='wdsupp_binding', $max_delta=600).stormStart.format($dateFormat, '0/0/0')';  //Davis VP Storm rain start date
+#else
+#raw $vpstormrainstart = #end raw '0/0/0';  //Davis VP Storm rain start date
+#end if
+#if $current($data_binding='wdsupp_binding', $max_delta=600).stormRain.exists
+#raw $vpstormrain = #end raw '$current($data_binding='wdsupp_binding', $max_delta=600).stormRain.format($skin_dict.Units.StringFormats[$skin_dict.Units.Groups.group_rain],"0.0")';           //Davis VP Storm rain value
+#else
 #raw $vpstormrain = #end raw '0.0';           //Davis VP Storm rain value
+#end if
 //
 // Sunshine/Solar/ET
 // -----------------
 #if $day.radiation.has_data
 #raw $VPsolar = #end raw '$current.radiation.formatted';//  Solar energy number (W/M2)
 #raw $highsolar = #end raw '$day.radiation.max.formatted';// Daily high solar (for Davis VP and Grow stations)
-### FIXME
+#if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.exists
+#if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw > 0
+#set $percent = int(round(100.0 * $current.radiation.raw / $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw))
+#else
+#set $percent = 0
+#end if
+#raw $currentsolarpercent = #end raw '$percent %';// Current solar percent for stations with a temperature solar sensor (like the dallas 1 wire)
+#else
 #raw $currentsolarpercent = #end raw '$naString';// Current solar percent for stations with a temperature solar sensor (like the dallas 1 wire)
+#end if
 #raw $highsolartime = #end raw '$day.radiation.maxtime.format($timeFormat)';// Time that the daily high solar occurred
 #raw $lowsolartime = #end raw '$day.radiation.mintime.format($timeFormat)';// Time that the daily low solar occurred
 #else
@@ -1080,23 +1113,45 @@ $icon_array[34] =  'day_partly_cloudy.gif';   // stopped raining
 $icon_array[35] =  'windyrain.gif';           // Wind+rain
 
 #end raw
-### FIXME
-#if $current_icon and $current_icon != ""
-#raw $iconnumber = #end raw '$current_icon';
-#raw $current_icon = $icon_array#end raw[$current_icon]; // name of our condition icon
+#if $varExists('current_icon')
+  #if $current_icon != None
+    #raw $iconnumber = #end raw '$current_icon';
+    #raw $current_icon = $icon_array#end raw[$current_icon]; // name of our condition icon
+  #elif $current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.exists
+    #raw $iconnumber = #end raw '$current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.nolabel("%d", "0")';
+    #raw $current_icon = $icon_array#end raw[$current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.nolabel("%d", "0")]; // name of our condition icon
+  #else
+    #raw $iconnumber = #end raw '0';
+    #raw $current_icon = $icon_array#end raw[0]; // name of our condition icon
+  #end if
+#elif $current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.exists
+  #raw $iconnumber = #end raw '$current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.nolabel("%d", "0")';
+  #raw $current_icon = $icon_array#end raw[$current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.nolabel("%d", "0")]; // name of our condition icon
 #else
-#raw $iconnumber = '0'; #end raw         // icon number
-#raw $current_icon = $icon_array[0]; #end raw // name of our condition icon
+  #raw $iconnumber = '0'; #end raw         // icon number
+  #raw $current_icon = $icon_array[0]; #end raw // name of our condition icon
 #end if
 #raw
 // ----------------------------------------------------------------------------------
 //   $current_summary = 'Dry' . "<br />" . 'Mainly cloudy/Dry ';
+#end raw
 ### FIXME
+#raw
 $weathercond = 'Dry';
-### FIXME
-$Currentsolardescription = #end raw 'Not Available';
-### FIXME
-
+#end raw
+#if $varExists('current_text')
+#if $current_text != ""
+#raw $Currentsolardescription = #end raw '$current_text';
+#elif $current($data_binding='wdsupp_binding', $max_delta=600).currentText.exists
+#raw $Currentsolardescription = #end raw '$current($data_binding='wdsupp_binding', $max_delta=600).currentText.raw';
+#else
+#raw $Currentsolardescription = #end raw 'Not Available';
+#end if
+#elif $current($data_binding='wdsupp_binding', $max_delta=600).currentText.exists
+#raw $Currentsolardescription = #end raw '$current($data_binding='wdsupp_binding', $max_delta=600).currentText.raw';
+#else
+#raw $Currentsolardescription = #end raw 'Not Available';
+#end if
 #raw
 $current_summary = $Currentsolardescription;
 $current_summary = preg_replace('|^/[^/]+/|','',$current_summary);
@@ -1398,19 +1453,19 @@ $lighteningcountlast30minutesnextstorm = '0';
 #raw $recordhighsolarday = #end raw '$naString';
 #raw $recordhighsolaryear = #end raw '$naString';
 #end if
-#if $day.uv.has_data
-#raw $mrecordhighuv = #end raw '$month.uv.max';
-#raw $mrecordhighuvmonth = #end raw '$month.uv.maxtime.format($monthFormat)';
-#raw $mrecordhighuvday = #end raw '$month.uv.maxtime.format($dayFormat)';
-#raw $mrecordhighuvyear = #end raw '$month.uv.maxtime.format($yearFormat)';
-#raw $yrecordhighuv = #end raw '$year.uv.max';
-#raw $yrecordhighuvmonth = #end raw '$year.uv.maxtime.format($monthFormat)';
-#raw $yrecordhighuvday = #end raw '$year.uv.maxtime.format($dayFormat)';
-#raw $yrecordhighuvyear = #end raw '$year.uv.maxtime.format($yearFormat)';
-#raw $recordhighuv = #end raw '$alltime.uv.max';
-#raw $recordhighuvmonth = #end raw '$alltime.uv.maxtime.format($monthFormat)';
-#raw $recordhighuvday = #end raw '$alltime.uv.maxtime.format($dayFormat)';
-#raw $recordhighuvyear = #end raw '$alltime.uv.maxtime.format($yearFormat)';
+#if $day.UV.has_data
+#raw $mrecordhighuv = #end raw '$month.UV.max';
+#raw $mrecordhighuvmonth = #end raw '$month.UV.maxtime.format($monthFormat)';
+#raw $mrecordhighuvday = #end raw '$month.UV.maxtime.format($dayFormat)';
+#raw $mrecordhighuvyear = #end raw '$month.UV.maxtime.format($yearFormat)';
+#raw $yrecordhighuv = #end raw '$year.UV.max';
+#raw $yrecordhighuvmonth = #end raw '$year.UV.maxtime.format($monthFormat)';
+#raw $yrecordhighuvday = #end raw '$year.UV.maxtime.format($dayFormat)';
+#raw $yrecordhighuvyear = #end raw '$year.UV.maxtime.format($yearFormat)';
+#raw $recordhighuv = #end raw '$alltime.UV.max';
+#raw $recordhighuvmonth = #end raw '$alltime.UV.maxtime.format($monthFormat)';
+#raw $recordhighuvday = #end raw '$alltime.UV.maxtime.format($dayFormat)';
+#raw $recordhighuvyear = #end raw '$alltime.UV.maxtime.format($yearFormat)';
 #else
 #raw $mrecordhighuv = #end raw '$naString';
 #raw $mrecordhighuvmonth = #end raw '$naString';
@@ -1563,8 +1618,11 @@ $lighteningcountlast30minutesnextstorm = '0';
 #raw $sunshinehourstodateday = #end raw '0';
 ### FIXME
 #raw $sunshinehourstodatemonth = #end raw '0';
-### FIXME
+#if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.exists
+#raw $maxsolarfortime = #end raw '$current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.formatted';
+#else
 #raw $maxsolarfortime = #end raw '0';
+#end if
 #raw $wetbulb = #end raw '$wetBulb';
 #raw $lighteningcountlasthour = #end raw '0';
 #raw $lighteningcountlastminute = #end raw '0';
