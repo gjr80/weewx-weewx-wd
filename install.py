@@ -189,11 +189,11 @@ class WeewxWdInstaller(ExtensionInstaller):
                         'database_retry_wait': '10',
                         'vacuum': '86400',
                         'WU': {
-                            'apiKey': '***REMOVED***',
+                            'apiKey': 'replace_me',
                             'forecast_interval': '1800',
                             'api_lockout_period': '60',
                             'max_WU_tries': '3',
-                            'location': '***REMOVED***',
+                            'location': 'replace_me',
                             'almanac_interval': '3600',
                             'conditions_interval': '1800'
                         }
