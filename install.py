@@ -184,18 +184,8 @@ class WeewxWdInstaller(ExtensionInstaller):
                     'sunshine_threshold': '120',
                     'Supplementary': {
                         'data_binding': 'wdsupp_binding',
-                        'database_max_tries': '3',
-                        'max_age': '691200',
-                        'database_retry_wait': '10',
-                        'vacuum': '86400',
                         'WU': {
-                            'apiKey': 'replace_me',
-                            'forecast_interval': '1800',
-                            'api_lockout_period': '60',
-                            'max_WU_tries': '3',
-                            'location': 'replace_me',
-                            'almanac_interval': '3600',
-                            'conditions_interval': '1800'
+                            'apiKey': 'replace_me'
                         }
                     }
                 }
