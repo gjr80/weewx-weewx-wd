@@ -84,17 +84,26 @@ WEEWXWD_VERSION = '1.2.0a1'
 WU_queries = [
     {
         'name': 'conditions',
+        'interval': None,
+        'last': None,
         'def_interval': 1800,
+        'response': None,
         'json_title': 'current_observation'
     },
     {
         'name': 'forecast',
+        'interval': None,
+        'last': None,
         'def_interval': 1800,
+        'response': None,
         'json_title': 'forecast'
     },
     {
         'name': 'almanac',
+        'interval': None,
+        'last': None,
         'def_interval': 3600,
+        'response': None,
         'json_title': 'almanac'
     }
 ]

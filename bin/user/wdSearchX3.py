@@ -3138,7 +3138,7 @@ class wdGdDays(weewx.cheetahgenerator.SearchList):
                         _month_gdd = round(_month_gdd * 5 / 9, 1)
                     if _month_gdd < 0.0:
                         _month_gdd = 0.0
-                except ValueError:
+                except (ValueError, TypeError):
                     _month_gdd = None
         else:
             _month_gdd = None
@@ -3169,7 +3169,7 @@ class wdGdDays(weewx.cheetahgenerator.SearchList):
                         _year_gdd = round(_year_gdd * 5 / 9, 1)
                     if _year_gdd < 0.0:
                         _year_gdd = 0.0
-                except ValueError:
+                except (ValueError, TypeError):
                     _year_gdd = None
         else:
             _year_gdd = None
