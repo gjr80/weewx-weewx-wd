@@ -54,15 +54,16 @@ GNU General Public License for more details.
 ##
 #if $forecast_text != ""
     #set $forecast_underscore_text = $forecast_text.replace(' ', '_')
-#elif $current($data_binding='wdsupp_binding', $max_delta=1800).forecastText.exists
-    #set $_text = $current($data_binding='wdsupp_binding', $max_delta=1800).forecastText.raw
-    #if $_text
-        #set $forecast_underscore_text = $_text.replace(' ', '_')
-    #else
-        #set $forecast_underscore_text = "---"
-    #end if
 #else
-    #set $forecast_underscore_text = "---"
+    #set $forecast_format = $skin_dict.Extras.get('forecast_format', 'metric')
+    #if $forecast_format.upper() == 'METRIC' and $current($data_binding='wdsupp_binding', $max_delta=1800).forecastTextMetric.exists
+        #set $_text = $current($data_binding='wdsupp_binding', $max_delta=1800).forecastTextMetric.raw
+    #elif $forecast_format.upper() == 'US' and $current($data_binding='wdsupp_binding', $max_delta=1800).forecastText.exists
+        #set $_text = $current($data_binding='wdsupp_binding', $max_delta=1800).forecastText.raw
+    #else
+        #set $_text = "--"
+    #end if
+    #set $forecast_underscore_text = $_text.replace(' ', '_')
 #end if
 ##
 ##End set forecast text
