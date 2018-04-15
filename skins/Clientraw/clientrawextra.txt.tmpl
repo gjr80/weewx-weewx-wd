@@ -47,10 +47,25 @@ GNU General Public License for more details.
 #set $inTempHourArray = $onehour.inTemp.avgQuery
 #set $rainWeekdailyArray = $weekdaily.rain.sumQuery
 #set $dateTimeHourArray = $onehour.dateTime.datetimeQuery
-#set $forecast_underscore_text = $forecast_text.replace(' ', '_')
 ##
 ##End Cache WD tagged stats required in clientrawextra
 ##
+## Set forecast text
+##
+#if $forecast_text != ""
+    #set $forecast_underscore_text = $forecast_text.replace(' ', '_')
+#elif $current($data_binding='wdsupp_binding', $max_delta=1800).forecastText.exists
+    #set $_text = $current($data_binding='wdsupp_binding', $max_delta=1800).forecastText.raw
+    #if $_text
+        #set $forecast_underscore_text = $_text.replace(' ', '_')
+    #else
+        #set $forecast_underscore_text = "---"
+    #end if
+#else
+    #set $forecast_underscore_text = "---"
+#end if
+##
+##End set forecast text
 ##
 #from datetime import date
 #import datetime
@@ -694,11 +709,7 @@ $UVHourArray[$i].toString($localize=False) #slurp
 0 #slurp
 #end try
 #end for
-#if $forecast_text != ""
 #*WD|531*#$forecast_underscore_text #slurp
-#else
-#*WD|531*#--- #slurp
-#end if
 #*WD|532*#$day.ET.sum.toString($addLabel=False, $localize=False) #slurp
 #*WD|533*#0 #slurp
 #*WD|534*#$yesterday.rain.sum.mm.toString($addLabel=False, $localize=False) #slurp

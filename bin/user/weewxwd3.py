@@ -62,6 +62,7 @@
 #       - initial implementation
 #
 
+#python imports
 import syslog
 import threading
 import urllib2
@@ -70,11 +71,15 @@ import math
 import time
 from datetime import datetime
 
+# weeWX imports
+import weeutil.weeutil
 import weewx
+import weewx.almanac
 import weewx.engine
 import weewx.manager
+import weewx.units
 import weewx.wxformulas
-import weewx.almanac
+
 from weewx.units import convert, obs_group_dict
 from weeutil.weeutil import to_bool, accumulateLeaves
 
@@ -565,13 +570,12 @@ class wdSuppThread(threading.Thread):
 
 
 class WdSuppArchive(weewx.engine.StdService):
-    """Service to supplementary weeWX-WD data to archive.
+    """Service to archive weeWX-WD supplementary data.
 
 
-#####    obtain and archive WU API sourced data and Davis console
-        forecast/storm data as well as archive theoretical max solar
-        radiation data. Data is only kept for a limited time before being
-        dropped.
+        Collects and archives WU API sourced data, Davis console forecast/storm 
+        data and theoretical max solar radiation data in the weeWX-WD supp 
+        database. Data is only kept for a limited time before being dropped.
     """
 
     def __init__(self, engine, config_dict):
@@ -590,7 +594,9 @@ class WdSuppArchive(weewx.engine.StdService):
                 # we have a [[Supplementary]] stanza so we can initialise
                 # wdsupp db
                 _supp_dict = config_dict['Weewx-WD']['Supplementary']
-                # get our binding, if it's missing use a default
+                
+                # setup for archiving of supp data
+                # first, get our binding, if it's missing use a default
                 self.binding = _supp_dict.get('data_binding',
                                               'wdsupp_binding')
                 loginf("WdSuppArchive:",
@@ -607,8 +613,6 @@ class WdSuppArchive(weewx.engine.StdService):
                 # how long to wait between retries (default 2 sec)
                 self.db_retry_wait = _supp_dict.get('database_retry_wait', 2)
                 self.db_retry_wait = int(self.db_retry_wait)
-
-                # initialise a few things
                 # setup our database if needed
                 self.setup_database(config_dict)
                 # ts at which we last vacuumed
@@ -630,89 +634,38 @@ class WdSuppArchive(weewx.engine.StdService):
                 obs_group_dict["currentIcon"] = "group_count"
                 obs_group_dict["vantageForecastIcon"] = "group_count"
 
-                # event bindings
+                # set event bindings
+                
                 # bind to NEW_LOOP_PACKET so we can capture Davis Vantage forecast
                 # data
                 self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
-
                 # bind to NEW_ARCHIVE_RECORD to ensure we have a chance to:
                 # - update WU data(if necessary)
                 # - save our data
                 # on each new record
                 self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
-            # do we have necessary config info for WU ie a [[[WU]]] stanza,
-            # apiKey and location
-            _wu_dict = check_enable(_supp_dict, 'WU', 'apiKey')
-            if _wu_dict is None:
-                # we are missing some/all essential WU API settings so set a
-                # flag and return
-                self.do_WU = False
-                loginf("WdSuppArchive:", "WU API calls will not be made")
-                loginf("              ", "**** Incomplete or missing config settings")
-                return
+                # we have everything we need to put a short message re supp 
+                # database
+                loginf("WdSuppArchive:", "max_age=%s vacuum=%s" % (self.max_age,
+                                                                   self.vacuum))
+                
+                # do we have necessary config info for WU ie a [[[WU]]] stanza,
+                # apiKey and location
+                _wu_dict = check_enable(_supp_dict, 'WU', 'apiKey')
+                if _wu_dict is None:
+                    # we are missing some/all essential WU API settings so set a
+                    # flag and return
+                    self.do_WU = False
+                    loginf("WdSuppArchive:", "WU API calls will not be made")
+                    loginf("              ", "**** Incomplete or missing config settings")
+                    return
 
-            # if we got this far we have the essential WU API settings so carry
-            # on with the rest of the initialisation
-            # set a flag indicating we are doing WU API queries
-            self.do_WU = True
-            # get station info required for almanac/Sun related calcs
-            self.latitude = float(config_dict['Station']['latitude'])
-            self.longitude = float(config_dict['Station']['longitude'])
-            self.altitude = convert(engine.stn_info.altitude_vt, 'meter')[0]
-            # create a list of the WU API calls we need
-            self.WU_queries = WU_queries
-            # set interval between API calls for each API call type we need
-            for q in self.WU_queries:
-                q['interval'] = int(_wu_dict.get('%s_interval' % q['name'],
-                                                 q['def_interval']))
-            # set max no of tries we will make in any one attempt to contact WU
-            # via API
-            self.max_WU_tries = _wu_dict.get('max_WU_tries', 3)
-            self.max_WU_tries = toint(self.max_WU_tries, 3)
-            # set API call lockout period in sec (default 60 sec)
-            self.api_lockout_period = _wu_dict.get('api_lockout_period', 60)
-            self.api_lockout_period = toint(self.api_lockout_period, 60)
-            # create holder for last WU API call ts
-            self.last_WU_query = None
-            # Get our API key from weewx.conf, we know we have something in
-            # [Weewx-WD] but it could be None. If this is the case try
-            # [Forecast] if it exists. [Weewx-WD] should not throw an exception
-            # but [Forecast] may so wrap in a try..except loop to catch any
-            # exceptions (eg [Forecast][WU]apiKey does not exist).
-            try:
-                if _wu_dict.get('apiKey', None) is not None:
-                    self.api_key = _wu_dict.get('apiKey')
-                elif config_dict['Forecast']['WU'].get('api_key', None) is not None:
-                    self.api_key = config_dict['Forecast']['WU'].get('api_key')
-                else:
-                    loginf("WdSuppArchive:",
-                           "Cannot find valid Weather Underground API key")
-                    loginf("              ",
-                           "**** Incomplete or missing config settings")
-            except KeyError:
-                loginf("WdSuppArchive:",
-                       "Cannot find Weather Underground API key")
-                loginf("              ",
-                       "**** Incomplete or missing config settings")
-            # get our 'location' for use in WU API calls. Default to station
-            # lat/long.
-            self.location = _wu_dict.get('location', '%s,%s' % (self.latitude,
-                                                                self.longitude))
-            if self.location == 'replace_me':
-                self.location = '%s,%s' % (self.latitude, self.longitude)
-            # set fixed part of WU API call url
-            self.default_url = 'http://api.wunderground.com/api'
-            # we have everything we need to put a short message in the log with
-            # a partially masked API key
-            loginf("WdSuppArchive:",
-                   "max_age=%s vacuum=%s, WU API calls will be made" % (self.max_age,
-                                                                        self.vacuum))
-            _m = ["%s interval=%s" % (a['name'], a['interval']) for a in self.WU_queries]
-            loginf("WdSuppArchive:", " ".join(_m))
-            loginf("WdSuppArchive:",
-                   "api_key=xxxxxxxxxxxx%s location=%s" % (self.api_key[-4:],
-                                                           self.location))
+                # setup for WU API queries
+                
+                # get a WuApiQuery object to handle WU API queries
+                self.wu_api_query_obj = WuApiQuery(config_dict)
+
 
     def new_archive_record(self, event):
         """Kick off in a new thread."""
@@ -725,76 +678,25 @@ class WdSuppArchive(weewx.engine.StdService):
         """ Take care of getting our data, archiving it and completing any
             database housekeeping.
 
-            If we are making WU API calls then step through each of our WU API
-            calls, obtain and parse our results. Grab any forecast/storm loop
-            data and theoretical max solar radiation> Archive our data, delete
-            any stale records and 'vacuum' the database if required.
+            Let a WuApiQuery object handle any WU API calls. Grab any 
+            forecast/storm loop data and theoretical max solar radiation. 
+            Archive our data, delete any stale records and 'vacuum' the 
+            database if required.
         """
 
         # get time now as a ts
         now = time.time()
-        # create a holder dict for our data record
+
+        # create a holder for our data record
         _rec = {}
-        # prepopulate it with a few things we know now
+        # prepopulate our data record with a few things we may know now
         _rec['dateTime'] = event.record['dateTime']
         _rec['usUnits'] = event.record['usUnits']
         _rec['interval'] = event.record['interval']
-
-        # get our WU data if we are setup for WU
-        if self.do_WU:
-            # almanac gives more accurate results with current temp and
-            # pressure
-            # first, initialise some defaults
-            temperature_c = 15.0
-            pressure_mbar = 1010.0
-            # get current outTemp and barometer if they exist
-            if 'outTemp' in event.record:
-                temperature_c = weewx.units.convert(weewx.units.as_value_tuple(event.record, 'outTemp'),
-                                                    "degree_C").value
-            if 'barometer' in event.record:
-                pressure_mbar = weewx.units.convert(weewx.units.as_value_tuple(event.record, 'barometer'),
-                                                    "mbar").value
-            # get an almanac object
-            self.almanac = weewx.almanac.Almanac(event.record['dateTime'],
-                                                 self.latitude,
-                                                 self.longitude,
-                                                 self.altitude,
-                                                 temperature_c,
-                                                 pressure_mbar)
-            # Work out sunrise and sunset ts so we can determine if it is night
-            # or day. Needed so we can set day or night icons when translating
-            # WU icons to Saratoga icons
-            sunrise_ts = self.almanac.sun.rise.raw
-            sunset_ts = self.almanac.sun.set.raw
-            # set the night flag
-            self.night = not (sunrise_ts < event.record['dateTime'] < sunset_ts)
-            # get the fully constructed URL for those API feature calls that
-            # are to be made
-            _wu_url, _features = self.construct_wu_url(now)
-            _response = None
-            if _wu_url is not None:
-                if self.last_WU_query is None or ((now + 1 - self.api_lockout_period) >= self.last_WU_query):
-                    # if we haven't made this API call previously or if its
-                    # been too long since the last call then make the call,
-                    # wrap in a try..except just in case
-                    try:
-                        _response = self.get_wu_response(_wu_url,
-                                                         self.max_WU_tries)
-                        _msg = "Downloaded updated Weather Underground information for %s" % (_features,)
-                        logdbg2("WdSuppArchive:", _msg)
-                    except:
-                        loginf("WdSuppArchive:",
-                               "Weather Underground API query failure")
-                    self.last_WU_query = max(q['last'] for q in self.WU_queries)
-                else:
-                    # API call limiter kicked in so say so
-                    _msg = "API call limit reached. Tried to make an API call within %d sec of the previous call. API call skipped." % (self.api_lockout_period, )
-                    loginf("WdSuppArchive:", _msg)
-            # parse the WU responses and put into a dictionary
-            _wu_record = self.parse_wu_response(_response, _rec['usUnits'])
-            # update our data record with any WU data
-            _rec.update(_wu_record)
-
+        # get any WU API data
+        _wu_data = self.wu_api_query_obj.getWuApiData(event)
+        # now update out data record with any WU data
+        _rec.update(_wu_data)
         # process data from latest loop packet
         _packet = self.process_loop()
         # update our data record with any loop data
@@ -820,121 +722,6 @@ class WdSuppArchive(weewx.engine.StdService):
                         self.vacuum_database(dbm)
                         self.last_vacuum = now
         return
-
-    def construct_wu_url(self, now):
-        """ Construct a multi-feature WU API URL
-
-            WU API allows multiple feature requests to be combined into a single
-            http request (thus cutting down on API calls. Look at each of our WU
-            queries then construct and return a WU API URL string that will
-            request all features that are due. If no features are due then
-            return None.
-        """
-
-        _feature_string = ''
-        for _q in self.WU_queries:
-            # if we haven't made this feature request previously or if its been
-            # too long since the last call then make the call
-            if (_q['last'] is None) or ((now + 1 - _q['interval']) >= _q['last']):
-                # we need to request this feature so add the feature code to our
-                # feature string
-                if len(_feature_string) > 0:
-                    _feature_string += '/' + _q['name']
-                else:
-                    _feature_string += _q['name']
-                _q['last'] = now
-        if len(_feature_string) > 0:
-            # we have a feature we need so construct the URL
-            url = '%s/%s/%s/pws:1/q/%s.json' % (self.default_url,
-                                                self.api_key,
-                                                _feature_string,
-                                                self.location)
-            return (url, _feature_string)
-        return (None, None)
-
-    @staticmethod
-    def get_wu_response(url, max_tries):
-        """Make a WU API call and return the raw response."""
-
-        # we will attempt the call max_tries times
-        for count in range(max_tries):
-            # attempt the call
-            try:
-                w = urllib2.urlopen(url)
-                _response = w.read()
-                w.close()
-                return _response
-            except:
-                loginf("WdSuppArchive:",
-                       "Failed to get Weather Underground API response on attempt %d" % (count + 1,))
-        else:
-            loginf("WdSuppArchive:",
-                   "Failed to get Weather Underground API response")
-        return None
-
-    def parse_wu_response(self, response, units):
-        """ Parse a WU response and construct a packet packet."""
-
-        # create a holder dict for the data we will gather
-        _data = {}
-        # do some pre-processing and error checking
-        if response is not None:
-            # we have a response so deserialise our JSON response
-            _json_response = json.loads(response)
-            # check for recognised format
-            if not 'response' in _json_response:
-                loginf("WdSuppArchive:",
-                       "Unknown format in Weather Underground API response")
-                return _data
-            # get the WU 'response' field so we can check for errors
-            _response = _json_response['response']
-            # check for WU provided error otherwise start pulling in the
-            # fields/data we want
-            if 'error' in _response:
-                loginf("WdSuppArchive:",
-                       "Error in Weather Underground API response")
-                return _data
-            # pull out our individual 'feature' responses, this way in the
-            # future we can populate our results even if we did not get a
-            # 'feature' response that time round
-            for _q in self.WU_queries:
-                if _q['json_title'] in _json_response:
-                    _q['response'] = _json_response[_q['json_title']]
-        # iterate over each of possible queries and parse as required
-        for _q in self.WU_queries:
-            _resp = _q['response']
-            # forecast data
-            if _q['name'] == 'forecast' and _resp is not None:
-                # Look up Saratoga icon number given WU icon name
-                _data['forecastIcon'] = icon_dict[_resp['txt_forecast']['forecastday'][0]['icon']]
-                _data['forecastText'] = _resp['txt_forecast']['forecastday'][0]['fcttext']
-                _data['forecastTextMetric'] = _resp['txt_forecast']['forecastday'][0]['fcttext_metric']
-            # conditions data
-            elif _q['name'] == 'conditions' and _resp is not None:
-                # WU does not seem to provide day/night icon name in their
-                # 'conditions' response so we need to do. Just need to add
-                # 'nt_' to front of name before looking up in out Saratoga
-                # icons dictionary
-                if self.night:
-                    _data['currentIcon'] = icon_dict['nt_' + _resp['icon']]
-                else:
-                    _data['currentIcon'] = icon_dict[_resp['icon']]
-                _data['currentText'] = _resp['weather']
-            # almanac data
-            elif _q['name'] == 'almanac' and _resp is not None:
-                if units is weewx.US:
-                    _data['tempRecordHigh'] = _resp['temp_high']['record']['F']
-                    _data['tempNormalHigh'] = _resp['temp_high']['normal']['F']
-                    _data['tempRecordLow'] = _resp['temp_low']['record']['F']
-                    _data['tempNormalLow'] = _resp['temp_low']['normal']['F']
-                else:
-                    _data['tempRecordHigh'] = _resp['temp_high']['record']['C']
-                    _data['tempNormalHigh'] = _resp['temp_high']['normal']['C']
-                    _data['tempRecordLow'] = _resp['temp_low']['record']['C']
-                    _data['tempNormalLow'] = _resp['temp_low']['normal']['C']
-                _data['tempRecordHighYear'] = _resp['temp_high']['recordyear']
-                _data['tempRecordLowYear'] = _resp['temp_low']['recordyear']
-        return _data
 
     def process_loop(self):
         """ Process latest loop data and populate fields as appropriate.
@@ -1084,6 +871,269 @@ class WdSuppArchive(weewx.engine.StdService):
 
 
 # ===============================================================================
+#                            Class WuApiQuery
+# ===============================================================================
+
+
+class WuApiQuery():
+    """Class to query the WeatherUnderground API.
+
+
+        getWuApiData() method returns a data record of selected WU API data.
+    """
+
+    def __init__(self, config_dict):
+
+        if 'Weewx-WD' in config_dict:
+            # we have a [Weewx-WD] stanza so get the supp dict
+            _supp_dict = config_dict['Weewx-WD'].get('Supplementary')
+
+            # Do we have necessary config info for WU ie a [[[WU]]] stanza,
+            # apiKey and location. If we were called from WdSuppArchive we 
+            # probably do but we may have been called from main() so we need 
+            # to check a couple of conditions.
+            _wu_dict = check_enable(_supp_dict, 'WU', 'apiKey')
+            if _wu_dict is None:
+                self.do_WU = False
+                # we are missing some/all essential WU API settings so set a
+                # flag and return
+                loginf("WuApiQuery:", "WU API calls will not be made")
+                loginf("              ", "**** Incomplete or missing config settings")
+                return
+
+            # if we got this far we have the essential WU API settings so carry
+            # on with the rest of the initialisation
+            # set a flag indicating we are doing WU API queries
+            self.do_WU = True
+            # get station info required for almanac/Sun related calcs
+            _stn_dict = config_dict.get('Station')
+            self.latitude = float(_stn_dict.get('latitude'))
+            self.longitude = float(_stn_dict.get('longitude'))
+            altitude_t = weeutil.weeutil.option_as_list(_stn_dict.get('altitude', 
+                                                        (None, None)))
+            altitude_vt = weewx.units.ValueTuple(float(altitude_t[0]), 
+                                                 altitude_t[1], 
+                                                 "group_altitude")
+            self.altitude = convert(altitude_vt, 'meter').value
+            # create a list of the WU API calls we need
+            self.WU_queries = WU_queries
+            # set interval between API calls for each API call type we need
+            for q in self.WU_queries:
+                q['interval'] = int(_wu_dict.get('%s_interval' % q['name'],
+                                                 q['def_interval']))
+            # set max no of tries we will make in any one attempt to contact WU
+            # via API
+            self.max_WU_tries = _wu_dict.get('max_WU_tries', 3)
+            self.max_WU_tries = toint(self.max_WU_tries, 3)
+            # set API call lockout period in sec (default 60 sec)
+            self.api_lockout_period = _wu_dict.get('api_lockout_period', 60)
+            self.api_lockout_period = toint(self.api_lockout_period, 60)
+            # create holder for last WU API call ts
+            self.last_WU_query = None
+            # Get our API key
+            self.api_key = _wu_dict.get('apiKey')
+            # get our 'location' for use in WU API calls. Default to station
+            # lat/long.
+            self.location = _wu_dict.get('location', '%s,%s' % (self.latitude,
+                                                                self.longitude))
+            if self.location == 'replace_me':
+                self.location = '%s,%s' % (self.latitude, self.longitude)
+            # set fixed part of WU API call url
+            self.default_url = 'http://api.wunderground.com/api'
+            # we have everything we need to put a short message in the log
+            loginf("WuApiQuery:", "WU API calls will be made")
+            _m = ["%s interval=%s" % (a['name'], a['interval']) for a in self.WU_queries]
+            loginf("WuApiQuery:", " ".join(_m))
+            loginf("WuApiQuery:",
+                   "api_key=xxxxxxxxxxxx%s location=%s" % (self.api_key[-4:],
+                                                           self.location))
+
+    def getWuApiData(self, event=None):
+        """Make a WU API call and return a data dict."""
+
+        if self.do_WU:
+            # get time now as a ts
+            now = time.time()
+            # create a holder dict for our data record
+            _rec = {}
+        
+            # almanac gives more accurate results with current temp and
+            # pressure
+            # first, initialise some defaults
+            temperature_c = 15.0
+            pressure_mbar = 1010.0
+            _datetime = now
+            if event:
+                _datetime = event.record['dateTime']
+
+                # get current outTemp and barometer if they exist
+                if 'outTemp' in event.record:
+                    temperature_c = weewx.units.convert(weewx.units.as_value_tuple(event.record, 'outTemp'),
+                                                        "degree_C").value
+                if 'barometer' in event.record:
+                    pressure_mbar = weewx.units.convert(weewx.units.as_value_tuple(event.record, 'barometer'),
+                                                        "mbar").value
+            # get an almanac object
+            _almanac = weewx.almanac.Almanac(_datetime,
+                                             self.latitude,
+                                             self.longitude,
+                                             self.altitude,
+                                             temperature_c,
+                                             pressure_mbar)
+            # Work out sunrise and sunset ts so we can determine if it is night
+            # or day. Needed so we can set day or night icons when translating
+            # WU icons to Saratoga icons
+            sunrise_ts = _almanac.sun.rise.raw
+            sunset_ts = _almanac.sun.set.raw
+            # set the night flag
+            self.night = not (sunrise_ts < _datetime < sunset_ts)
+            # get the fully constructed URL for those API feature calls that
+            # are to be made
+            _wu_url, _features = self.construct_wu_url(now)
+            _response = None
+            if _wu_url is not None:
+                if self.last_WU_query is None or ((now + 1 - self.api_lockout_period) >= self.last_WU_query):
+                    # if we haven't made this API call previously or if its
+                    # been too long since the last call then make the call,
+                    # wrap in a try..except just in case
+                    try:
+                        _response = self.get_wu_response(_wu_url,
+                                                         self.max_WU_tries)
+                        _msg = "Downloaded updated Weather Underground information for %s" % (_features,)
+                        logdbg2("getWuApiData:", _msg)
+                    except Exception,e:
+                        loginf("getWuApiData:",
+                               "Weather Underground API query failure: %s" % e)
+                    self.last_WU_query = max(q['last'] for q in self.WU_queries)
+                else:
+                    # API call limiter kicked in so say so
+                    _msg = "API call limit reached. Tried to make an API call within %d sec of the previous call. API call skipped." % (self.api_lockout_period, )
+                    loginf("getWuApiData:", _msg)
+            # parse the WU responses and put into a dictionary
+            _tgt_units = _rec['usUnits'] if 'usUnits' in _rec else weewx.METRIC
+            _wu_record = self.parse_wu_response(_response, _tgt_units)
+            # update the data record with any WU data
+            _rec.update(_wu_record)
+            # return the updated record
+            return _rec
+
+    def construct_wu_url(self, now):
+        """ Construct a multi-feature WU API URL
+
+            WU API allows multiple feature requests to be combined into a single
+            http request (thus cutting down on API calls. Look at each of our WU
+            queries then construct and return a WU API URL string that will
+            request all features that are due. If no features are due then
+            return None.
+        """
+
+        _feature_string = ''
+        for _q in self.WU_queries:
+            # if we haven't made this feature request previously or if its been
+            # too long since the last call then make the call
+            if (_q['last'] is None) or ((now + 1 - _q['interval']) >= _q['last']):
+                # we need to request this feature so add the feature code to our
+                # feature string
+                if len(_feature_string) > 0:
+                    _feature_string += '/' + _q['name']
+                else:
+                    _feature_string += _q['name']
+                _q['last'] = now
+        if len(_feature_string) > 0:
+            # we have a feature we need so construct the URL
+            url = '%s/%s/%s/pws:1/q/%s.json' % (self.default_url,
+                                                self.api_key,
+                                                _feature_string,
+                                                self.location)
+            return (url, _feature_string)
+        return (None, None)
+
+    @staticmethod
+    def get_wu_response(url, max_tries):
+        """Make a WU API call and return the raw response."""
+
+        # we will attempt the call max_tries times
+        for count in range(max_tries):
+            # attempt the call
+            try:
+                w = urllib2.urlopen(url)
+                _response = w.read()
+                w.close()
+                return _response
+            except:
+                loginf("WdSuppArchive:",
+                       "Failed to get Weather Underground API response on attempt %d" % (count + 1,))
+        else:
+            loginf("WdSuppArchive:",
+                   "Failed to get Weather Underground API response")
+        return None
+
+    def parse_wu_response(self, response, units):
+        """ Parse a WU response and construct a packet packet."""
+
+        # create a holder dict for the data we will gather
+        _data = {}
+        # do some pre-processing and error checking
+        if response is not None:
+            # we have a response so deserialise our JSON response
+            _json_response = json.loads(response)
+            # check for recognised format
+            if not 'response' in _json_response:
+                loginf("WdSuppArchive:",
+                       "Unknown format in Weather Underground API response")
+                return _data
+            # get the WU 'response' field so we can check for errors
+            _response = _json_response['response']
+            # check for WU provided error otherwise start pulling in the
+            # fields/data we want
+            if 'error' in _response:
+                loginf("WdSuppArchive:",
+                       "Error in Weather Underground API response")
+                return _data
+            # pull out our individual 'feature' responses, this way in the
+            # future we can populate our results even if we did not get a
+            # 'feature' response that time round
+            for _q in self.WU_queries:
+                if _q['json_title'] in _json_response:
+                    _q['response'] = _json_response[_q['json_title']]
+        # iterate over each of possible queries and parse as required
+        for _q in self.WU_queries:
+            _resp = _q['response']
+            # forecast data
+            if _q['name'] == 'forecast' and _resp is not None:
+                # Look up Saratoga icon number given WU icon name
+                _data['forecastIcon'] = icon_dict[_resp['txt_forecast']['forecastday'][0]['icon']]
+                _data['forecastText'] = _resp['txt_forecast']['forecastday'][0]['fcttext']
+                _data['forecastTextMetric'] = _resp['txt_forecast']['forecastday'][0]['fcttext_metric']
+            # conditions data
+            elif _q['name'] == 'conditions' and _resp is not None:
+                # WU does not seem to provide day/night icon name in their
+                # 'conditions' response so we need to do. Just need to add
+                # 'nt_' to front of name before looking up in out Saratoga
+                # icons dictionary
+                if self.night:
+                    _data['currentIcon'] = icon_dict['nt_' + _resp['icon']]
+                else:
+                    _data['currentIcon'] = icon_dict[_resp['icon']]
+                _data['currentText'] = _resp['weather']
+            # almanac data
+            elif _q['name'] == 'almanac' and _resp is not None:
+                if units is weewx.US:
+                    _data['tempRecordHigh'] = _resp['temp_high']['record']['F']
+                    _data['tempNormalHigh'] = _resp['temp_high']['normal']['F']
+                    _data['tempRecordLow'] = _resp['temp_low']['record']['F']
+                    _data['tempNormalLow'] = _resp['temp_low']['normal']['F']
+                else:
+                    _data['tempRecordHigh'] = _resp['temp_high']['record']['C']
+                    _data['tempNormalHigh'] = _resp['temp_high']['normal']['C']
+                    _data['tempRecordLow'] = _resp['temp_low']['record']['C']
+                    _data['tempNormalLow'] = _resp['temp_low']['normal']['C']
+                _data['tempRecordHighYear'] = _resp['temp_high']['recordyear']
+                _data['tempRecordLowYear'] = _resp['temp_low']['recordyear']
+        return _data
+
+
+# ===============================================================================
 #                                 Utilities
 # ===============================================================================
 
@@ -1169,3 +1219,92 @@ def check_enable(cfg_dict, service, *args):
         return None
 
     return wdsupp_dict
+
+
+# ============================================================================
+#                          Main Entry for Testing
+# ============================================================================
+
+# Define a main entry point for basic testing without the weeWX engine and
+# service overhead. To invoke this module without weeWX:
+#
+# $ sudo PYTHONPATH=/home/weewx/bin python /home/weewx/bin/user/weewxwd3.py --option
+#
+# where option is one of the following options:
+#   --help               - display command line help
+#   --version            - display version
+#   --get-wu-api-data    - display WU API data
+#   --get-wu-api-config  - display WU API config parameters to be used 
+#
+
+
+if __name__ == '__main__':
+
+    # python imports
+    import optparse
+    import pprint
+    import sys
+
+    # weeWX imports
+    import weecfg
+
+
+    usage = """sudo PYTHONPATH=/home/weewx/bin python
+               /home/weewx/bin/user/%prog [--option]"""
+
+    syslog.openlog('weewxwd3', syslog.LOG_PID | syslog.LOG_CONS)
+    syslog.setlogmask(syslog.LOG_UPTO(syslog.LOG_DEBUG))
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('--config', dest='config_path', type=str,
+                      metavar="CONFIG_FILE",
+                      help="Use configuration file CONFIG_FILE.")
+    parser.add_option('--version', dest='version', action='store_true',
+                      help='Display module version.')
+    parser.add_option('--get-wu-api-data', dest='api_data', 
+                      action='store_true',
+                      help='Query WU API and display results.')
+    parser.add_option('--get-wu-api-config', dest='api_config', 
+                      action='store_true',
+                      help='Query WU API and display results.')
+    (options, args) = parser.parse_args()
+
+    if options.version:
+        print "weewxwd3 version %s" % WEEWXWD_VERSION
+        exit(0)
+
+    # get config_dict to use
+    config_path, config_dict = weecfg.read_config(options.config_path, args)
+    print "Using configuration file %s" % config_path
+
+    # get a WeeWX-WD config dict
+    weewxwd_dict = config_dict.get('Weewx-WD', None)
+    
+    # get a WuApiQuery object
+    if weewxwd_dict is not None:
+        wu_api = WuApiQuery(config_dict)
+    else:
+        exit_str = "'Weewx-WD' stanza not found in config file '%s'. Exiting." % config_path
+        sys.exit(exit_str)
+    
+    if options.api_data:
+        _result = wu_api.getWuApiData()
+        print
+        print "The following data was extracted from the Weather Underground API:"
+        print
+        pprint.pprint(_result)
+
+    if options.api_config:
+        print
+        print "The following config data will be used to access the Weather Underground API:"
+        print
+        if wu_api.api_key is not None and wu_api.location is not None:
+            print "API key: xxxxxxxxxxxx%s" % (wu_api.api_key[-4:],)
+            print "Location: %s" % wu_api.location
+        else:
+            if wu_api.api_key is not None:
+                print "API key: xxxxxxxxxxxx%s" % (wu_api.api_key[-4:],)
+                print "Cannot find location."
+            else:
+                print "Cannot find valid Weather Underground API key."
+                print "Location: %s" % wu_api.location
+            print "Weather Underground API will not be accessed."
