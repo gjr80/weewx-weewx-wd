@@ -12,7 +12,7 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
-#  Version: 1.2.0a1                                    Date: 9 March 2018
+#  Version: 1.2.0a2                                    Date: 17 April 2018
 #
 #  Revision History
 #   9 March 2018        v1.2.a1
@@ -24,6 +24,7 @@
 #         methods
 #       - simplified outTempDay and outtempNight calculations
 #       - simplified function toint()
+#       - added WU API language support
 #
 # Previous Bitbucket revision history
 #   31 March 2017       v1.0.3
@@ -112,6 +113,91 @@ WU_queries = [
         'json_title': 'almanac'
     }
 ]
+
+WU_languages = {
+    'afrikaans': 'AF',
+    'albanian': 'AL',
+    'arabic': 'AR',
+    'armenian': 'HY',
+    'azerbaijani': 'AZ',
+    'basque': 'EU',
+    'belarusian': 'BY',
+    'bulgarian': 'BU',
+    'british english': 'LI',
+    'burmese': 'MY',
+    'catalan': 'CA',
+    'chinese - simplified': 'CN',
+    'chinese - traditional': 'TW',
+    'croatian': 'CR',
+    'czech': 'CZ',
+    'danish': 'DK',
+    'dhivehi': 'DV',
+    'dutch': 'NL',
+    'english': 'EN',
+    'esperanto': 'EO',
+    'estonian': 'ET',
+    'farsi': 'FA',
+    'finnish': 'FI',
+    'french': 'FR',
+    'french canadian': 'FC',
+    'galician': 'GZ',
+    'german': 'DL',
+    'georgian': 'KA',
+    'greek': 'GR',
+    'gujarati': 'GU',
+    'Haitian creole': 'HT',
+    'hebrew': 'IL',
+    'hindi': 'HI',
+    'hungarian': 'HU',
+    'icelandic': 'IS',
+    'ido': 'IO',
+    'indonesian': 'ID',
+    'irish gaelic': 'IR',
+    'italian': 'IT',
+    'japanese': 'JP',
+    'javanese': 'JW',
+    'khmer': 'KM',
+    'korean': 'KR',
+    'kurdish': 'KU',
+    'latin': 'LA',
+    'latvian': 'LV',
+    'lithuanian': 'LT',
+    'low german': 'ND',
+    'macedonian': 'MK',
+    'maltese': 'MT',
+    'mandinka': 'GM',
+    'maori': 'MI',
+    'marathi': 'MR',
+    'mongolian': 'MN',
+    'norwegian': 'NO',
+    'occitan': 'OC',
+    'pashto': 'PS',
+    'plautdietsch': 'GN',
+    'polish': 'PL',
+    'portuguese': 'BR',
+    'punjabi': 'PA',
+    'romanian': 'RO',
+    'russian': 'RU',
+    'serbian': 'SR',
+    'slovak': 'SK',
+    'slovenian': 'SL',
+    'spanish': 'SP',
+    'swahili': 'SI',
+    'swedish': 'SW',
+    'swiss': 'CH',
+    'tagalog': 'TL',
+    'tatarish': 'TT',
+    'thai': 'TH',
+    'turkish': 'TR',
+    'turkmen': 'TK',
+    'ukrainian': 'UA',
+    'uzbek': 'UZ',
+    'vietnamese': 'VU',
+    'welsh': 'CY',
+    'wolof': 'SN',
+    'yiddish - transliterated': 'JI',
+    'yiddish - unicode': 'YI'
+}
 
 # Define a dictionary to look up WU icon names and
 # return corresponding Saratoga icon code
@@ -938,6 +1024,11 @@ class WuApiQuery():
                                                                 self.longitude))
             if self.location == 'replace_me':
                 self.location = '%s,%s' % (self.latitude, self.longitude)
+            # get the language to use, must be one of the WU supported 
+            # languages listed at 
+            # https://www.wunderground.com/weather/api/d/docs?d=language-support&MR=1
+            _language = _wu_dict.get('language', 'English')
+            self.language = WU_languages.get(_language.lower(), 'EN')
             # set fixed part of WU API call url
             self.default_url = 'http://api.wunderground.com/api'
             # we have everything we need to put a short message in the log
@@ -947,6 +1038,9 @@ class WuApiQuery():
             loginf("WuApiQuery:",
                    "api_key=xxxxxxxxxxxx%s location=%s" % (self.api_key[-4:],
                                                            self.location))
+            if self.language != 'EN':
+                loginf("WuApiQuery:", 
+                       "WU API results will use the %s language" % _language.title())
 
     def getWuApiData(self, event=None):
         """Make a WU API call and return a data dict."""
@@ -1041,10 +1135,11 @@ class WuApiQuery():
                 _q['last'] = now
         if len(_feature_string) > 0:
             # we have a feature we need so construct the URL
-            url = '%s/%s/%s/pws:1/q/%s.json' % (self.default_url,
-                                                self.api_key,
-                                                _feature_string,
-                                                self.location)
+            url = '%s/%s/%s/lang:%s/pws:1/q/%s.json' % (self.default_url,
+                                                        self.api_key,
+                                                        _feature_string,
+                                                        self.language,
+                                                        self.location)
             return (url, _feature_string)
         return (None, None)
 
