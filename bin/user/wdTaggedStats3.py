@@ -12,10 +12,10 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
-# Version: 1.2.0a1                                      Date: 7 March 2018
+# Version: 1.2.0                                        Date: 7 March 2018
 #
 # Revision History
-#   7 March 2018        v1.2.0a1
+#   7 March 2018        v1.2.0  
 #       - minor formatting/comment changes
 #
 # Previous bitbucket revision history
@@ -51,7 +51,7 @@ from weewx.units import ValueHelper, getStandardUnitType
 from weeutil.weeutil import TimeSpan
 from datetime import date, timedelta
 
-WEEWXWD_TAGGED_STATS_VERSION = '1.2.0a1'
+WEEWXWD_TAGGED_STATS_VERSION = '1.2.0'
 
 # The contexts that are multiples of a day, and can use the daily summaries
 # to answer aggregation queries:

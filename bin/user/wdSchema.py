@@ -12,7 +12,7 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
-#  Version: 1.2.0a1                                    Date: 8 March 2018
+#  Version: 1.2.0                                      Date: 8 March 2018
 #
 # Revision History
 #   7 March 2018        v1.2.0
@@ -32,7 +32,7 @@ in saving as much space as you may think - most of the space is taken up by the
 primary key indexes (type "dateTime").
 """
 
-WDSCHEMA_VERSION = '1.2.0a1'
+WDSCHEMA_VERSION = '1.2.0'
 
 # define schema for archive table
 weewxwd_schema = [

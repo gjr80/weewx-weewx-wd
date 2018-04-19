@@ -12,7 +12,7 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
-# Version: 1.2.0a1                                      Date: 8 March 2018
+# Version: 1.2.0                                        Date: 8 March 2018
 #
 # Revision History
 #   8 March 2018        v1.2.0
@@ -70,7 +70,7 @@ import weewx.units
 from weeplot.utilities import get_font_handle
 from weeutil.weeutil import TimeSpan
 
-WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0.a1'
+WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0'
 
 
 def logmsg(level, msg):

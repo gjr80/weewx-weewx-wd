@@ -12,19 +12,24 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
-#  Version: 1.2.0a2                                    Date: 17 April 2018
+#  Version: 1.2.0                                      Date: 17 April 2018
 #
 #  Revision History
-#   9 March 2018        v1.2.a1
-######       - revised for weeWX v3.2.0
+#   9 March 2018        v1.2.0
+#       - revised for weeWX v3.5.0
 #       - moved __main__ code to weewxwd_config utility
 #       - now uses appTemp and humidex as provided by StdWXCalculate
 #       - simplified WdWXCalculate.new_loop_packet,
 #         WdWXCalculate.new_archive_record and WdArchive.new_archive_record
 #         methods
-#       - simplified outTempDay and outtempNight calculations
+#       - simplified outTempDay and outTempNight calculations
 #       - simplified function toint()
+#       - added support for a weeWX-WD supplementary database for recording 
+#         short term information such as theoretical solar max, WU current 
+#         conditions, WU forecast and WU almanac data
 #       - added WU API language support
+#       - added abaility to exercise WU aspects of weewxwd3.py without the 
+#         overheads of running a weeWX instance
 #
 # Previous Bitbucket revision history
 #   31 March 2017       v1.0.3
@@ -63,7 +68,7 @@
 #       - initial implementation
 #
 
-#python imports
+# python imports
 import syslog
 import threading
 import urllib2
@@ -84,7 +89,7 @@ import weewx.wxformulas
 from weewx.units import convert, obs_group_dict
 from weeutil.weeutil import to_bool, accumulateLeaves
 
-WEEWXWD_VERSION = '1.2.0a1'
+WEEWXWD_VERSION = '1.2.0'
 
 # Define a dictionary with our API call query details
 WU_queries = [
@@ -114,6 +119,7 @@ WU_queries = [
     }
 ]
 
+# define dict of languages supported by the WU API
 WU_languages = {
     'afrikaans': 'AF',
     'albanian': 'AL',
@@ -490,6 +496,7 @@ class WdWXCalculate(weewx.engine.StdService):
         _x = {}
         _x['outTempDay'], _x['outTempNight'] = calc_day_night(event.record)
         event.record.update(_x)
+
 
 # ===============================================================================
 #                              Class WdArchive
@@ -892,9 +899,9 @@ class WdSuppArchive(weewx.engine.StdService):
         # database file. It should be OK to run this on a MySQL database - it
         # will silently fail.
 
-# remove timing code once we get a handle on how long this takes
         # Get time now as a ts
         t1 = time.time()
+        #do the vacuum, wrap in try..except in case it fails
         try:
             dbm.getSql('vacuum')
         except Exception, e:
@@ -965,7 +972,8 @@ class WuApiQuery():
     """Class to query the WeatherUnderground API.
 
 
-        getWuApiData() method returns a data record of selected WU API data.
+        Calling the getWuApiData() method returns a data record of selected WU
+        API data.
     """
 
     def __init__(self, config_dict):

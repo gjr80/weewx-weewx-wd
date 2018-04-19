@@ -12,7 +12,7 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
-# Version: 1.2.0a1                                    Date: 7 March 2018
+# Version: 1.2.0                                      Date: 7 March 2018
 #
 # Revision History
 #   7 March 2018        v1.2.0
@@ -43,7 +43,7 @@ import weewx
 from weewx.cheetahgenerator import SearchList
 from weewx.units import ValueHelper
 
-WEEWXWD_ASTRO_SLE_VERSION = '1.2.0a1'
+WEEWXWD_ASTRO_SLE_VERSION = '1.2.0'
 
 
 def logmsg(level, msg):
