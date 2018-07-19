@@ -28,8 +28,10 @@
 #         short term information such as theoretical solar max, WU current 
 #         conditions, WU forecast and WU almanac data
 #       - added WU API language support
-#       - added abaility to exercise WU aspects of weewxwd3.py without the 
+#       - added ability to exercise WU aspects of weewxwd3.py without the 
 #         overheads of running a weeWX instance
+#       - added current_label config option to allow a user defined label to be
+#         prepended to the current conditions text
 #
 # Previous Bitbucket revision history
 #   31 March 2017       v1.0.3
@@ -1037,6 +1039,8 @@ class WuApiQuery():
             # https://www.wunderground.com/weather/api/d/docs?d=language-support&MR=1
             _language = _wu_dict.get('language', 'English')
             self.language = WU_languages.get(_language.lower(), 'EN')
+            # get current condiitons text label
+            self.current_label = _wu_dict.get('current_label', '')
             # set fixed part of WU API call url
             self.default_url = 'http://api.wunderground.com/api'
             # we have everything we need to put a short message in the log
@@ -1218,7 +1222,13 @@ class WuApiQuery():
                     _data['currentIcon'] = icon_dict['nt_' + _resp['icon']]
                 else:
                     _data['currentIcon'] = icon_dict[_resp['icon']]
-                _data['currentText'] = _resp['weather']
+                # get the current conditions text prepending a label if we have 
+                # one
+                if _resp['weather']:
+                    _data['currentText'] = ''.join((self.current_label, 
+                                                    _resp['weather']))
+                else:
+                    _data['currentText'] = None
             # almanac data
             elif _q['name'] == 'almanac' and _resp is not None:
                 if units is weewx.US:
