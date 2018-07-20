@@ -9,9 +9,19 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 # details.
 #
-# Version: 1.0.3                                    Date: 31 March 2017
+# Version: 1.0.4                                    Date: 20 July 2018
 #
 # Revision History
+#   20 July 2018
+#       - fixed bug that occurred on partial packet stations that occasionally 
+#         omit outTemp from packets/records
+#       - changed behaviour for calculating derived obs. If any one of the 
+#         pre-requisite obs are missing then the derived obs is not calculated 
+#         and not added to the packet/record. If all of the pre-requisite obs 
+#         exist but one or more is None then the derived obs is set to None. If 
+#         all pre-requisite obs exist and are non-None then the derived obs is 
+#         calculated and added to the packet/record as normal.
+#       - simplified WdArchive new_archive_record() method
 #   31 March 2017       v1.0.3
 #       - no change, version number change only
 #   14 December 2016    v1.0.2
@@ -58,7 +68,7 @@ import weewx.units
 from datetime import datetime
 from weewx.units import obs_group_dict
 
-WEEWXWD_VERSION = '1.0.3'
+WEEWXWD_VERSION = '1.0.4'
 
 schema = [('dateTime',     'INTEGER NOT NULL UNIQUE PRIMARY KEY'),
           ('usUnits',      'INTEGER NOT NULL'),
@@ -105,26 +115,25 @@ def calc_daynighttemps(data):
         the way outTempxxxx is calculated.
     """
 
-    if 'outTemp' in data:
-        if data['outTemp'] is not None:
-            # check if record covers daytime (6AM to 6PM) and if so add
-            # 'outTemp' to 'outTempDay' remember record timestamped 6AM belongs
-            # in the night time
-            if datetime.fromtimestamp(data['dateTime']-1).hour < 6 or datetime.fromtimestamp(data['dateTime']-1).hour > 17:
-                # ie the data packet is from before 6am or after 6pm
-                return (None, data['outTemp'])
-            else:
-                # ie the data packet is from after 6am and before or including
-                # 6pm
-                return (data['outTemp'], None)
+    if data['outTemp'] is not None:
+        # check if record covers daytime (6AM to 6PM) and if so add
+        # 'outTemp' to 'outTempDay' remember record timestamped 6AM belongs
+        # in the night time
+        if datetime.fromtimestamp(data['dateTime']-1).hour < 6 or datetime.fromtimestamp(data['dateTime']-1).hour > 17:
+            # ie the data packet is from before 6am or after 6pm
+            return (None, data['outTemp'])
         else:
-            return (None, None)
+            # ie the data packet is from after 6am and before or including
+            # 6pm
+            return (data['outTemp'], None)
     else:
         return (None, None)
+
 
 #=============================================================================
 #                            Class WdWXCalculate
 #=============================================================================
+
 
 class WdWXCalculate(weewx.engine.StdService):
 
@@ -143,16 +152,20 @@ class WdWXCalculate(weewx.engine.StdService):
         # has weewx already calculated humidex?
         if 'humidex' not in data_metricwx:
             # no, so calculate it ourself and add to our WD data
-            wd_data['humidex'] = weewx.wxformulas.humidexC(data_metricwx['outTemp'],
-                                                           data_metricwx['outHumidity'])
+            if 'outTemp' in data_metricwx and 'outHumidity' in data_metricwx:
+                wd_data['humidex'] = weewx.wxformulas.humidexC(data_metricwx['outTemp'],
+                                                               data_metricwx['outHumidity'])
         # has weewx already calculated appTemp?
         if 'appTemp' not in data_metricwx:
             # no, so calculate it ourself and add to our WD data
-            wd_data['appTemp'] = weewx.wxformulas.apptempC(data_metricwx['outTemp'],
-                                                           data_metricwx['outHumidity'],
-                                                           data_metricwx['windSpeed'])
-        # 'calculate' our day and night outTemp values and add to our WD data
-        wd_data['outTempDay'], wd_data['outTempNight'] = calc_daynighttemps(data_metricwx)
+            if 'outTemp' in data_metricwx and 'outHumidity' in data_metricwx and 'windSpeed' in data_metricwx:
+                wd_data['appTemp'] = weewx.wxformulas.apptempC(data_metricwx['outTemp'],
+                                                               data_metricwx['outHumidity'],
+                                                               data_metricwx['windSpeed'])
+        # if we have outTemp data 'calculate' our day and night outTemp values
+        # and add to our WD data
+        if 'outTemp' in data_metricwx:
+            wd_data['outTempDay'], wd_data['outTempNight'] = calc_daynighttemps(data_metricwx)
 
         # convert our WD data back to the original packet units
         wd_data_x = weewx.units.to_std_system(wd_data, event.packet['usUnits'])
@@ -167,21 +180,26 @@ class WdWXCalculate(weewx.engine.StdService):
         # has weewx already calculated humidex?
         if 'humidex' not in data_metricwx:
             # no, so calculate it ourself and add to our WD data
-            wd_data['humidex'] = weewx.wxformulas.humidexC(data_metricwx['outTemp'],
-                                                           data_metricwx['outHumidity'])
+            if 'outTemp' in data_metricwx and 'outHumidity' in data_metricwx:
+                wd_data['humidex'] = weewx.wxformulas.humidexC(data_metricwx['outTemp'],
+                                                               data_metricwx['outHumidity'])
         # has weewx already calculated appTemp?
         if 'appTemp' not in data_metricwx:
             # no, so calculate it ourself and add to our WD data
-            wd_data['appTemp'] = weewx.wxformulas.apptempC(data_metricwx['outTemp'],
-                                                           data_metricwx['outHumidity'],
-                                                           data_metricwx['windSpeed'])
-        # 'calculate' our day and night outTemp values and add to our WD data
-        wd_data['outTempDay'], wd_data['outTempNight'] = calc_daynighttemps(data_metricwx)
+            if 'outTemp' in data_metricwx and 'outHumidity' in data_metricwx and 'windSpeed' in data_metricwx:
+                wd_data['appTemp'] = weewx.wxformulas.apptempC(data_metricwx['outTemp'],
+                                                               data_metricwx['outHumidity'],
+                                                               data_metricwx['windSpeed'])
+        # if we have outTemp data 'calculate' our day and night outTemp values
+        # and add to our WD data
+        if 'outTemp' in data_metricwx:
+            wd_data['outTempDay'], wd_data['outTempNight'] = calc_daynighttemps(data_metricwx)
 
         # convert our WD data back to the original record units
         wd_data_x = weewx.units.to_std_system(wd_data, event.record['usUnits'])
         # add the WD data to the record
         event.record.update(wd_data_x)
+
 
 #=============================================================================
 #                             Class WdArchive
@@ -228,25 +246,12 @@ class WdArchive(weewx.engine.StdService):
     def new_archive_record(self, event):
         """Called when a new archive record has arrived.
 
-           Pull out our data (essential elements (dateTime, interval and
-           usUnits) and our calculated obs from the received record) and save
-           in our archive.
+           Save WeeWX-WD specific data in the WeeWX-WD archive.
         """
 
-        # Create our new record
-        wd_record = {}
-        # Add our essential elements from event.record and add our derived obs
-        wd_record['dateTime'] = event.record['dateTime']
-        wd_record['interval'] = event.record['interval']
-        wd_record['usUnits']  = event.record['usUnits']
-        wd_record['humidex']  = event.record['humidex']
-        wd_record['appTemp']  = event.record['appTemp']
-        wd_record['outTempDay']  = event.record['outTempDay']
-        wd_record['outTempNight']  = event.record['outTempNight']
-
-        # Now put the record in the archive
+        # Put the record in the archive
         dbmanager = self.engine.db_binder.get_manager(self.data_binding)
-        dbmanager.addRecord(wd_record)
+        dbmanager.addRecord(event.record)
 
     def setup_database(self, config_dict):
         """Setup the main database archive"""
