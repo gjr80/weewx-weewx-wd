@@ -1542,28 +1542,25 @@ class wdSundryTags(SearchList):
         #
         # Barometer trend
         #
-        if 'barometer' in curr_rec_metric:
+        if 'barometer' in curr_rec_metric and curr_rec_metric['barometer'] is not None:
             curr_baro_hpa = curr_rec_metric['barometer']
             # 1 hour trend
             rec_60 = db_lookup().getRecord(self.generator.gen_ts - 3600, 300)
             if rec_60:
                 rec_60_metric = weewx.units.to_METRIC(rec_60)
-                if 'barometer' in rec_60_metric:
+                if 'barometer' in rec_60_metric and rec_60_metric['barometer'] is not None:
                     baro_60_hpa = rec_60_metric['barometer']
-                    if baro_60_hpa is not None:
-                        trend_60_hpa = curr_baro_hpa - baro_60_hpa
-                        if trend_60_hpa >= 2:
-                            trend_60 = "Rising Rapidly"
-                        elif trend_60_hpa >= 0.7:
-                            trend_60 = "Rising Slowly"
-                        elif trend_60_hpa <= -2:
-                            trend_60 = "Falling Rapidly"
-                        elif trend_60_hpa <= -0.7:
-                            trend_60 = "Falling Slowly"
-                        else:
-                            trend_60 = "Steady"
+                    trend_60_hpa = curr_baro_hpa - baro_60_hpa
+                    if trend_60_hpa >= 2:
+                        trend_60 = "Rising Rapidly"
+                    elif trend_60_hpa >= 0.7:
+                        trend_60 = "Rising Slowly"
+                    elif trend_60_hpa <= -2:
+                        trend_60 = "Falling Rapidly"
+                    elif trend_60_hpa <= -0.7:
+                        trend_60 = "Falling Slowly"
                     else:
-                        trend_60 = "N/A"
+                        trend_60 = "Steady"
                 else:
                     trend_60 = "N/A"
             else:
@@ -1572,22 +1569,19 @@ class wdSundryTags(SearchList):
             rec_180 = db_lookup().getRecord(self.generator.gen_ts - 10800, 300)
             if rec_180:
                 rec_180_metric = weewx.units.to_METRIC(rec_180)
-                if 'barometer' in rec_180_metric:
+                if 'barometer' in rec_180_metric and rec_180_metric['barometer'] is not None:
                     baro_180_hpa = rec_180_metric['barometer']
-                    if baro_180_hpa is not None:
-                        trend_180_hpa = curr_baro_hpa - baro_180_hpa
-                        if trend_180_hpa >= 2:
-                            trend_180 = "Rising Rapidly"
-                        elif trend_180_hpa >= 0.7:
-                            trend_180 = "Rising Slowly"
-                        elif trend_180_hpa <= -2:
-                            trend_180 = "Falling Rapidly"
-                        elif trend_180_hpa <= -0.7:
-                            trend_180 = "Falling Slowly"
-                        else:
-                            trend_180 = "Steady"
+                    trend_180_hpa = curr_baro_hpa - baro_180_hpa
+                    if trend_180_hpa >= 2:
+                        trend_180 = "Rising Rapidly"
+                    elif trend_180_hpa >= 0.7:
+                        trend_180 = "Rising Slowly"
+                    elif trend_180_hpa <= -2:
+                        trend_180 = "Falling Rapidly"
+                    elif trend_180_hpa <= -0.7:
+                        trend_180 = "Falling Slowly"
                     else:
-                        trend_180 = "N/A"
+                        trend_180 = "Steady"
                 else:
                     trend_180 = "N/A"
             else:
