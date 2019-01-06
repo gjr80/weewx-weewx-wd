@@ -32,7 +32,15 @@
 #         overheads of running a weeWX instance
 #       - added current_label config option to allow a user defined label to be
 #         prepended to the current conditions text
-#
+#       - fixed bug that occurred on partial packet stations that occasionally 
+#         omit outTemp from packets/records
+#       - changed behaviour for calculating derived obs. If any one of the 
+#         pre-requisite obs are missing then the derived obs is not calculated 
+#         and not added to the packet/record. If all of the pre-requisite obs 
+#         exist but one or more is None then the derived obs is set to None. If 
+#         all pre-requisite obs exist and are non-None then the derived obs is 
+#         calculated and added to the packet/record as normal.
+#       - simplified WdArchive new_archive_record() method
 # Previous Bitbucket revision history
 #   31 March 2017       v1.0.3
 #       - no change, version number change only
@@ -470,6 +478,7 @@ def logerr(src, msg):
 # ===============================================================================
 #                            Class WdWXCalculate
 # ===============================================================================
+
 
 
 class WdWXCalculate(weewx.engine.StdService):
