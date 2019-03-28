@@ -479,7 +479,7 @@ class WdWXCalculate(weewx.engine.StdService):
         # initialise our parent
         super(WdWXCalculate, self).__init__(engine, config_dict)
 
-        # bind ourself to new loop packet and new archive record events
+        # bind our self to new loop packet and new archive record events
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
@@ -487,7 +487,7 @@ class WdWXCalculate(weewx.engine.StdService):
     def new_loop_packet(event):
         """Add outTempDay and outTempNight to the loop packet."""
 
-        _x = {}
+        _x = dict()
         _x['outTempDay'], _x['outTempNight'] = calc_day_night(event.packet)
         event.packet.update(_x)
 
@@ -495,7 +495,7 @@ class WdWXCalculate(weewx.engine.StdService):
     def new_archive_record(event):
         """Add outTempDay and outTempNight to the archive record."""
 
-        _x = {}
+        _x = dict()
         _x['outTempDay'], _x['outTempNight'] = calc_day_night(event.record)
         event.record.update(_x)
 
@@ -565,6 +565,7 @@ class WdArchive(weewx.engine.StdService):
                "Using binding '%s' to database '%s'" % (self.data_binding,
                                                         dbmanager.database_name))
 
+        # FIXME. Is this still required
         # Check if we have any historical data to bring in from the weeWX
         # archive.
         # first get a dbmanager for the weeWX archive
@@ -1405,6 +1406,7 @@ if __name__ == '__main__':
         print "The following data was extracted from the Weather Underground API:"
         print
         pprint.pprint(_result)
+        sys.exit(0)
 
     if options.api_config:
         print
@@ -1421,3 +1423,7 @@ if __name__ == '__main__':
                 print "Cannot find valid Weather Underground API key."
                 print "Location: %s" % wu_api.location
             print "Weather Underground API will not be accessed."
+        sys.exit(0)
+
+    # if we made it here display our help message
+
