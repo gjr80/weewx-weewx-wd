@@ -1,35 +1,37 @@
-# wdAstroSearchX3.py
-#
-# Astronomical search list extensions for weewx-weeWX-WD
-#
-# This program is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 3 of the License, or (at your option) any later
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
-#
-# Version: 1.2.0                                      Date: 7 March 2018
-#
-# Revision History
-#   7 March 2018        v1.2.0
-#       - minor formatting changes
-#
-# Previous bitbucket revision history
-#   31 March 2017       v1.0.3
-#       - no change, version number change only
-#   14 December 2016    v1.0.2
-#       - no change, version number change only
-#   30 November 2016    v1.0.1
-#       - added support for second level debug messaging (ie debug = 2)
-#   10 January 2015     v1.0.0
-#       - rewritten for weeWX v3.0.0
-#   21 October 2014     v0.9.4 (never released)
-#       - initial implementation
-#
+"""
+wdastro.py
+
+Astronomical search list extensions for WeeWX-WD
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+Version: 1.2.0a1                                    Date: 29 March 2019
+
+Revision History
+    29 March 2019       v1.2.0a1
+      - minor formatting changes
+
+Previous bitbucket revision history
+    31 March 2017       v1.0.3
+      - no change, version number change only
+    14 December 2016    v1.0.2
+      - no change, version number change only
+    30 November 2016    v1.0.1
+      - added support for second level debug messaging (ie debug = 2)
+    10 January 2015     v1.0.0
+      - rewritten for WeeWX v3.0.0
+    21 October 2014     v0.9.4 (never released)
+      - initial implementation
+
+"""
+
 # python imports
 from array import array
 import bisect
@@ -38,12 +40,12 @@ import math
 import syslog
 import time
 
-# weeWX imports
+# WeeWX imports
 import weewx
 from weewx.cheetahgenerator import SearchList
 from weewx.units import ValueHelper
 
-WEEWXWD_ASTRO_SLE_VERSION = '1.2.0'
+WEEWXWD_ASTRO_VERSION = '1.2.0a1'
 
 
 def logmsg(level, msg):
@@ -67,7 +69,7 @@ def logerr(msg):
     logmsg(syslog.LOG_ERR, msg)
 
 
-class wdMoonApsis(SearchList):
+class MoonApsis(SearchList):
     """WeeWX SLE to provide various lunar apogee/perigee details.
 
        Code to calculate apogee and perigee details based on public domain
@@ -181,23 +183,23 @@ class wdMoonApsis(SearchList):
 
         return a - 360.0 * (math.floor(a / 360.0))
 
-    def sumser(self, trig, D, M, F, T, argtab, coeff, tfix, tfixc):
+    def sumser(self, trig, d, m, f, t, argtab, coeff, tfix, tfixc):
         """Sum the series of periodic terms."""
 
         j = 0
         n = 0
         summ = 0
-        D = math.radians(self.fixangle(D))
-        M = math.radians(self.fixangle(M))
-        F = math.radians(self.fixangle(F))
+        d = math.radians(self.fixangle(d))
+        m = math.radians(self.fixangle(m))
+        f = math.radians(self.fixangle(f))
 
         i = 0
         while coeff[i] != 0.0:
-            arg = (D * argtab[j]) + (M * argtab[j + 1]) + (F * argtab[j + 2])
+            arg = (d * argtab[j]) + (m * argtab[j + 1]) + (f * argtab[j + 2])
             j += 3
             coef = coeff[i]
             if i == tfix[n]:
-                coef += T * tfixc[n]
+                coef += t * tfixc[n]
                 n += 1
             summ += coef * trig(arg)
             i += 1
@@ -267,7 +269,7 @@ class wdMoonApsis(SearchList):
           next_apogee_ts: ValueHelper containing date-time of next apogee
                           (could be next year)
           next_apogee_dist_km: Earth to Moon distance in km at next apogee
-                               (weeWX has no notion of km/mi so cannot use a
+                               (WeeWX has no notion of km/mi so cannot use a
                                ValueHelper)
           next_perigee_ts: ValueHelper containing date-time of next apogee
                            (could be next year)
@@ -380,12 +382,12 @@ class wdMoonApsis(SearchList):
                                  'min_perigee': min_perigee}
 
         t2 = time.time()
-        logdbg2("wdMoonApsis SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("MoonApsis SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
 
-class wdEclipse(SearchList):
+class Eclipse(SearchList):
 
     def __init__(self, generator):
         SearchList.__init__(self, generator)
@@ -461,7 +463,8 @@ class wdEclipse(SearchList):
                                           'T': 'Total'
                                           }
 
-    def deltaT(self, ts):
+    @staticmethod
+    def delta_t(ts):
         """Calculates the difference between Universal Time (UT) and
            Terrestrial Dynamical Time (TD). This allows UT of an eclipse to be
            determined from the NASA provided eclipse time (which is in TD)
@@ -551,7 +554,8 @@ class wdEclipse(SearchList):
             next_solar_eclipse_idx = bisect.bisect_left(solar_eclipse_ts_list,
                                                         search_ts)
             # get ts of next solar eclipse
-            next_solar_eclipse_ts = solar_eclipse_ts_list[next_solar_eclipse_idx] - self.deltaT(solar_eclipse_ts_list[next_solar_eclipse_idx])
+            next_solar_eclipse_ts = (solar_eclipse_ts_list[next_solar_eclipse_idx] -
+                                     self.delta_t(solar_eclipse_ts_list[next_solar_eclipse_idx]))
             # get the type code of next solar eclipse
             next_solar_eclipse_type = solar_eclipse_type_list[next_solar_eclipse_idx]
         except ValueError:
@@ -574,7 +578,8 @@ class wdEclipse(SearchList):
             next_lunar_eclipse_idx = bisect.bisect_left(lunar_eclipse_ts_list,
                                                         search_ts)
             # get ts of next lunar eclipse
-            next_lunar_eclipse_ts = lunar_eclipse_ts_list[next_lunar_eclipse_idx] - self.deltaT(lunar_eclipse_ts_list[next_lunar_eclipse_idx])
+            next_lunar_eclipse_ts = (lunar_eclipse_ts_list[next_lunar_eclipse_idx] -
+                                     self.delta_t(lunar_eclipse_ts_list[next_lunar_eclipse_idx]))
             # get the type code of next lunar eclipse
             next_lunar_eclipse_type = lunar_eclipse_data_list[next_lunar_eclipse_idx]
         except ValueError:
@@ -597,11 +602,12 @@ class wdEclipse(SearchList):
                                  'next_lunar_eclipse_type': next_lunar_eclipse_type}
 
         t2 = time.time()
-        logdbg2("wdEclipse SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("Eclipse SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
-class wdEarthApsis(SearchList):
+
+class EarthApsis(SearchList):
 
     def __init__(self, generator):
         SearchList.__init__(self, generator)
@@ -654,7 +660,7 @@ class wdEarthApsis(SearchList):
             next_perihelion_ts = self.perihelion[next_perihelion_idx]
             # get ts of next aphelion
             next_aphelion_ts = self.aphelion[next_aphelion_idx]
-        except:
+        except IndexError:
             # if an error then set them to None
             next_perihelion_ts = None
             next_aphelion_ts = None
@@ -674,12 +680,12 @@ class wdEarthApsis(SearchList):
                                  'next_aphelion': next_aphelion_ts_vh}
 
         t2 = time.time()
-        logdbg2("wdEarthApsis SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("EarthApsis SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
 
-class wdChineseNewYear(SearchList):
+class ChineseNewYear(SearchList):
 
     def __init__(self, generator):
         SearchList.__init__(self, generator)
@@ -733,6 +739,6 @@ class wdChineseNewYear(SearchList):
         search_list_extension = {'next_cny': cny}
 
         t2 = time.time()
-        logdbg2("wdChineseNewYear SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("ChineseNewYear SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]

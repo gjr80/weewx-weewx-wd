@@ -196,7 +196,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                 }
             },
             files=[('bin/user', ['bin/user/stackedwindrose.py',
-                                 'bin/user/wdAstroSearchX3.py',
+                                 'bin/user/wdastro.py',
                                  'bin/user/wdSchema.py',
                                  'bin/user/wdSearchX3.py',
                                  'bin/user/wdTaggedStats3.py',
