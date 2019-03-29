@@ -82,7 +82,7 @@ import time
 from datetime import date
 
 # weeWX imports
-import user.wdTaggedStats3
+import user.wdtaggedstats
 import weewx
 import weewx.almanac
 import weewx.cheetahgenerator
@@ -1939,10 +1939,10 @@ class wdTaggedStats(weewx.cheetahgenerator.SearchList):
 
         # Get a WDTaggedStats structure. This allows constructs such as
         # WDstats.monthdaily.outTemp.max
-        _stats = user.wdTaggedStats3.WdTimeBinder(db_lookup,
-                                                  timespan.stop,
-                                                  formatter=self.generator.formatter,
-                                                  converter=self.generator.converter)
+        _stats = user.wdtaggedstats.WdTimeBinder(db_lookup,
+                                                 timespan.stop,
+                                                 formatter=self.generator.formatter,
+                                                 converter=self.generator.converter)
 
         t2 = time.time()
         logdbg2("wdTaggedStats SLE executed in %0.3f seconds" % (t2-t1))
@@ -2024,10 +2024,10 @@ class wdTaggedArchiveStats(weewx.cheetahgenerator.SearchList):
 
         # Get a WDTaggedStats structure. This allows constructs such as
         # WDstats.minute.outTemp.max
-        _stats = user.wdTaggedStats3.WdArchiveTimeBinder(db_lookup,
-                                                         timespan.stop,
-                                                         formatter=self.generator.formatter,
-                                                         converter=self.generator.converter)
+        _stats = user.wdtaggedstats.WdArchiveTimeBinder(db_lookup,
+                                                        timespan.stop,
+                                                        formatter=self.generator.formatter,
+                                                        converter=self.generator.converter)
 
         t2 = time.time()
         logdbg2("wdTaggedArchiveStats SLE executed in %0.3f seconds" % (t2-t1))

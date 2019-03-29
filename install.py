@@ -199,7 +199,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                                  'bin/user/wdastro.py',
                                  'bin/user/wdschema.py',
                                  'bin/user/wdSearchX3.py',
-                                 'bin/user/wdTaggedStats3.py',
+                                 'bin/user/wdtaggedstats.py',
                                  'bin/user/weewxwd3.py']),
                    ('skins/Clientraw', ['skins/Clientraw/clientraw.txt.tmpl',
                                         'skins/Clientraw/clientrawdaily.txt.tmpl',
