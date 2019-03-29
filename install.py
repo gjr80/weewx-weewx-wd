@@ -23,7 +23,7 @@ Revision History
         - wdPWS skin disabled by default
         - added sunshine_threshold config option and Supplementary stanza to
           WeeWX-WD config stanza to support WeeWX-WD supplementary data
-        - added new file wdSchema.py
+        - added new file wdschema.py
         - removed no longer used file wd_database
         - renamed various install files
         - reformatted these comments
@@ -197,7 +197,7 @@ class WeewxWdInstaller(ExtensionInstaller):
             },
             files=[('bin/user', ['bin/user/stackedwindrose.py',
                                  'bin/user/wdastro.py',
-                                 'bin/user/wdSchema.py',
+                                 'bin/user/wdschema.py',
                                  'bin/user/wdSearchX3.py',
                                  'bin/user/wdTaggedStats3.py',
                                  'bin/user/weewxwd3.py']),
