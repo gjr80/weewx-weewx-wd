@@ -157,13 +157,13 @@ class WeewxWdInstaller(ExtensionInstaller):
                         'database': 'weewxwd_sqlite',
                         'table_name': 'archive',
                         'manager': 'weewx.manager.DaySummaryManager',
-                        'schema': 'user.wdSchema.weewxwd_schema'
+                        'schema': 'user.wdschema.weewxwd_schema'
                     },
                     'wdsupp_binding': {
                         'database': 'wd_supp_sqlite',
                         'table_name': 'supp',
                         'manager': 'weewx.manager.Manager',
-                        'schema': 'user.wdSchema.wdsupp_schema'
+                        'schema': 'user.wdschema.wdsupp_schema'
                     }
                 },
                 'Databases': {
@@ -200,7 +200,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                                  'bin/user/wdschema.py',
                                  'bin/user/wdSearchX3.py',
                                  'bin/user/wdtaggedstats.py',
-                                 'bin/user/weewxwd3.py']),
+                                 'bin/user/weewxwd.py']),
                    ('skins/Clientraw', ['skins/Clientraw/clientraw.txt.tmpl',
                                         'skins/Clientraw/clientrawdaily.txt.tmpl',
                                         'skins/Clientraw/clientrawextra.txt.tmpl',

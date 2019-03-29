@@ -1,93 +1,93 @@
-# weewxwd3.py
-#
-# Service classes used by weeWX-WD
-#
-# This program is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 3 of the License, or (at your option) any later
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
-#
-#  Version: 1.2.0                                      Date: 17 April 2018
-#
-#  Revision History
-#   9 March 2018        v1.2.0
-#       - revised for weeWX v3.5.0
-#       - moved __main__ code to weewxwd_config utility
-#       - now uses appTemp and humidex as provided by StdWXCalculate
-#       - simplified WdWXCalculate.new_loop_packet,
-#         WdWXCalculate.new_archive_record and WdArchive.new_archive_record
-#         methods
-#       - simplified outTempDay and outTempNight calculations
-#       - simplified function toint()
-#       - added support for a weeWX-WD supplementary database for recording 
-#         short term information such as theoretical solar max, WU current 
-#         conditions, WU forecast and WU almanac data
-#       - added WU API language support
-#       - added ability to exercise WU aspects of weewxwd3.py without the 
-#         overheads of running a weeWX instance
-#       - added current_label config option to allow a user defined label to be
-#         prepended to the current conditions text
-#       - fixed bug that occurred on partial packet stations that occasionally 
-#         omit outTemp from packets/records
-#       - changed behaviour for calculating derived obs. If any one of the 
-#         pre-requisite obs are missing then the derived obs is not calculated 
-#         and not added to the packet/record. If all of the pre-requisite obs 
-#         exist but one or more is None then the derived obs is set to None. If 
-#         all pre-requisite obs exist and are non-None then the derived obs is 
-#         calculated and added to the packet/record as normal.
-#       - simplified WdArchive new_archive_record() method
-# Previous Bitbucket revision history
-#   31 March 2017       v1.0.3
-#       - no change, version number change only
-#   14 December 2016    v1.0.2
-#       - no change, version number change only
-#   30 November 2016    v1.0.1
-#       - now uses humidex and appTemp formulae from weewx.wxformulas
-#       - weeWX-WD db management functions moved to wd_database utility
-#       - implemented syslog wrapper functions
-#       - minor reformatting
-#       - replaced calls to superseded DBBinder.get_database method with
-#         DBBinder.get_manager method
-#       - removed database management utility functions and placed in new
-#         wd_database utility
-#   10 January 2015     v1.0.0
-#       - rewritten for weeWX v3.0
-#       - uses separate database for weeWX-WD specific data, no longer
-#         recycles existing weeWX database fields
-#       - added __main__ to allow command line execution of a number of db
-#         management actions
-#       - removed --debug option from main()
-#       - added --create_archive option to main() to create the weewxwd
-#         database
-#       - split --backfill_daily into separate --drop_daily and
-#         --backfill_daily options
-#       - added 'user.' to all weeWX-WD imports
-#   18 September 2014   v0.9.4 (never released)
-#       - added GNU license text
-#   18 May 2014         v0.9.2
-#       - removed code that set windDir/windGustDir to 0 if windDir/windGustDir
-#         were None respectively
-#   30 July 2013        v0.9.1
-#       - revised version number to align with weeWX-WD version numbering
-#   20 July 2013        v0.1
-#       - initial implementation
-#
+"""
+weewxwd.py
+
+Service classes used by WeeWX-WD
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+Version: 1.2.0a1                                    Date: 29 March 2019
+
+Revision History
+    29 March 2019       v1.2.0a1
+        - revised for WeeWX v3.5.0
+        - moved __main__ code to weewxwd_config utility
+        - now uses appTemp and humidex as provided by StdWXCalculate
+        - simplified WdWXCalculate.new_loop_packet,
+          WdWXCalculate.new_archive_record and WdArchive.new_archive_record
+          methods
+        - simplified outTempDay and outTempNight calculations
+        - simplified function toint()
+        - added support for a WeeWX-WD supplementary database for recording
+          short term information such as theoretical solar max, WU current 
+          conditions, WU forecast and WU almanac data
+        - added WU API language support
+        - added ability to exercise WU aspects of weewxwd.py without the
+          overheads of running a WeeWX instance
+        - added current_label config option to allow a user defined label to be
+          prepended to the current conditions text
+        - fixed bug that occurred on partial packet stations that occasionally 
+          omit outTemp from packets/records
+        - changed behaviour for calculating derived obs. If any one of the 
+          pre-requisite obs are missing then the derived obs is not calculated 
+          and not added to the packet/record. If all of the pre-requisite obs 
+          exist but one or more is None then the derived obs is set to None. If 
+          all pre-requisite obs exist and are non-None then the derived obs is 
+          calculated and added to the packet/record as normal.
+        - simplified WdArchive new_archive_record() method
+Previous Bitbucket revision history
+    31 March 2017       v1.0.3
+        - no change, version number change only
+    14 December 2016    v1.0.2
+        - no change, version number change only
+    30 November 2016    v1.0.1
+        - now uses humidex and appTemp formulae from weewx.wxformulas
+        - WeeWX-WD db management functions moved to wd_database utility
+        - implemented syslog wrapper functions
+        - minor reformatting
+        - replaced calls to superseded DBBinder.get_database method with
+          DBBinder.get_manager method
+        - removed database management utility functions and placed in new
+          wd_database utility
+    10 January 2015     v1.0.0
+        - rewritten for WeeWX v3.0
+        - uses separate database for WeeWX-WD specific data, no longer
+          recycles existing WeeWX database fields
+        - added __main__ to allow command line execution of a number of db
+          management actions
+        - removed --debug option from main()
+        - added --create_archive option to main() to create the weewxwd
+          database
+        - split --backfill_daily into separate --drop_daily and
+          --backfill_daily options
+        - added 'user.' to all WeeWX-WD imports
+    18 September 2014   v0.9.4 (never released)
+        - added GNU license text
+    18 May 2014         v0.9.2
+        - removed code that set windDir/windGustDir to 0 if windDir/windGustDir
+          were None respectively
+    30 July 2013        v0.9.1
+        - revised version number to align with WeeWX-WD version numbering
+    20 July 2013        v0.1
+        - initial implementation
+"""
 
 # python imports
 import syslog
 import threading
 import urllib2
 import json
-import math
 import time
 from datetime import datetime
 
-# weeWX imports
+# WeeWX imports
 import weeutil.weeutil
 import weewx
 import weewx.almanac
@@ -97,37 +97,34 @@ import weewx.units
 import weewx.wxformulas
 
 from weewx.units import convert, obs_group_dict
-from weeutil.weeutil import to_bool, accumulateLeaves
+from weeutil.weeutil import accumulateLeaves
 
-WEEWXWD_VERSION = '1.2.0'
+WEEWXWD_VERSION = '1.2.0a1'
 
-# Define a dictionary with our API call query details
+# define a dictionary with our API call query details
 WU_queries = [
-    {
-        'name': 'conditions',
-        'interval': None,
-        'last': None,
-        'def_interval': 1800,
-        'response': None,
-        'json_title': 'current_observation'
-    },
-    {
-        'name': 'forecast',
-        'interval': None,
-        'last': None,
-        'def_interval': 1800,
-        'response': None,
-        'json_title': 'forecast'
-    },
-    {
-        'name': 'almanac',
-        'interval': None,
-        'last': None,
-        'def_interval': 3600,
-        'response': None,
-        'json_title': 'almanac'
-    }
-]
+    {'name': 'conditions',
+     'interval': None,
+     'last': None,
+     'def_interval': 1800,
+     'response': None,
+     'json_title': 'current_observation'
+     },
+    {'name': 'forecast',
+     'interval': None,
+     'last': None,
+     'def_interval': 1800,
+     'response': None,
+     'json_title': 'forecast'
+     },
+    {'name': 'almanac',
+     'interval': None,
+     'last': None,
+     'def_interval': 3600,
+     'response': None,
+     'json_title': 'almanac'
+     }
+    ]
 
 # define dict of languages supported by the WU API
 WU_languages = {
@@ -218,239 +215,263 @@ WU_languages = {
 # Define a dictionary to look up WU icon names and
 # return corresponding Saratoga icon code
 icon_dict = {
-    'clear'             : 0,
-    'cloudy'            : 18,
-    'flurries'          : 25,
-    'fog'               : 11,
-    'hazy'              : 7,
-    'mostlycloudy'      : 18,
-    'mostlysunny'       : 9,
-    'partlycloudy'      : 19,
-    'partlysunny'       : 9,
-    'sleet'             : 23,
-    'rain'              : 20,
-    'snow'              : 25,
-    'sunny'             : 28,
-    'tstorms'           : 29,
-    'nt_clear'          : 1,
-    'nt_cloudy'         : 13,
-    'nt_flurries'       : 16,
-    'nt_fog'            : 11,
-    'nt_hazy'           : 13,
-    'nt_mostlycloudy'   : 13,
-    'nt_mostlysunny'    : 1,
-    'nt_partlycloudy'   : 4,
-    'nt_partlysunny'    : 1,
-    'nt_sleet'          : 12,
-    'nt_rain'           : 14,
-    'nt_snow'           : 16,
-    'nt_tstorms'        : 17,
-    'chancerain'        : 20,
-    'chancesleet'       : 23,
-    'chancesnow'        : 25,
-    'chancetstorms'     : 29
+    'clear': 0,
+    'cloudy': 18,
+    'flurries': 25,
+    'fog': 11,
+    'hazy': 7,
+    'mostlycloudy': 18,
+    'mostlysunny': 9,
+    'partlycloudy': 19,
+    'partlysunny': 9,
+    'sleet': 23,
+    'rain': 20,
+    'snow': 25,
+    'sunny': 28,
+    'tstorms': 29,
+    'nt_clear': 1,
+    'nt_cloudy': 13,
+    'nt_flurries': 16,
+    'nt_fog': 11,
+    'nt_hazy': 13,
+    'nt_mostlycloudy': 13,
+    'nt_mostlysunny': 1,
+    'nt_partlycloudy': 4,
+    'nt_partlysunny': 1,
+    'nt_sleet': 12,
+    'nt_rain': 14,
+    'nt_snow': 16,
+    'nt_tstorms': 17,
+    'chancerain': 20,
+    'chancesleet': 23,
+    'chancesnow': 25,
+    'chancetstorms': 29
     }
 
 # Define a dictionary to look up Davis forecast rule
 # and return forecast text
-davis_fr_dict= {
-        0   : 'Mostly clear and cooler.',
-        1   : 'Mostly clear with little temperature change.',
-        2   : 'Mostly clear for 12 hours with little temperature change.',
-        3   : 'Mostly clear for 12 to 24 hours and cooler.',
-        4   : 'Mostly clear with little temperature change.',
-        5   : 'Partly cloudy and cooler.',
-        6   : 'Partly cloudy with little temperature change.',
-        7   : 'Partly cloudy with little temperature change.',
-        8   : 'Mostly clear and warmer.',
-        9   : 'Partly cloudy with little temperature change.',
-        10  : 'Partly cloudy with little temperature change.',
-        11  : 'Mostly clear with little temperature change.',
-        12  : 'Increasing clouds and warmer. Precipitation possible within 24 to 48 hours.',
-        13  : 'Partly cloudy with little temperature change.',
-        14  : 'Mostly clear with little temperature change.',
-        15  : 'Increasing clouds with little temperature change. Precipitation possible within 24 hours.',
-        16  : 'Mostly clear with little temperature change.',
-        17  : 'Partly cloudy with little temperature change.',
-        18  : 'Mostly clear with little temperature change.',
-        19  : 'Increasing clouds with little temperature change. Precipitation possible within 12 hours.',
-        20  : 'Mostly clear with little temperature change.',
-        21  : 'Partly cloudy with little temperature change.',
-        22  : 'Mostly clear with little temperature change.',
-        23  : 'Increasing clouds and warmer. Precipitation possible within 24 hours.',
-        24  : 'Mostly clear and warmer. Increasing winds.',
-        25  : 'Partly cloudy with little temperature change.',
-        26  : 'Mostly clear with little temperature change.',
-        27  : 'Increasing clouds and warmer. Precipitation possible within 12 hours. Increasing winds.',
-        28  : 'Mostly clear and warmer. Increasing winds.',
-        29  : 'Increasing clouds and warmer.',
-        30  : 'Partly cloudy with little temperature change.',
-        31  : 'Mostly clear with little temperature change.',
-        32  : 'Increasing clouds and warmer. Precipitation possible within 12 hours. Increasing winds.',
-        33  : 'Mostly clear and warmer. Increasing winds.',
-        34  : 'Increasing clouds and warmer.',
-        35  : 'Partly cloudy with little temperature change.',
-        36  : 'Mostly clear with little temperature change.',
-        37  : 'Increasing clouds and warmer. Precipitation possible within 12 hours. Increasing winds.',
-        38  : 'Partly cloudy with little temperature change.',
-        39  : 'Mostly clear with little temperature change.',
-        40  : 'Mostly clear and warmer. Precipitation possible within 48 hours.',
-        41  : 'Mostly clear and warmer.',
-        42  : 'Partly cloudy with little temperature change.',
-        43  : 'Mostly clear with little temperature change.',
-        44  : 'Increasing clouds with little temperature change. Precipitation possible within 24 to 48 hours.',
-        45  : 'Increasing clouds with little temperature change.',
-        46  : 'Partly cloudy with little temperature change.',
-        47  : 'Mostly clear with little temperature change.',
-        48  : 'Increasing clouds and warmer. Precipitation possible within 12 to 24 hours.',
-        49  : 'Partly cloudy with little temperature change.',
-        50  : 'Mostly clear with little temperature change.',
-        51  : 'Increasing clouds and warmer. Precipitation possible within 12 to 24 hours. Windy.',
-        52  : 'Partly cloudy with little temperature change.',
-        53  : 'Mostly clear with little temperature change.',
-        54  : 'Increasing clouds and warmer. Precipitation possible within 12 to 24 hours. Windy.',
-        55  : 'Partly cloudy with little temperature change.',
-        56  : 'Mostly clear with little temperature change.',
-        57  : 'Increasing clouds and warmer. Precipitation possible within 6 to 12 hours.',
-        58  : 'Partly cloudy with little temperature change.',
-        59  : 'Mostly clear with little temperature change.',
-        60  : 'Increasing clouds and warmer. Precipitation possible within 6 to 12 hours. Windy.',
-        61  : 'Partly cloudy with little temperature change.',
-        62  : 'Mostly clear with little temperature change.',
-        63  : 'Increasing clouds and warmer. Precipitation possible within 12 to 24 hours. Windy.',
-        64  : 'Partly cloudy with little temperature change.',
-        65  : 'Mostly clear with little temperature change.',
-        66  : 'Increasing clouds and warmer. Precipitation possible within 12 hours.',
-        67  : 'Partly cloudy with little temperature change.',
-        68  : 'Mostly clear with little temperature change.',
-        69  : 'Increasing clouds and warmer. Precipitation likley.',
-        70  : 'Clearing and cooler. Precipitation ending within 6 hours.',
-        71  : 'Partly cloudy with little temperature change.',
-        72  : 'Clearing and cooler. Precipitation ending within 6 hours.',
-        73  : 'Mostly clear with little temperature change.',
-        74  : 'Clearing and cooler. Precipitation ending within 6 hours.',
-        75  : 'Partly cloudy and cooler.',
-        76  : 'Partly cloudy with little temperature change.',
-        77  : 'Mostly clear and cooler.',
-        78  : 'Clearing and cooler. Precipitation ending within 6 hours.',
-        79  : 'Mostly clear with little temperature change.',
-        80  : 'Clearing and cooler. Precipitation ending within 6 hours.',
-        81  : 'Mostly clear and cooler.',
-        82  : 'Partly cloudy with little temperature change.',
-        83  : 'Mostly clear with little temperature change.',
-        84  : 'Increasing clouds with little temperature change. Precipitation possible within 24 hours.',
-        85  : 'Mostly cloudy and cooler. Precipitation continuing.',
-        86  : 'Partly cloudy with little temperature change.',
-        87  : 'Mostly clear with little temperature change.',
-        88  : 'Mostly cloudy and cooler. Precipitation likely.',
-        89  : 'Mostly cloudy with little temperature change. Precipitation continuing.',
-        90  : 'Mostly cloudy with little temperature change. Precipitation likely.',
-        91  : 'Partly cloudy with little temperature change.',
-        92  : 'Mostly clear with little temperature change.',
-        93  : 'Increasing clouds and cooler. Precipitation possible and windy within 6 hours.',
-        94  : 'Increasing clouds with little temperature change. Precipitation possible and windy within 6 hours.',
-        95  : 'Mostly cloudy and cooler. Precipitation continuing. Increasing winds.',
-        96  : 'Partly cloudy with little temperature change.',
-        97  : 'Mostly clear with little temperature change.',
-        98  : 'Mostly cloudy and cooler. Precipitation likely. Increasing winds.',
-        99  : 'Mostly cloudy with little temperature change. Precipitation continuing. Increasing winds.',
-        100 : 'Mostly cloudy with little temperature change. Precipitation likely. Increasing winds.',
-        101 : 'Partly cloudy with little temperature change.',
-        102 : 'Mostly clear with little temperature change.',
-        103 : 'Increasing clouds and cooler. Precipitation possible within 12 to 24 hours possible wind shift to the W, NW, or N.',
-        104 : 'Increasing clouds with little temperature change. Precipitation possible within 12 to 24 hours possible wind shift to the W, NW, or N.',
-        105 : 'Partly cloudy with little temperature change.',
-        106 : 'Mostly clear with little temperature change.',
-        107 : 'Increasing clouds and cooler. Precipitation possible within 6 hours possible wind shift to the W, NW, or N.',
-        108 : 'Increasing clouds with little temperature change. Precipitation possible within 6 hours possible wind shift to the W, NW, or N.',
-        109 : 'Mostly cloudy and cooler. Precipitation ending within 12 hours possible wind shift to the W, NW, or N.',
-        110 : 'Mostly cloudy and cooler. Possible wind shift to the W, NW, or N.',
-        111 : 'Mostly cloudy with little temperature change. Precipitation ending within 12 hours possible wind shift to the W, NW, or N.',
-        112 : 'Mostly cloudy with little temperature change. Possible wind shift to the W, NW, or N.',
-        113 : 'Mostly cloudy and cooler. Precipitation ending within 12 hours possible wind shift to the W, NW, or N.',
-        114 : 'Partly cloudy with little temperature change.',
-        115 : 'Mostly clear with little temperature change.',
-        116 : 'Mostly cloudy and cooler. Precipitation possible within 24 hours possible wind shift to the W, NW, or N.',
-        117 : 'Mostly cloudy with little temperature change. Precipitation ending within 12 hours possible wind shift to the W, NW, or N.',
-        118 : 'Mostly cloudy with little temperature change. Precipitation possible within 24 hours possible wind shift to the W, NW, or N.',
-        119 : 'Clearing, cooler and windy. Precipitation ending within 6 hours.',
-        120 : 'Clearing, cooler and windy.',
-        121 : 'Mostly cloudy and cooler. Precipitation ending within 6 hours. Windy with possible wind shift to the W, NW, or N.',
-        122 : 'Mostly cloudy and cooler. Windy with possible wind shift o the W, NW, or N.',
-        123 : 'Clearing, cooler and windy.',
-        124 : 'Partly cloudy with little temperature change.',
-        125 : 'Mostly clear with little temperature change.',
-        126 : 'Mostly cloudy with little temperature change. Precipitation possible within 12 hours. Windy.',
-        127 : 'Partly cloudy with little temperature change.',
-        128 : 'Mostly clear with little temperature change.',
-        129 : 'Increasing clouds and cooler. Precipitation possible within 12 hours, possibly heavy at times. Windy.',
-        130 : 'Mostly cloudy and cooler. Precipitation ending within 6 hours. Windy.',
-        131 : 'Partly cloudy with little temperature change.',
-        132 : 'Mostly clear with little temperature change.',
-        133 : 'Mostly cloudy and cooler. Precipitation possible within 12 hours. Windy.',
-        134 : 'Mostly cloudy and cooler. Precipitation ending in 12 to 24 hours.',
-        135 : 'Mostly cloudy and cooler.',
-        136 : 'Mostly cloudy and cooler. Precipitation continuing, possible heavy at times. Windy.',
-        137 : 'Partly cloudy with little temperature change.',
-        138 : 'Mostly clear with little temperature change.',
-        139 : 'Mostly cloudy and cooler. Precipitation possible within 6 to 12 hours. Windy.',
-        140 : 'Mostly cloudy with little temperature change. Precipitation continuing, possibly heavy at times. Windy.',
-        141 : 'Partly cloudy with little temperature change.',
-        142 : 'Mostly clear with little temperature change.',
-        143 : 'Mostly cloudy with little temperature change. Precipitation possible within 6 to 12 hours. Windy.',
-        144 : 'Partly cloudy with little temperature change.',
-        145 : 'Mostly clear with little temperature change.',
-        146 : 'Increasing clouds with little temperature change. Precipitation possible within 12 hours, possibly heavy at times. Windy.',
-        147 : 'Mostly cloudy and cooler. Windy.',
-        148 : 'Mostly cloudy and cooler. Precipitation continuing, possibly heavy at times. Windy.',
-        149 : 'Partly cloudy with little temperature change.',
-        150 : 'Mostly clear with little temperature change.',
-        151 : 'Mostly cloudy and cooler. Precipitation likely, possibly heavy at times. Windy.',
-        152 : 'Mostly cloudy with little temperature change. Precipitation continuing, possibly heavy at times. Windy.',
-        153 : 'Mostly cloudy with little temperature change. Precipitation likely, possibly heavy at times. Windy.',
-        154 : 'Partly cloudy with little temperature change.',
-        155 : 'Mostly clear with little temperature change.',
-        156 : 'Increasing clouds and cooler. Precipitation possible within 6 hours. Windy.',
-        157 : 'Increasing clouds with little temperature change. Precipitation possible within 6 hours. Windy',
-        158 : 'Increasing clouds and cooler. Precipitation continuing. Windy with possible wind shift to the W, NW, or N.',
-        159 : 'Partly cloudy with little temperature change.',
-        160 : 'Mostly clear with little temperature change.',
-        161 : 'Mostly cloudy and cooler. Precipitation likely. Windy with possible wind shift to the W, NW, or N.',
-        162 : 'Mostly cloudy with little temperature change. Precipitation continuing. Windy with possible wind shift to the W, NW, or N.',
-        163 : 'Mostly cloudy with little temperature change. Precipitation likely. Windy with possible wind shift to the W, NW, or N.',
-        164 : 'Increasing clouds and cooler. Precipitation possible within 6 hours. Windy with possible wind shift to the W, NW, or N.',
-        165 : 'Partly cloudy with little temperature change.',
-        166 : 'Mostly clear with little temperature change.',
-        167 : 'Increasing clouds and cooler. Precipitation possible within 6 hours possible wind shift to the W, NW, or N.',
-        168 : 'Increasing clouds with little temperature change. Precipitation possible within 6 hours. Windy with possible wind shift to the W, NW, or N.',
-        169 : 'Increasing clouds with little temperature change. Precipitation possible within 6 hours possible wind shift to the W, NW, or N.',
-        170 : 'Partly cloudy with little temperature change.',
-        171 : 'Mostly clear with little temperature change.',
-        172 : 'Increasing clouds and cooler. Precipitation possible within 6 hours. Windy with possible wind shift to the W, NW, or N.',
-        173 : 'Increasing clouds with little temperature change. Precipitation possible within 6 hours. Windy with possible wind shift to the W, NW, or N.',
-        174 : 'Partly cloudy with little temperature change.',
-        175 : 'Mostly clear with little temperature change.',
-        176 : 'Increasing clouds and cooler. Precipitation possible within 12 to 24 hours. Windy with possible wind shift to the W, NW, or N.',
-        177 : 'Increasing clouds with little temperature change. Precipitation possible within 12 to 24 hours. Windy with possible wind shift to the W, NW, or N.',
-        178 : 'Mostly cloudy and cooler. Precipitation possibly heavy at times and ending within 12 hours. Windy with possible wind shift to the W, NW, or N.',
-        179 : 'Partly cloudy with little temperature change.',
-        180 : 'Mostly clear with little temperature change.',
-        181 : 'Mostly cloudy and cooler. Precipitation possible within 6 to 12 hours, possibly heavy at times. Windy with possible wind shift to the W, NW, or N.',
-        182 : 'Mostly cloudy with little temperature change. Precipitation ending within 12 hours. Windy with possible wind shift to the W, NW, or N.',
-        183 : 'Mostly cloudy with little temperature change. Precipitation possible within 6 to 12 hours, possibly heavy at times. Windy with possible wind shift to the W, NW, or N.',
-        184 : 'Mostly cloudy and cooler. Precipitation continuing.',
-        185 : 'Partly cloudy with little temperature change.',
-        186 : 'Mostly clear with little temperature change.',
-        187 : 'Mostly cloudy and cooler. Precipitation likely. Windy with possible wind shift to the W, NW, or N.',
-        188 : 'Mostly cloudy with little temperature change. Precipitation continuing.',
-        189 : 'Mostly cloudy with little temperature change. Precipitation likely.',
-        190 : 'Partly cloudy with little temperature change.',
-        191 : 'Mostly clear with little temperature change.',
-        192 : 'Mostly cloudy and cooler. Precipitation possible within 12 hours, possibly heavy at times. Windy.',
-        193 : 'FORECAST REQUIRES 3 HOURS OF RECENT DATA',
-        194 : 'Mostly clear and cooler.',
-        195 : 'Mostly clear and cooler.',
-        196 : 'Mostly clear and cooler.'
+davis_fr_dict = {
+        0: 'Mostly clear and cooler.',
+        1: 'Mostly clear with little temperature change.',
+        2: 'Mostly clear for 12 hours with little temperature change.',
+        3: 'Mostly clear for 12 to 24 hours and cooler.',
+        4: 'Mostly clear with little temperature change.',
+        5: 'Partly cloudy and cooler.',
+        6: 'Partly cloudy with little temperature change.',
+        7: 'Partly cloudy with little temperature change.',
+        8: 'Mostly clear and warmer.',
+        9: 'Partly cloudy with little temperature change.',
+        10: 'Partly cloudy with little temperature change.',
+        11: 'Mostly clear with little temperature change.',
+        12: 'Increasing clouds and warmer. Precipitation possible within 24 to 48 hours.',
+        13: 'Partly cloudy with little temperature change.',
+        14: 'Mostly clear with little temperature change.',
+        15: 'Increasing clouds with little temperature change. Precipitation possible within 24 hours.',
+        16: 'Mostly clear with little temperature change.',
+        17: 'Partly cloudy with little temperature change.',
+        18: 'Mostly clear with little temperature change.',
+        19: 'Increasing clouds with little temperature change. Precipitation possible within 12 hours.',
+        20: 'Mostly clear with little temperature change.',
+        21: 'Partly cloudy with little temperature change.',
+        22: 'Mostly clear with little temperature change.',
+        23: 'Increasing clouds and warmer. Precipitation possible within 24 hours.',
+        24: 'Mostly clear and warmer. Increasing winds.',
+        25: 'Partly cloudy with little temperature change.',
+        26: 'Mostly clear with little temperature change.',
+        27: 'Increasing clouds and warmer. Precipitation possible within 12 hours. Increasing winds.',
+        28: 'Mostly clear and warmer. Increasing winds.',
+        29: 'Increasing clouds and warmer.',
+        30: 'Partly cloudy with little temperature change.',
+        31: 'Mostly clear with little temperature change.',
+        32: 'Increasing clouds and warmer. Precipitation possible within 12 hours. Increasing winds.',
+        33: 'Mostly clear and warmer. Increasing winds.',
+        34: 'Increasing clouds and warmer.',
+        35: 'Partly cloudy with little temperature change.',
+        36: 'Mostly clear with little temperature change.',
+        37: 'Increasing clouds and warmer. Precipitation possible within 12 hours. Increasing winds.',
+        38: 'Partly cloudy with little temperature change.',
+        39: 'Mostly clear with little temperature change.',
+        40: 'Mostly clear and warmer. Precipitation possible within 48 hours.',
+        41: 'Mostly clear and warmer.',
+        42: 'Partly cloudy with little temperature change.',
+        43: 'Mostly clear with little temperature change.',
+        44: 'Increasing clouds with little temperature change. Precipitation possible within 24 to 48 hours.',
+        45: 'Increasing clouds with little temperature change.',
+        46: 'Partly cloudy with little temperature change.',
+        47: 'Mostly clear with little temperature change.',
+        48: 'Increasing clouds and warmer. Precipitation possible within 12 to 24 hours.',
+        49: 'Partly cloudy with little temperature change.',
+        50: 'Mostly clear with little temperature change.',
+        51: 'Increasing clouds and warmer. Precipitation possible within 12 to 24 hours. Windy.',
+        52: 'Partly cloudy with little temperature change.',
+        53: 'Mostly clear with little temperature change.',
+        54: 'Increasing clouds and warmer. Precipitation possible within 12 to 24 hours. Windy.',
+        55: 'Partly cloudy with little temperature change.',
+        56: 'Mostly clear with little temperature change.',
+        57: 'Increasing clouds and warmer. Precipitation possible within 6 to 12 hours.',
+        58: 'Partly cloudy with little temperature change.',
+        59: 'Mostly clear with little temperature change.',
+        60: 'Increasing clouds and warmer. Precipitation possible within 6 to 12 hours. Windy.',
+        61: 'Partly cloudy with little temperature change.',
+        62: 'Mostly clear with little temperature change.',
+        63: 'Increasing clouds and warmer. Precipitation possible within 12 to 24 hours. Windy.',
+        64: 'Partly cloudy with little temperature change.',
+        65: 'Mostly clear with little temperature change.',
+        66: 'Increasing clouds and warmer. Precipitation possible within 12 hours.',
+        67: 'Partly cloudy with little temperature change.',
+        68: 'Mostly clear with little temperature change.',
+        69: 'Increasing clouds and warmer. Precipitation likley.',
+        70: 'Clearing and cooler. Precipitation ending within 6 hours.',
+        71: 'Partly cloudy with little temperature change.',
+        72: 'Clearing and cooler. Precipitation ending within 6 hours.',
+        73: 'Mostly clear with little temperature change.',
+        74: 'Clearing and cooler. Precipitation ending within 6 hours.',
+        75: 'Partly cloudy and cooler.',
+        76: 'Partly cloudy with little temperature change.',
+        77: 'Mostly clear and cooler.',
+        78: 'Clearing and cooler. Precipitation ending within 6 hours.',
+        79: 'Mostly clear with little temperature change.',
+        80: 'Clearing and cooler. Precipitation ending within 6 hours.',
+        81: 'Mostly clear and cooler.',
+        82: 'Partly cloudy with little temperature change.',
+        83: 'Mostly clear with little temperature change.',
+        84: 'Increasing clouds with little temperature change. Precipitation possible within 24 hours.',
+        85: 'Mostly cloudy and cooler. Precipitation continuing.',
+        86: 'Partly cloudy with little temperature change.',
+        87: 'Mostly clear with little temperature change.',
+        88: 'Mostly cloudy and cooler. Precipitation likely.',
+        89: 'Mostly cloudy with little temperature change. Precipitation continuing.',
+        90: 'Mostly cloudy with little temperature change. Precipitation likely.',
+        91: 'Partly cloudy with little temperature change.',
+        92: 'Mostly clear with little temperature change.',
+        93: 'Increasing clouds and cooler. Precipitation possible and windy within 6 hours.',
+        94: 'Increasing clouds with little temperature change. Precipitation possible and windy within 6 hours.',
+        95: 'Mostly cloudy and cooler. Precipitation continuing. Increasing winds.',
+        96: 'Partly cloudy with little temperature change.',
+        97: 'Mostly clear with little temperature change.',
+        98: 'Mostly cloudy and cooler. Precipitation likely. Increasing winds.',
+        99: 'Mostly cloudy with little temperature change. Precipitation continuing. Increasing winds.',
+        100: 'Mostly cloudy with little temperature change. Precipitation likely. Increasing winds.',
+        101: 'Partly cloudy with little temperature change.',
+        102: 'Mostly clear with little temperature change.',
+        103: 'Increasing clouds and cooler. Precipitation possible within 12 to 24 hours possible wind shift '
+             'to the W, NW, or N.',
+        104: 'Increasing clouds with little temperature change. Precipitation possible within 12 to 24 hours '
+             'possible wind shift to the W, NW, or N.',
+        105: 'Partly cloudy with little temperature change.',
+        106: 'Mostly clear with little temperature change.',
+        107: 'Increasing clouds and cooler. Precipitation possible within 6 hours possible wind shift to the '
+             'W, NW, or N.',
+        108: 'Increasing clouds with little temperature change. Precipitation possible within 6 hours possible '
+             'wind shift to the W, NW, or N.',
+        109: 'Mostly cloudy and cooler. Precipitation ending within 12 hours possible wind shift to the W, NW, or N.',
+        110: 'Mostly cloudy and cooler. Possible wind shift to the W, NW, or N.',
+        111: 'Mostly cloudy with little temperature change. Precipitation ending within 12 hours possible wind '
+             'shift to the W, NW, or N.',
+        112: 'Mostly cloudy with little temperature change. Possible wind shift to the W, NW, or N.',
+        113: 'Mostly cloudy and cooler. Precipitation ending within 12 hours possible wind shift to the W, NW, or N.',
+        114: 'Partly cloudy with little temperature change.',
+        115: 'Mostly clear with little temperature change.',
+        116: 'Mostly cloudy and cooler. Precipitation possible within 24 hours possible wind shift to the W, NW, or N.',
+        117: 'Mostly cloudy with little temperature change. Precipitation ending within 12 hours possible wind '
+             'shift to the W, NW, or N.',
+        118: 'Mostly cloudy with little temperature change. Precipitation possible within 24 hours possible wind '
+             'shift to the W, NW, or N.',
+        119: 'Clearing, cooler and windy. Precipitation ending within 6 hours.',
+        120: 'Clearing, cooler and windy.',
+        121: 'Mostly cloudy and cooler. Precipitation ending within 6 hours. Windy with possible wind shift to the '
+             'W, NW, or N.',
+        122: 'Mostly cloudy and cooler. Windy with possible wind shift o the W, NW, or N.',
+        123: 'Clearing, cooler and windy.',
+        124: 'Partly cloudy with little temperature change.',
+        125: 'Mostly clear with little temperature change.',
+        126: 'Mostly cloudy with little temperature change. Precipitation possible within 12 hours. Windy.',
+        127: 'Partly cloudy with little temperature change.',
+        128: 'Mostly clear with little temperature change.',
+        129: 'Increasing clouds and cooler. Precipitation possible within 12 hours, possibly heavy at times. Windy.',
+        130: 'Mostly cloudy and cooler. Precipitation ending within 6 hours. Windy.',
+        131: 'Partly cloudy with little temperature change.',
+        132: 'Mostly clear with little temperature change.',
+        133: 'Mostly cloudy and cooler. Precipitation possible within 12 hours. Windy.',
+        134: 'Mostly cloudy and cooler. Precipitation ending in 12 to 24 hours.',
+        135: 'Mostly cloudy and cooler.',
+        136: 'Mostly cloudy and cooler. Precipitation continuing, possible heavy at times. Windy.',
+        137: 'Partly cloudy with little temperature change.',
+        138: 'Mostly clear with little temperature change.',
+        139: 'Mostly cloudy and cooler. Precipitation possible within 6 to 12 hours. Windy.',
+        140: 'Mostly cloudy with little temperature change. Precipitation continuing, possibly heavy at times. Windy.',
+        141: 'Partly cloudy with little temperature change.',
+        142: 'Mostly clear with little temperature change.',
+        143: 'Mostly cloudy with little temperature change. Precipitation possible within 6 to 12 hours. Windy.',
+        144: 'Partly cloudy with little temperature change.',
+        145: 'Mostly clear with little temperature change.',
+        146: 'Increasing clouds with little temperature change. Precipitation possible within 12 hours, possibly '
+             'heavy at times. Windy.',
+        147: 'Mostly cloudy and cooler. Windy.',
+        148: 'Mostly cloudy and cooler. Precipitation continuing, possibly heavy at times. Windy.',
+        149: 'Partly cloudy with little temperature change.',
+        150: 'Mostly clear with little temperature change.',
+        151: 'Mostly cloudy and cooler. Precipitation likely, possibly heavy at times. Windy.',
+        152: 'Mostly cloudy with little temperature change. Precipitation continuing, possibly heavy at times. Windy.',
+        153: 'Mostly cloudy with little temperature change. Precipitation likely, possibly heavy at times. Windy.',
+        154: 'Partly cloudy with little temperature change.',
+        155: 'Mostly clear with little temperature change.',
+        156: 'Increasing clouds and cooler. Precipitation possible within 6 hours. Windy.',
+        157: 'Increasing clouds with little temperature change. Precipitation possible within 6 hours. Windy',
+        158: 'Increasing clouds and cooler. Precipitation continuing. Windy with possible wind shift to the W, NW, '
+             'or N.',
+        159: 'Partly cloudy with little temperature change.',
+        160: 'Mostly clear with little temperature change.',
+        161: 'Mostly cloudy and cooler. Precipitation likely. Windy with possible wind shift to the W, NW, or N.',
+        162: 'Mostly cloudy with little temperature change. Precipitation continuing. Windy with possible wind shift '
+             'to the W, NW, or N.',
+        163: 'Mostly cloudy with little temperature change. Precipitation likely. Windy with possible wind shift to '
+             'the W, NW, or N.',
+        164: 'Increasing clouds and cooler. Precipitation possible within 6 hours. Windy with possible wind shift to '
+             'the W, NW, or N.',
+        165: 'Partly cloudy with little temperature change.',
+        166: 'Mostly clear with little temperature change.',
+        167: 'Increasing clouds and cooler. Precipitation possible within 6 hours possible wind shift to the W, NW, '
+             'or N.',
+        168: 'Increasing clouds with little temperature change. Precipitation possible within 6 hours. Windy with '
+             'possible wind shift to the W, NW, or N.',
+        169: 'Increasing clouds with little temperature change. Precipitation possible within 6 hours possible wind '
+             'shift to the W, NW, or N.',
+        170: 'Partly cloudy with little temperature change.',
+        171: 'Mostly clear with little temperature change.',
+        172: 'Increasing clouds and cooler. Precipitation possible within 6 hours. Windy with possible wind shift to '
+             'the W, NW, or N.',
+        173: 'Increasing clouds with little temperature change. Precipitation possible within 6 hours. Windy with '
+             'possible wind shift to the W, NW, or N.',
+        174: 'Partly cloudy with little temperature change.',
+        175: 'Mostly clear with little temperature change.',
+        176: 'Increasing clouds and cooler. Precipitation possible within 12 to 24 hours. Windy with possible wind '
+             'shift to the W, NW, or N.',
+        177: 'Increasing clouds with little temperature change. Precipitation possible within 12 to 24 hours. Windy '
+             'with possible wind shift to the W, NW, or N.',
+        178: 'Mostly cloudy and cooler. Precipitation possibly heavy at times and ending within 12 hours. Windy with '
+             'possible wind shift to the W, NW, or N.',
+        179: 'Partly cloudy with little temperature change.',
+        180: 'Mostly clear with little temperature change.',
+        181: 'Mostly cloudy and cooler. Precipitation possible within 6 to 12 hours, possibly heavy at times. Windy '
+             'with possible wind shift to the W, NW, or N.',
+        182: 'Mostly cloudy with little temperature change. Precipitation ending within 12 hours. Windy with possible '
+             'wind shift to the W, NW, or N.',
+        183: 'Mostly cloudy with little temperature change. Precipitation possible within 6 to 12 hours, possibly '
+             'heavy at times. Windy with possible wind shift to the W, NW, or N.',
+        184: 'Mostly cloudy and cooler. Precipitation continuing.',
+        185: 'Partly cloudy with little temperature change.',
+        186: 'Mostly clear with little temperature change.',
+        187: 'Mostly cloudy and cooler. Precipitation likely. Windy with possible wind shift to the W, NW, or N.',
+        188: 'Mostly cloudy with little temperature change. Precipitation continuing.',
+        189: 'Mostly cloudy with little temperature change. Precipitation likely.',
+        190: 'Partly cloudy with little temperature change.',
+        191: 'Mostly clear with little temperature change.',
+        192: 'Mostly cloudy and cooler. Precipitation possible within 12 hours, possibly heavy at times. Windy.',
+        193: 'FORECAST REQUIRES 3 HOURS OF RECENT DATA',
+        194: 'Mostly clear and cooler.',
+        195: 'Mostly clear and cooler.',
+        196: 'Mostly clear and cooler.'
         }
 
 
@@ -464,7 +485,7 @@ def logdbg(src, msg):
 
 def logdbg2(src, msg):
     if weewx.debug >= 2:
-        logmsg(syslog.LOG_DEBUG, msg)
+        logmsg(syslog.LOG_DEBUG, src, msg)
 
 
 def loginf(src, msg):
@@ -475,17 +496,16 @@ def logerr(src, msg):
     logmsg(syslog.LOG_ERR, src, msg)
 
 
-# ===============================================================================
-#                            Class WdWXCalculate
-# ===============================================================================
-
+# ==============================================================================
+#                              Class WdWXCalculate
+# ==============================================================================
 
 
 class WdWXCalculate(weewx.engine.StdService):
-    """Service to calculate weeWX-WD specific observations."""
+    """Service to calculate WeeWX-WD specific observations."""
 
     def __init__(self, engine, config_dict):
-        # initialise our parent
+        # initialise our superclass
         super(WdWXCalculate, self).__init__(engine, config_dict)
 
         # bind our self to new loop packet and new archive record events
@@ -509,30 +529,30 @@ class WdWXCalculate(weewx.engine.StdService):
         event.record.update(_x)
 
 
-# ===============================================================================
-#                              Class WdArchive
-# ===============================================================================
+# ==============================================================================
+#                                Class WdArchive
+# ==============================================================================
 
 
 class WdArchive(weewx.engine.StdService):
     """Service to store Weewx-WD specific archive data."""
 
     def __init__(self, engine, config_dict):
-        # initialise our parent
+        # initialise our superclass
         super(WdArchive, self).__init__(engine, config_dict)
 
-        # Extract our binding from the weeWX-WD section of the config file. If
+        # Extract our binding from the WeeWX-WD section of the config file. If
         # it's missing, fill with a default.
         if 'WeewxWD' in config_dict:
             self.data_binding = config_dict['WeewxWD'].get('data_binding',
                                                            'wd_binding')
         else:
             self.data_binding = 'wd_binding'
-        loginf("WdArchive:",
+        loginf("wdarchive:",
                "WdArchive will use data binding %s" % self.data_binding)
 
-        # extract the weeWX binding for use when we check the need for backfill
-        # from the weeWX archive
+        # extract the WeeWX binding for use when we check the need for backfill
+        # from the WeeWX archive
         if 'StdArchive' in config_dict:
             self.data_binding_wx = config_dict['StdArchive'].get('data_binding',
                                                                  'wx_binding')
@@ -552,10 +572,10 @@ class WdArchive(weewx.engine.StdService):
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
     def new_archive_record(self, event):
-        """Save the weeWX-WD archive record.
+        """Save the WeeWX-WD archive record.
 
-           Use our db manager's addRecord method to save the relevant weeWX-WD
-           fields to the weeWX-WD archive.
+           Use our db manager's addRecord method to save the relevant WeeWX-WD
+           fields to the WeeWX-WD archive.
         """
 
         # get our db manager
@@ -564,44 +584,44 @@ class WdArchive(weewx.engine.StdService):
         dbmanager.addRecord(event.record)
 
     def setup_database(self, config_dict):
-        """Setup the weeWX-WD database.e"""
+        """Setup the WeeWX-WD database.e"""
 
         # create the database if it doesn't exist and a db manager for the
         # opened database
         dbmanager = self.engine.db_binder.get_manager(self.data_binding,
                                                       initialize=True)
-        loginf("WdArchive:",
+        loginf("wdarchive:",
                "Using binding '%s' to database '%s'" % (self.data_binding,
                                                         dbmanager.database_name))
 
         # FIXME. Is this still required
-        # Check if we have any historical data to bring in from the weeWX
+        # Check if we have any historical data to bring in from the WeeWX
         # archive.
-        # first get a dbmanager for the weeWX archive
+        # first get a dbmanager for the WeeWX archive
         dbmanager_wx = self.engine.db_binder.get_manager(self.data_binding_wx,
                                                          initialize=False)
 
-        # then backfill the weeWX-WD daily summaries
-        loginf("WdArchive:", "Starting backfill of daily summaries")
+        # then backfill the WeeWX-WD daily summaries
+        loginf("wdarchive:", "Starting backfill of daily summaries")
         t1 = time.time()
-        nrecs, ndays = dbmanager.backfill_day_summary()
+        nrecs, ndays = dbmanager_wx.backfill_day_summary()
         tdiff = time.time() - t1
         if nrecs:
-            loginf("WdArchive:",
+            loginf("wdarchive:",
                    "Processed %d records to backfill %d day summaries in %.2f seconds" % (nrecs,
                                                                                           ndays,
                                                                                           tdiff))
         else:
-            loginf("WdArchive:", "Daily summaries up to date.")
+            loginf("wdarchive:", "Daily summaries up to date.")
 
 
-# ===============================================================================
-#                           Class WdGenerateDerived
-# ===============================================================================
+# ==============================================================================
+#                            Class WdGenerateDerived
+# ==============================================================================
 
 
 class WdGenerateDerived(object):
-    """ Adds weeWX-WD derived obs to the output of the wrapped generator."""
+    """ Adds WeeWX-WD derived obs to the output of the wrapped generator."""
 
     def __init__(self, input_generator):
         """ Initialize an instance of WdGenerateDerived
@@ -647,12 +667,12 @@ class WdGenerateDerived(object):
         return weewx.units.to_std_system(_mwx, _rec['usUnits'])
 
 
-# ===============================================================================
-#                             Class wdSuppThread
-# ===============================================================================
+# ==============================================================================
+#                              Class WdSuppThread
+# ==============================================================================
 
 
-class wdSuppThread(threading.Thread):
+class WdSuppThread(threading.Thread):
     """ Thread in which to run WdSuppArchive service.
 
         As we need to obtain WU data via WU API query we need to run this in
@@ -669,32 +689,32 @@ class wdSuppThread(threading.Thread):
         self._target(*self._args)
 
 
-# ===============================================================================
-#                            Class WdSuppArchive
-# ===============================================================================
+# ==============================================================================
+#                              Class WdSuppArchive
+# ==============================================================================
 
 
 class WdSuppArchive(weewx.engine.StdService):
-    """Service to archive weeWX-WD supplementary data.
+    """Service to archive WeeWX-WD supplementary data.
 
 
         Collects and archives WU API sourced data, Davis console forecast/storm 
-        data and theoretical max solar radiation data in the weeWX-WD supp 
+        data and theoretical max solar radiation data in the WeeWX-WD supp
         database. Data is only kept for a limited time before being dropped.
     """
 
     def __init__(self, engine, config_dict):
-        # initialise our parent
+        # initialise our superclass
         super(WdSuppArchive, self).__init__(engine, config_dict)
 
-        # Initialisation is 2 part; 1 part for wdsupp db/loop data, 2nd part
-        # for WU API calls. We are only going to invoke ourself if we have the
-        # necessary config data available in weewx.conf for 1 or both parts.
-        # If any essential config data is missing/not set then give a short log
+        # Initialisation is 2 part; 1 part for wdsupp db/loop data, 2nd part for
+        # WU API calls. We are only going to invoke our self if we have the
+        # necessary config data available in weewx.conf for 1 or both parts. If
+        # any essential config data is missing/not set then give a short log
         # message and defer.
 
         if 'Weewx-WD' in config_dict:
-            # we have a [Weewx-WD} stanza
+            # we have a [Weewx-WD] stanza
             if 'Supplementary' in config_dict['Weewx-WD']:
                 # we have a [[Supplementary]] stanza so we can initialise
                 # wdsupp db
@@ -704,7 +724,7 @@ class WdSuppArchive(weewx.engine.StdService):
                 # first, get our binding, if it's missing use a default
                 self.binding = _supp_dict.get('data_binding',
                                               'wdsupp_binding')
-                loginf("WdSuppArchive:",
+                loginf("wdsupparchive:",
                        "WdSuppArchive will use data binding '%s'" % self.binding)
                 # how long to keep records in our db (default 8 days)
                 self.max_age = _supp_dict.get('max_age', 691200)
@@ -752,7 +772,7 @@ class WdSuppArchive(weewx.engine.StdService):
 
                 # we have everything we need to put a short message re supp 
                 # database
-                loginf("WdSuppArchive:", "max_age=%s vacuum=%s" % (self.max_age,
+                loginf("wdsupparchive:", "max_age=%s vacuum=%s" % (self.max_age,
                                                                    self.vacuum))
                 
                 # do we have necessary config info for WU ie a [[[WU]]] stanza,
@@ -762,7 +782,7 @@ class WdSuppArchive(weewx.engine.StdService):
                     # we are missing some/all essential WU API settings so set a
                     # flag and return
                     self.do_WU = False
-                    loginf("WdSuppArchive:", "WU API calls will not be made")
+                    loginf("wdsupparchive:", "WU API calls will not be made")
                     loginf("              ", "**** Incomplete or missing config settings")
                     return
 
@@ -771,15 +791,17 @@ class WdSuppArchive(weewx.engine.StdService):
                 # get a WuApiQuery object to handle WU API queries
                 self.wu_api_query_obj = WuApiQuery(config_dict)
 
+                # define some properties for later use
+                self.last_ts = None
 
     def new_archive_record(self, event):
         """Kick off in a new thread."""
 
-        t = wdSuppThread(self.wdSupp_main, event)
-        t.setName('wdSuppThread')
+        t = WdSuppThread(self.wdsupp_main, event)
+        t.setName('WdSuppThread')
         t.start()
 
-    def wdSupp_main(self, event):
+    def wdsupp_main(self, event):
         """ Take care of getting our data, archiving it and completing any
             database housekeeping.
 
@@ -793,7 +815,7 @@ class WdSuppArchive(weewx.engine.StdService):
         now = time.time()
 
         # create a holder for our data record
-        _rec = {}
+        _rec = dict()
         # prepopulate our data record with a few things we may know now
         _rec['dateTime'] = event.record['dateTime']
         _rec['usUnits'] = event.record['usUnits']
@@ -840,7 +862,7 @@ class WdSuppArchive(weewx.engine.StdService):
         """
 
         # holder dictionary for our gathered data
-        _data = {}
+        _data = dict()
         # vantage forecast icon
         if 'forecastIcon' in self.loop_packet:
             _data['vantageForecastIcon'] = self.loop_packet['forecastIcon']
@@ -850,7 +872,7 @@ class WdSuppArchive(weewx.engine.StdService):
                 _data['vantageForecastRule'] = davis_fr_dict[self.loop_packet['forecastRule']]
             except KeyError:
                 _data['vantageForecastRule'] = ""
-                logdbg2("WdSuppArchive:",
+                logdbg2("wdsupparchive:",
                         "Could not decode Vantage forecast code")
         # vantage stormRain
         if 'stormRain' in self.loop_packet:
@@ -872,10 +894,10 @@ class WdSuppArchive(weewx.engine.StdService):
                 dbm.addRecord(_data_record)
                 break
             except Exception, e:
-                logerr("WdSuppArchive:",
+                logerr("wdsupparchive:",
                        "save failed (attempt %d of %d): %s" % ((count + 1),
                                                                max_tries, e))
-                logerr("WdSuppArchive:",
+                logerr("wdsupparchive:",
                        "waiting %d seconds before retry" % (retry_wait, ))
                 time.sleep(retry_wait)
         else:
@@ -891,10 +913,10 @@ class WdSuppArchive(weewx.engine.StdService):
                 dbm.getSql(sql)
                 break
             except Exception, e:
-                logerr("WdSuppArchive:",
+                logerr("wdsupparchive:",
                        "prune failed (attempt %d of %d): %s" % ((count+1),
                                                                 max_tries, e))
-                logerr("WdSuppArchive:",
+                logerr("wdsupparchive:",
                        "waiting %d seconds before retry" % (retry_wait, ))
                 time.sleep(retry_wait)
         else:
@@ -913,15 +935,15 @@ class WdSuppArchive(weewx.engine.StdService):
 
         # Get time now as a ts
         t1 = time.time()
-        #do the vacuum, wrap in try..except in case it fails
+        # do the vacuum, wrap in try..except in case it fails
         try:
             dbm.getSql('vacuum')
         except Exception, e:
-            logerr("WdSuppArchive:",
+            logerr("wdsupparchive:",
                    "Vacuuming database % failed: %s" % (dbm.database_name, e))
 
         t2 = time.time()
-        logdbg("WdSuppArchive:",
+        logdbg("wdsupparchive:",
                "vacuum_database executed in %0.9f seconds" % (t2-t1))
 
     def setup_database(self, config_dict):
@@ -931,7 +953,7 @@ class WdSuppArchive(weewx.engine.StdService):
         # then return an opened instance of the database manager.
         dbmanager = self.engine.db_binder.get_database(self.binding,
                                                        initialize=True)
-        loginf("WdSuppArchive:",
+        loginf("wdsupparchive:",
                "Using binding '%s' to database '%s'" % (self.binding,
                                                         dbmanager.database_name))
 
@@ -967,8 +989,8 @@ class WdSuppArchive(weewx.engine.StdService):
                 self.loop_packet['maxSolarRad'] = event.packet['maxSolarRad']
             else:
                 self.loop_packet['maxSolarRad'] = None
-        except:
-            loginf("WdSuppArchive:",
+        except AttributeError:
+            loginf("wdsupparchive:",
                    "new_loop_packet: Loop packet data error. Cannot decode packet.")
 
     def shutDown(self):
@@ -980,7 +1002,7 @@ class WdSuppArchive(weewx.engine.StdService):
 # ===============================================================================
 
 
-class WuApiQuery():
+class WuApiQuery(object):
     """Class to query the WeatherUnderground API.
 
 
@@ -1162,8 +1184,8 @@ class WuApiQuery():
                                                         _feature_string,
                                                         self.language,
                                                         self.location)
-            return (url, _feature_string)
-        return (None, None)
+            return url, _feature_string
+        return None, None
 
     @staticmethod
     def get_wu_response(url, max_tries):
@@ -1195,7 +1217,7 @@ class WuApiQuery():
             # we have a response so deserialise our JSON response
             _json_response = json.loads(response)
             # check for recognised format
-            if not 'response' in _json_response:
+            if 'response' not in _json_response:
                 loginf("WdSuppArchive:",
                        "Unknown format in Weather Underground API response")
                 return _data
@@ -1256,9 +1278,9 @@ class WuApiQuery():
         return _data
 
 
-# ===============================================================================
-#                                 Utilities
-# ===============================================================================
+# ==============================================================================
+#                                   Utilities
+# ==============================================================================
 
 
 def toint(string, default):
@@ -1314,17 +1336,18 @@ def calc_day_night(data_dict):
         _hour = datetime.fromtimestamp(data_dict['dateTime'] - 1).hour
         if _hour < 6 or _hour > 17:
             # ie the data packet is from before 6am or after 6pm
-            return (None, data_dict['outTemp'])
+            return None, data_dict['outTemp']
         else:
             # ie the data packet is from after 6am and before or including 6pm
-            return (data_dict['outTemp'], None)
+            return data_dict['outTemp'], None
     else:
-        return (None, None)
+        return None, None
+
 
 def check_enable(cfg_dict, service, *args):
 
     try:
-        wdsupp_dict = accumulateLeaves(cfg_dict[service], max_level = 1)
+        wdsupp_dict = accumulateLeaves(cfg_dict[service], max_level=1)
     except KeyError:
         logdbg2("weewxwd3: check_enable:",
                 "%s: No config info. Skipped." % service)
@@ -1347,19 +1370,18 @@ def check_enable(cfg_dict, service, *args):
 # ============================================================================
 #                          Main Entry for Testing
 # ============================================================================
+"""
+Define a main entry point for basic testing without the WeeWX engine and 
+services overhead. To invoke this module without WeeWX:
 
-# Define a main entry point for basic testing without the weeWX engine and
-# service overhead. To invoke this module without weeWX:
-#
-# $ sudo PYTHONPATH=/home/weewx/bin python /home/weewx/bin/user/weewxwd3.py --option
-#
-# where option is one of the following options:
-#   --help               - display command line help
-#   --version            - display version
-#   --get-wu-api-data    - display WU API data
-#   --get-wu-api-config  - display WU API config parameters to be used 
-#
+    $ sudo PYTHONPATH=/home/weewx/bin python /home/weewx/bin/user/weewxwd.py --option
 
+    where option is one of the following options:
+        --help               - display command line help
+        --version            - display version
+        --get-wu-api-data    - display WU API data
+        --get-wu-api-config  - display WU API config parameters to be used 
+"""
 
 if __name__ == '__main__':
 
@@ -1368,9 +1390,8 @@ if __name__ == '__main__':
     import pprint
     import sys
 
-    # weeWX imports
+    # WeeWX imports
     import weecfg
-
 
     usage = """sudo PYTHONPATH=/home/weewx/bin python
                /home/weewx/bin/user/%prog [--option]"""

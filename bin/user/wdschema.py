@@ -17,7 +17,7 @@ Version: 1.2.0a1                                    Date: 29 March 2019
 Revision History
     29 March 2019       v1.2.0a1
       - initial release
-      - removed WeeWX-WD schema data from weewxwd3.py
+      - removed WeeWX-WD schema data from weewxwd.py
 
 Below are the default schemas for the weeWX-WD archive table and weeWX-WD
 supplementary database supp table. They are only used for initialization, or
