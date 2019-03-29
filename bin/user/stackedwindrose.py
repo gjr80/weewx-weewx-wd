@@ -1,58 +1,54 @@
-# imageStackedWindRose3.py
-#
-# A polar wind plot image generator for weeWX
-#
-# This program is free software; you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation; either version 3 of the License, or (at your option) any later
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
-#
-# Version: 1.2.0                                        Date: 8 March 2018
-#
-# Revision History
-#   8 March 2018        v1.2.0
-#       - reformatting to remove numerous long lines
-#
-# Previous Bitbucket revision history
-#   31 March 2017       v1.0.3
-#       - no change, version number change only
-#   14 December 2016    v1.0.2
-#       - fixed Image/ImageDraw import issue, now tries to import from PIL
-#         first
-#       - fixed issue where wind speed was always displayed in the windSpeed/
-#         windGust units used in the weeWX database
-#       - speed and direction ValueTuples now use .value property instead of
-#         [0] to access the ValueTuple value
-#   30 November 2016    v1.0.1
-#       - fixed issue whereby weeWX would exit if the requested font is not
-#         installed, now defaults to a system font used by weeWX if the
-#         requested font is not installed
-#       - minor reformatting of long lines and equations
-#   10 January 2015     v1.0.0
-#       - rewritten for weeWX v3.0.0
-#   1 May 2014          v0.9.3
-#       - fixed issue that arose with weeWX 2.6.3 now allowing use of UTF-8
-#         characters in plots
-#       - fixed logic error in code that calculates size of wind rose 'petals'
-#       - removed unnecessary import statements
-#       - tweaked wind rose size calculations to better cater for labels on plot
-#   30 July 2013        v0.9.1
-#       - revised version number to align with weeWX-WD version numbering
-#   20 July 2013        v0.1
-#       - initial implementation
-#
 """
-To do:
--   set default petal width degrees
--   ditto speed factor
--   default plot period = 24 hours
+stackedwindrose.py
+
+A polar wind rose image generator for WeeWX
+
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+Version: 1.2.0a1                                        Date: 29 March 2019
+
+Revision History
+  29 March 2018       v1.2.0a1
+      - renaming of this file and various classes, methods and variables
+      - reformatting to remove numerous long lines
+      - reformat of these comments
+
+Previous Bitbucket revision history
+  31 March 2017       v1.0.3
+      - no change, version number change only
+  14 December 2016    v1.0.2
+      - fixed Image/ImageDraw import issue, now tries to import from PIL first
+      - fixed issue where wind speed was always displayed in the windSpeed/
+        windGust units used in the WeeWX database
+      - speed and direction ValueTuples now use .value property instead of [0]
+        to access the ValueTuple value
+  30 November 2016    v1.0.1
+      - fixed issue whereby WeeWX would exit if the requested font is not
+        installed, now defaults to a system font used by WeeWX if the requested
+        font is not installed
+      - minor reformatting of long lines and equations
+  10 January 2015     v1.0.0
+      - rewritten for WeeWX v3.0.0
+  1 May 2014          v0.9.3
+      - fixed issue that arose with WeeWX 2.6.3 now allowing use of UTF-8
+        characters in plots
+      - fixed logic error in code that calculates size of wind rose 'petals'
+      - removed unnecessary import statements
+      - tweaked wind rose size calculations to better cater for labels on plot
+  30 July 2013        v0.9.1
+      - revised version number to align with WeeWX-WD version numbering
+  20 July 2013        v0.1
+      - initial implementation
 """
 
+# python imports
 import datetime
 import math
 import os.path
@@ -61,20 +57,21 @@ import time
 try:
     from PIL import Image, ImageDraw
 except ImportError:
-    import Image, ImageDraw
+    import Image
+    import ImageDraw
 
+# WeeWX imports
 import weeutil.weeutil
 import weewx.reportengine
 import weewx.units
 
 from weeplot.utilities import get_font_handle
-from weeutil.weeutil import TimeSpan
 
-WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0'
+WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0a1'
 
 
 def logmsg(level, msg):
-    syslog.syslog(level, 'imageStackedWindRose: %s' % msg)
+    syslog.syslog(level, 'StackedWindRose: %s' % msg)
 
 
 def logdbg(msg):
@@ -89,56 +86,57 @@ def logerr(msg):
     logmsg(syslog.LOG_ERR, msg)
 
 
-# =============================================================================
-#                    Class ImageStackedWindRoseGenerator
-# =============================================================================
+# ==============================================================================
+#                      Class StackedWindRoseImageGenerator
+# ==============================================================================
 
 
-class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
+class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
     """Generate a polar wind rose plot image."""
 
-    def run(self):
-        self.setup()
+    def __init__(self, config_dict, skin_dict, gen_ts, first_run, stn_info, record=None):
+        # initialize my superclass
+        super(StackedWindRoseImageGenerator, self).__init__(config_dict,
+                                                            skin_dict,
+                                                            gen_ts,
+                                                            first_run,
+                                                            stn_info,
+                                                            record)
+        # get the data binding to use
+        self.data_binding = config_dict['StdArchive'].get('data_binding',
+                                                          'wx_binding')
 
-        # generate any images
-        self.genImages(self.gen_ts)
-
-    def setup(self):
-        # get the binding to use
-        self.data_binding = self.config_dict['StdArchive'].get('data_binding',
-                                                               'wx_binding')
-
-        self.image_dict = self.skin_dict['ImageStackedWindRoseGenerator']
-        self.title_dict = self.skin_dict['Labels']['Generic']
-        self.converter  = weewx.units.Converter.fromSkinDict(self.skin_dict)
-        self.formatter  = weewx.units.Formatter.fromSkinDict(self.skin_dict)
-        self.unit_helper= weewx.units.UnitInfoHelper(self.formatter,
-                                                     self.converter)
+        self.image_dict = skin_dict['StackedWindRoseImageGenerator']
+        self.title_dict = skin_dict['Labels']['Generic']
+        self.converter = weewx.units.Converter.fromSkinDict(skin_dict)
+        self.formatter = weewx.units.Formatter.fromSkinDict(skin_dict)
+        self.unit_helper = weewx.units.UnitInfoHelper(self.formatter,
+                                                      self.converter)
 
         # set image attributes
         self.image_width = int(self.image_dict['image_width'])
         self.image_height = int(self.image_dict['image_height'])
         self.image_background_box_color = int(self.image_dict['image_background_box_color'], 0)
         self.image_background_circle_color = int(self.image_dict['image_background_circle_color'], 0)
-        self.image_background_range_ring_color = int(self.image_dict['image_background_range_ring_color'],0)
+        self.image_background_range_ring_color = int(self.image_dict['image_background_range_ring_color'], 0)
         self.image_background_image = self.image_dict['image_background_image']
 
         # set wind rose attributes
         self.windrose_plot_border = int(self.image_dict['windrose_plot_border'])
         self.windrose_legend_bar_width = int(self.image_dict['windrose_legend_bar_width'])
         self.windrose_font_path = self.image_dict['windrose_font_path']
-        self.windrose_plot_font_size  = int(self.image_dict['windrose_plot_font_size'])
+        self.windrose_plot_font_size = int(self.image_dict['windrose_plot_font_size'])
         self.windrose_plot_font_color = int(self.image_dict['windrose_plot_font_color'], 0)
-        self.windrose_legend_font_size  = int(self.image_dict['windrose_legend_font_size'])
+        self.windrose_legend_font_size = int(self.image_dict['windrose_legend_font_size'])
         self.windrose_legend_font_color = int(self.image_dict['windrose_legend_font_color'], 0)
-        self.windrose_label_font_size  = int(self.image_dict['windrose_label_font_size'])
+        self.windrose_label_font_size = int(self.image_dict['windrose_label_font_size'])
         self.windrose_label_font_color = int(self.image_dict['windrose_label_font_color'], 0)
         # set the petal colours, if not defined then use some sensible defaults
         try:
             self.petal_colors = self.image_dict['windrose_plot_petal_colors']
         except KeyError:
             self.petal_colors = ['lightblue', 'blue', 'midnightblue',
-                                 'forestgreen','limegreen','green',
+                                 'forestgreen', 'limegreen', 'green',
                                  'greenyellow']
         # Loop through petal colours looking for 0xBGR values amongst colour
         # names, set any 0xBGR to their numeric value and leave colour names
@@ -164,7 +162,30 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
         # 20% of max ... 100% of max)
         self.speed_factor = [0.0, 0.1, 0.2, 0.3, 0.5, 0.7, 1.0]
 
-    def genImages(self, gen_ts):
+        # initialise some properties for later use
+        self.plotgen_ts = None
+        self.label = None
+        self.time_stamp = None
+        self.time_stamp_location = None
+        self.units = None
+        self.unit_label = None
+        self.obs = None
+        self.dir_name = None
+        self.max_ring_value = None
+        self.label_dir = None
+        self.plot_font = None
+        self.legend_font = None
+        self.label_font = None
+        self.rose_max_dia = None
+        self.origin_x = None
+        self.origin_y = None
+
+    def run(self):
+
+        # generate any images
+        self.gen_images(self.gen_ts)
+
+    def gen_images(self, gen_ts):
         """Generate any images.
 
             The time period chosen is from gen_ts going back skin.conf
@@ -198,7 +219,7 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                                           plot_options['HTML_ROOT'])
                 # Get image file format. Can use any format PIL can write.
                 # Default to .png
-                if plot_options.has_key('format'):
+                if 'format' in plot_options:
                     image_format = plot_options['format']
                 else:
                     image_format = "png"
@@ -206,8 +227,8 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                 img_file = os.path.join(image_root, '%s.%s' % (plotname,
                                                                image_format))
                 # check whether this plot needs to be done at all
-                ai = plot_options.as_int('time_length') if plot_options.has_key('time_length') else None
-                if skipThisPlot(self.plotgen_ts, ai, img_file, plotname):
+                ai = plot_options.as_int('time_length') if 'time_length' in plot_options else None
+                if skip_this_plot(self.plotgen_ts, ai, img_file, plotname):
                     continue
                 # Create the subdirectory where the image is to be saved. Wrap
                 # in a try block in case it already exists.
@@ -253,12 +274,12 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                     # windSpeed.
                     self.obs = line_options.get('data_type', line_name)
                     if self.obs == 'windSpeed':
-                        self.dirName = 'windDir'
+                        self.dir_name = 'windDir'
                     elif self.obs == 'windGust':
-                        self.dirName = 'windGustDir'
+                        self.dir_name = 'windGustDir'
                     else:
                         self.obs = 'windSpeed'
-                        self.dirName = 'windDir'
+                        self.dir_name = 'windDir'
                     # Get data tuples for speed and direction. Default to
                     # 24 hour time frame if time_length not specified
                     _length = int(plot_options.get('time_length', 86400)) + 1
@@ -267,7 +288,7 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                     (_t_vec, _t_vec_stop, _sp_vec) = db_manager.getSqlVectors(_span,
                                                                               self.obs)
                     (_t_vec, _t_vec_d_stop, dir_data) = db_manager.getSqlVectors(_span,
-                                                                                 self.dirName)
+                                                                                 self.dir_name)
                     # convert the speeds to units to be used in the plot
                     speed_data = weewx.units.convert(_sp_vec, self.units)
                     # find maximum speed from our data
@@ -428,7 +449,8 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                         s = len(speed_list[0]) - 1
                         cum_rad = sum(wind_bin[a])
                         if cum_rad > 0:
-                            arm_rad = int((10 * self.rose_max_dia * sum(wind_bin[a]))/(11 * 2.0 * self.max_ring_value * samples))
+                            arm_rad = int((10 * self.rose_max_dia * sum(wind_bin[a])) /
+                                          (11 * 2.0 * self.max_ring_value * samples))
                             while s > 0:
                                 # calc radius of current arm
                                 pie_rad = int(round(arm_rad * cum_rad/sum(wind_bin[a]) + self.rose_max_dia/22, 0))
@@ -480,9 +502,9 @@ class ImageStackedWindRoseGenerator(weewx.reportengine.ReportGenerator):
                                                                t2 - t1))
 
 
-#=============================================================================
-#                            Utility Functions
-#=============================================================================
+# ==============================================================================
+#                               Utility Functions
+# ==============================================================================
 
 
 def windrose_image_setup(self):
@@ -493,7 +515,7 @@ def windrose_image_setup(self):
 
     try:
         image = Image.open(self.image_background_image)
-    except IOError as e:
+    except IOError:
         image = Image.new("RGB",
                           (self.image_width, self.image_height),
                           self.image_background_box_color)
@@ -555,7 +577,7 @@ def wind_rose_plot_setup(self, draw):
     speed_labels = list((0, 0, 0, 0, 0))
     i = 1
     while i < 6:
-        speed_labels[i - 1] = "%d%%" % int(round(_label_inc * i * 100,0))
+        speed_labels[i - 1] = "%d%%" % int(round(_label_inc * i * 100, 0))
         i += 1
     # calculate location of ring labels
     _angle = 7 * math.pi / 4 + int(self.label_dir / 4.0) * math.pi / 2
@@ -621,7 +643,7 @@ def legend_setup(self, draw, speed_list, speed_bin):
         xy = (label_x + 1.5 * self.windrose_legend_bar_width,
               label_y - text_h / 2 - (0.85 * self.rose_max_dia * self.speed_factor[i]))
         _text = '%d (%d%%)' % (int(round(speed_list[0][i], 0)),
-                             int(round(100 * speed_bin[i]/sum(speed_bin), 0)))
+                               int(round(100 * speed_bin[i]/sum(speed_bin), 0)))
         draw.text(xy, _text,
                   fill=self.windrose_legend_font_color, font=self.legend_font)
         i -= 1
@@ -698,7 +720,8 @@ def legend_setup(self, draw, speed_list, speed_bin):
                   ts_text,
                   fill=self.windrose_legend_font_color, font=self.legend_font)
 
-def skipThisPlot(time_ts, time_length, img_file, plotname):
+
+def skip_this_plot(time_ts, time_length, img_file, plotname):
     """    Plots must be generated if:
     (1) it does not exist
     (2) it is 24 hours old (or older)
