@@ -32,7 +32,7 @@ Previous Bitbucket revision history
         - revised for WeeWX v3.4.0
         - implemented a second debug level (ie debug = 2)
         - minor reformatting
-        - added heatColorWord, feelsLike and density tags to wdSundryTags SLE
+        - added heatColorWord, feelsLike and density tags to WdSundryTags SLE
         - added day_windrun, yest_windrun, week_windrun, seven_day_windrun,
           month_windrun, year_windrun tags and alltime_windrun tags to
           WdWindRunTags SLE
@@ -54,7 +54,7 @@ Previous Bitbucket revision history
         - wdClientrawAgotags and wdTesttagsAgotags SLEs now use max_delta on
           archive queries
         - added additional tags to WdAvgWindTags SLE
-        - wdSundryTags SLE now provides current_text and current_icon from
+        - WdSundryTags SLE now provides current_text and current_icon from
           current conditions text file if it exists
         - added additional tags to WdWindRunTags SLE
         - new SLEs wdGdDays, WdForToday, WdRainThisDay and WdRainDays
@@ -295,7 +295,7 @@ class WdMonthStats(weewx.cheetahgenerator.SearchList):
         # much to do
         if ((_start_dt.hour != 0 or _start_dt.minute != 0 or _start_dt.day != 1) and
                 ((_start_dt.month == _end_dt.month and _start_dt.year == _end_dt.year) or
-                 (_end_dt < datetime.datetime.combine(get_first_day(_start_dt,0,2), _mn_time)))):
+                 (_end_dt < datetime.datetime.combine(get_first_day(_start_dt, 0, 2), _mn_time)))):
             # we do not have a complete month of data so get record highs/lows,
             # set everything else to None and return
             # first, set our results to None
@@ -723,17 +723,17 @@ class WdMonthStats(weewx.cheetahgenerator.SearchList):
         return [search_list]
 
 
-# ============================================================================
-#                        class wdLastRainTags
-# ============================================================================
+# ==============================================================================
+#                             class WdLastRainTags
+# ==============================================================================
 
 
-class wdLastRainTags(weewx.cheetahgenerator.SearchList):
+class WdLastRainTags(weewx.cheetahgenerator.SearchList):
     """SLE that returns the date and time of last rain."""
 
     def __init__(self, generator):
-        # call our parent's initialisation
-        super(wdLastRainTags, self).__init__(generator)
+        # initialise our superclass
+        super(WdLastRainTags, self).__init__(generator)
 
     def get_extension_list(self, timespan, db_lookup):
         """Returns a search list with the date and time of last rain.
@@ -762,12 +762,12 @@ class wdLastRainTags(weewx.cheetahgenerator.SearchList):
             # so we can find the last archive record during which it rained,
             # wrap in a try..except just in case
             if last_rain_ts is not None:
+                _sql = "SELECT MAX(dateTime) FROM archive "\
+                       "WHERE rain > 0 "\
+                       "AND dateTime > %(start)s AND dateTime <= %(stop)s"
+                interpolate = {'start': last_rain_ts,
+                               'stop': last_rain_ts + 86400}
                 try:
-                    _sql = "SELECT MAX(dateTime) FROM archive "\
-                           "WHERE rain > 0 "\
-                           "AND dateTime > %(start)s AND dateTime <= %(stop)s"
-                    interpolate = {'start': last_rain_ts,
-                                   'stop': last_rain_ts + 86400}
                     _row = db_lookup().getSql(_sql % interpolate)
                     if _row:
                         last_rain_ts = _row[0]
@@ -784,7 +784,7 @@ class wdLastRainTags(weewx.cheetahgenerator.SearchList):
         search_list = {'last_rain': last_rain_vh}
 
         t2 = time.time()
-        logdbg2("wdLastRainTags SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdLastRainTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -827,37 +827,16 @@ class WdTimeSpanTags(weewx.cheetahgenerator.SearchList):
         t1 = time.time()
 
         class WdBinder(weewx.tags.TimeBinder):
+            """Class supporting additional TimeSpan based aggregate tags."""
 
             def __init__(self, db_lookup, report_time,
                          formatter=weewx.units.Formatter(),
                          converter=weewx.units.Converter(), **option_dict):
-                """Initialize an instance of WdBinder.
-
-                db_lookup: A function with call signature
-                           db_lookup(data_binding), which returns a database
-                           manager and where data_binding is an optional
-                           binding name. If not given, then a default binding
-                           will be used.
-
-                report_time: The time for which the report should be run.
-
-                formatter: An instance of weewx.units.Formatter() holding the
-                           formatting information to be used. [Optional. If not
-                           given, the default formatter will be used.]
-
-                converter: An instance of weewx.units.Converter() holding the
-                           target unit information to be used. [Optional. If
-                           not given, the default converter will be used.]
-
-                option_dict: Other options which can be used to customize
-                             calculations. [Optional.]
-                """
-
-                self.db_lookup = db_lookup
-                self.report_time = report_time
-                self.formatter = formatter
-                self.converter = converter
-                self.option_dict = option_dict
+                # initialise my superclass
+                super(WdBinder, self).__init__(db_lookup, report_time,
+                                               formatter=formatter,
+                                               converter=converter,
+                                               **option_dict)
 
             def dayagg(self, data_binding=None, ago=0):
                 """Return a TimespanBinder from midnight until ago seconds ago."""
@@ -1001,16 +980,16 @@ class WdAvgWindTags(weewx.cheetahgenerator.SearchList):
 
 
 # ==============================================================================
-#                          class wdSundryTags
+#                              class WdSundryTags
 # ==============================================================================
 
 
-class wdSundryTags(weewx.cheetahgenerator.SearchList):
+class WdSundryTags(weewx.cheetahgenerator.SearchList):
     """SLE to return various sundry tags."""
 
     def __init__(self, generator):
-        # call our parent's initialisation
-        super(wdSundryTags, self).__init__(generator)
+        # initialise our superclass
+        super(WdSundryTags, self).__init__(generator)
 
     def get_extension_list(self, timespan, db_lookup):
         """Returns various tags.
@@ -1032,7 +1011,7 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
                           read from a file specified in the relevant skin.conf.
             current_icon: An integer representing the weather forecast icon
                           read from a file specified in the relevant skin.conf.
-            start_time: A ValueHelper containing the epoch time that weewx was
+            launchtime: A ValueHelper containing the epoch time that weewx was
                         started.
             nineamrain: A ValueHelper containing the rainfall since 9am. Note
                         that if it is before 9am the result will be the total
@@ -1076,18 +1055,24 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
 
         # get forecast file setting
         _file = self.generator.skin_dict['Extras']['Forecast'].get('Forecast_File_Location')
-        # If the file exists open it, get the data and close it
+        # if the file exists get the data
         if _file:
-            f = open(_file, "r")
-            raw_text = f.readline()
-            forecast_text = raw_text.strip(' \t\n\r')
-            raw_text = f.readline()
-            forecast_icon = int(raw_text.strip(' \t\n\r'))
-            raw_text = f.readline()
-            current_text = raw_text.strip(' \t\n\r')
-            raw_text = f.readline()
-            current_icon = raw_text.strip(' \t\n\r')
-            f.close()
+            try:
+                with open(_file, "r") as f:
+                    raw_text = f.readline()
+                    forecast_text = raw_text.strip(' \t\n\r')
+                    raw_text = f.readline()
+                    forecast_icon = int(raw_text.strip(' \t\n\r'))
+                    raw_text = f.readline()
+                    current_text = raw_text.strip(' \t\n\r')
+                    raw_text = f.readline()
+                    current_icon = raw_text.strip(' \t\n\r')
+            except IOError:
+                logdbg("WdSundryTags: Could not read file '%s'" % _file)
+                forecast_text = ""
+                forecast_icon = None
+                current_text = ""
+                current_icon = None
         # otherwise set the forecast data to empty strings
         else:
             forecast_text = ""
@@ -1110,17 +1095,17 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
 
         # get ts WeeWX was launched
         try:
-            starttime = weewx.launchtime_ts
+            launchtime = weewx.launchtime_ts
         except ValueError:
-            starttime = time.time()
+            launchtime = time.time()
         # wrap in a ValueHelper
-        starttime_vt = (starttime, t_type, t_group)
-        starttime_vh = ValueHelper(starttime_vt,
-                                   formatter=self.generator.formatter,
-                                   converter=self.generator.converter)
+        launchtime_vt = (launchtime, t_type, t_group)
+        launchtime_vh = ValueHelper(launchtime_vt,
+                                    formatter=self.generator.formatter,
+                                    converter=self.generator.converter)
 
         # get rainfall since 9am
-        # firs, need a ts for '9am', but is it 9am today or 9am yesterday
+        # first, need a ts for '9am', but is it 9am today or 9am yesterday
         # get datetime obj for the time of our report
         today_dt = datetime.datetime.fromtimestamp(timespan.stop)
         # get time obj for midnight
@@ -1492,7 +1477,7 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
                        'forecast_icon':  forecast_icon,
                        'current_text':   current_text,
                        'current_icon':   current_icon,
-                       'start_time':     starttime_vh,
+                       'launchtime':     launchtime_vh,
                        'nineamrain':     rain_vh,
                        'heatColorWord':  heat_color_word,
                        'feelsLike':      feels_like_vh,
@@ -1512,7 +1497,7 @@ class wdSundryTags(weewx.cheetahgenerator.SearchList):
                        'long_dms':       long_str}
 
         t2 = time.time()
-        logdbg2("wdSundryTags SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdSundryTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
