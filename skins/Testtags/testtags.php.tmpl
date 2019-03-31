@@ -1031,8 +1031,8 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $mwarmestnightonrecord = #end raw 'NA  on: --';
 #end if
 #raw $raincurrentweek = #end raw '$seven_day.rain.sum.formatted';
-#raw $raintodatemonthago = #end raw '$rain_this_time_last_month.formatted';
-#raw $raintodateyearago = #end raw '$rain_this_time_last_year.formatted';
+#raw $raintodatemonthago = #end raw '$rainthisday.lastmonth.formatted';
+#raw $raintodateyearago = #end raw '$rainthisday.lastyear.formatted';
 #raw $timeoflastrainalways = #end raw '$last_rain.format($timeFormat)';
 #raw $windruntodatethismonth = #end raw '$month_windrun';
 #raw $windruntodatethisyear = #end raw '$year_windrun';
@@ -1238,10 +1238,10 @@ $lighteningcountlast30minutesnextstorm = '0';
 #end if
 #raw $tempchangelasthourfaren = #end raw '$outTempTrendHourF'; //For snow prediction
 #raw $abshum = #end raw '$current.outHumidity.formatted'; //For snow prediction
-#raw $maxtemp4today = #end raw '$max_temp_today.formatted'; // max from station's records
-#raw $mintemp4today = #end raw '$min_temp_today.formatted'; // min from station's records
-#raw $maxtemp4todayyr = #end raw '$max_temp_today_year'; // max year from station's records
-#raw $mintemp4todayyr = #end raw '$min_temp_today_year'; // min year from station's records
+#raw $maxtemp4today = #end raw '$thisday.outTemp.max.formatted'; // max from station's records
+#raw $mintemp4today = #end raw '$thisday.outTemp.min.formatted'; // min from station's records
+#raw $maxtemp4todayyr = #end raw '$thisday.outTemp.maxyear'; // max year from station's records
+#raw $mintemp4todayyr = #end raw '$thisday.outTemp.minyear'; // min year from station's records
 #raw
 //
 // End of WebsterWeatherLive Tags

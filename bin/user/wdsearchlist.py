@@ -16,7 +16,7 @@ Version: 1.2.0a1                                    Date: 29 March 2019
 
 Revision History
     29 March 2019       v1.2.0
-        - simplified logic used in wdHourRainTags calculation
+        - simplified logic used in WdHourRainTags calculation
         - simplified logic used in wdGdDays calculations
         - fixed typo where wet bulb was returned as feels_like temperature
         - Easter is now calculated on report time not system time
@@ -38,14 +38,14 @@ Previous Bitbucket revision history
           WdWindRunTags SLE
     10 January 2015     v1.0.0
         - rewritten for WeeWX v3.0.0
-        - added wdManualAverages SLE
-        - fixed issues with wdRainThisDay SLE affecting databases with limited
+        - added WdManualAverages SLE
+        - fixed issues with WdRainThisDay SLE affecting databases with limited
           historical data
         - fixed bug in WdTimeSpanTags that was causing unit issues with
           $alltime tags
-        - removed use of total_seconds() attribute in wdRainThisDay
-        - fixed error in wdHourRainTags
-        - removed redundant code in wdHourRainTags
+        - removed use of total_seconds() attribute in WdRainThisDay
+        - fixed error in WdHourRainTags
+        - removed redundant code in WdHourRainTags
         - fixed errors in wdTesttagsRainAgo
         - removed redundant wdClientrawRainAgo SLE
     dd September 2014   v0.9.4 (never released)
@@ -57,7 +57,7 @@ Previous Bitbucket revision history
         - wdSundryTags SLE now provides current_text and current_icon from
           current conditions text file if it exists
         - added additional tags to WdWindRunTags SLE
-        - new SLEs wdGdDays, wdForToday, wdRainThisDay and wdRainDays
+        - new SLEs wdGdDays, WdForToday, WdRainThisDay and WdRainDays
         - added helper functions get_first_day and doygen
         - added GNU license text
     August 2013         v0.1
@@ -2471,17 +2471,17 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
         return [search_list]
 
 
-# ============================================================================
-#                           class wdHourRainTags
-# ============================================================================
+# ==============================================================================
+#                              class WdHourRainTags
+# ==============================================================================
 
 
-class wdHourRainTags(weewx.cheetahgenerator.SearchList):
+class WdHourRainTags(weewx.cheetahgenerator.SearchList):
     """SLE to return maximum 1 hour rainfall during the current day."""
 
     def __init__(self, generator):
         # call our parent's initialisation
-        super(wdHourRainTags, self).__init__(generator)
+        super(WdHourRainTags, self).__init__(generator)
 
     def get_extension_list(self, timespan, db_lookup):
         """Returns a search list with the maximum 1 hour rainfall and the time
@@ -2539,7 +2539,7 @@ class wdHourRainTags(weewx.cheetahgenerator.SearchList):
             (_start_vt, _stop_vt, _rain_vt) = db_lookup().getSqlVectors(tspan,
                                                                         'rain')
         except:
-            loginf("wdHourRainTags: getSqlVectors exception")
+            loginf("WdHourRainTags: getSqlVectors exception")
         # set a few variables beforehand
         hour_start_ts = None
         hour_rain = []
@@ -2579,7 +2579,7 @@ class wdHourRainTags(weewx.cheetahgenerator.SearchList):
                        }
 
         t2 = time.time()
-        logdbg2("wdHourRainTags SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdHourRainTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2747,7 +2747,7 @@ class wdGdDays(weewx.cheetahgenerator.SearchList):
         # create a small dictionary with the tag names (keys) we want to use
         search_list = {'month_gdd': _month_gdd,
                        'year_gdd': _year_gdd
-                      }
+                       }
 
         t2 = time.time()
         logdbg2("wdGdDays SLE executed in %0.3f seconds" % (t2-t1))
@@ -2755,17 +2755,17 @@ class wdGdDays(weewx.cheetahgenerator.SearchList):
         return [search_list]
 
 
-# ============================================================================
-#                             class wdForToday
-# ============================================================================
+# ==============================================================================
+#                                class WdForToday
+# ==============================================================================
 
 
-class wdForToday(weewx.cheetahgenerator.SearchList):
+class WdForToday(weewx.cheetahgenerator.SearchList):
     """SLE to return max and min temperature for this day."""
 
     def __init__(self, generator):
-        # call our parent's initialisation
-        super(wdForToday, self).__init__(generator)
+        # initialise our superclass
+        super(WdForToday, self).__init__(generator)
 
     def get_extension_list(self, timespan, db_lookup):
         """Returns max and min temp for this day as well as the year each
@@ -2896,29 +2896,36 @@ class wdForToday(weewx.cheetahgenerator.SearchList):
             _min_year = None
 
         # create a small dictionary with the tag names (keys) we want to use
-        search_list = {'max_temp_today':      _max_vh,
-                       'max_temp_today_year': _max_year,
-                       'min_temp_today':      _min_vh,
-                       'min_temp_today_year': _min_year,
-                      }
+        search_list = {'thisday': {'outTemp': {'max': _max_vh,
+                                               'maxyear': _max_year,
+                                               'min':  _min_vh,
+                                               'minyear': _min_year}
+                                   }
+                       }
+
+        #search_list = {'max_temp_today':      _max_vh,
+        #               'max_temp_today_year': _max_year,
+        #               'min_temp_today':      _min_vh,
+        #               'min_temp_today_year': _min_year,
+        #               }
 
         t2 = time.time()
-        logdbg2("wdForToday SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdForToday SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
 
-# ============================================================================
-#                            class wdRainThisDay
-# ============================================================================
+# ==============================================================================
+#                              class WdRainThisDay
+# ==============================================================================
 
 
-class wdRainThisDay(weewx.cheetahgenerator.SearchList):
+class WdRainThisDay(weewx.cheetahgenerator.SearchList):
     """SLE to return rain this time last month/year."""
 
     def __init__(self, generator):
-        # call our parent's initialisation
-        super(wdRainThisDay, self).__init__(generator)
+        # initialise our superclass
+        super(WdRainThisDay, self).__init__(generator)
 
     def get_extension_list(self, timespan, db_lookup):
         """Returns rain to date for this time last month and this time
@@ -3057,7 +3064,7 @@ class wdRainThisDay(weewx.cheetahgenerator.SearchList):
         # Filter is slower than nested if..else but what's a few milliseconds
         # for the sake of neater code
         if rain_vt.value:
-            filtered = filter(None, [rain_vt.value[0],_row[0]])
+            filtered = filter(None, [rain_vt.value[0], _row[0]])
             no_none = not (rain_vt.value[0] is None or _row[0] is None)
             month_rain_vt = ValueTuple(sum(filtered), r_type, r_group) if no_none else none_vt
             month_rain_vh = ValueHelper(month_rain_vt,
@@ -3115,15 +3122,15 @@ class wdRainThisDay(weewx.cheetahgenerator.SearchList):
                 rain_vt = ValueTuple([0, ], r_type, r_group)
         else:
             _row = (None,)
-            rain_vt = ValueTuple([None,], r_type, r_group)
+            rain_vt = ValueTuple([None, ], r_type, r_group)
 
         # Add our two query results being careful in case one or both is None.
         # Filter is slower than nested if..else but what's a few milliseconds
         # for the sake of neater code
         if rain_vt.value:
-            filtered = filter(None, [rain_vt.value[0],_row[0]])
+            filtered = filter(None, [rain_vt.value[0], _row[0]])
             no_none = not (rain_vt.value[0] is None or _row[0] is None)
-            year_rain_vt = ValueTuple(sum(filtered),r_type, r_group) if no_none else none_vt
+            year_rain_vt = ValueTuple(sum(filtered), r_type, r_group) if no_none else none_vt
             year_rain_vh = ValueHelper(year_rain_vt,
                                        formatter=self.generator.formatter,
                                        converter=self.generator.converter)
@@ -3133,26 +3140,27 @@ class wdRainThisDay(weewx.cheetahgenerator.SearchList):
                                        converter=self.generator.converter)
 
         # create a small dictionary with the tag names (keys) we want to use
-        search_list = {'rain_this_time_last_month' : month_rain_vh,
-                       'rain_this_time_last_year'  : year_rain_vh}
+        search_list = {'rainthisday': {'lastmonth': month_rain_vh,
+                                       'lastyear': year_rain_vh}
+                       }
 
         t2 = time.time()
-        logdbg2("wdRainThisDay SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdRainThisDay SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
 
-# ============================================================================
-#                             class wdRainDays
-# ============================================================================
+# ==============================================================================
+#                                class WdRainDays
+# ==============================================================================
 
 
-class wdRainDays(weewx.cheetahgenerator.SearchList):
+class WdRainDays(weewx.cheetahgenerator.SearchList):
     """SLE to return various longest rainy/dry period tags."""
 
     def __init__(self, generator):
-        # call our parent's initialisation
-        super(wdRainDays, self).__init__(generator)
+        # initialise our superclass
+        super(WdRainDays, self).__init__(generator)
 
     def get_extension_list(self, timespan, db_lookup):
         """Returns various tags related to longest periods of rainy/dry days.
@@ -3202,7 +3210,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
                                        consecutive wet days
         """
 
-        t1= time.time()
+        t1 = time.time()
 
         # get units for use later with ValueHelpers
         # first get current record from the archive
@@ -3224,16 +3232,12 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         _mn_first_of_month_dt = datetime.datetime.combine(first_of_month_dt,
                                                           _mn_t)
         _mn_first_of_month_ts = time.mktime(_mn_first_of_month_dt.timetuple())
-### possible unused variable _month_ts
-        _month_ts = TimeSpan(_mn_first_of_month_ts, timespan.stop)
         # get midnight 1st of the year as a datetime object and then get it as
         # a timestamp
         _first_of_year_dt = get_first_day(_today_d, 0, 1-_today_d.month)
         _mn_first_of_year_dt = datetime.datetime.combine(_first_of_year_dt,
                                                          _mn_t)
         _mn_first_of_year_ts = time.mktime(_mn_first_of_year_dt.timetuple())
-### possible unused variable _year_ts
-        _year_ts = TimeSpan(_mn_first_of_year_ts, timespan.stop)
 
         # get vectors of our month stats
         _rain_vector = []
@@ -3260,7 +3264,7 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
         _index = 0
         # use itertools groupby method to make our search for a run easier
         # iterate over the groups itertools has found
-        for k,g in itertools.groupby(_rain_vector):
+        for k, g in itertools.groupby(_rain_vector):
             _length = len(list(g))
             # do we have a run of 0s (ie no rain)?
             if k == 0:
@@ -3477,36 +3481,36 @@ class wdRainDays(weewx.cheetahgenerator.SearchList):
                        'alltime_con_wet_days': _a_wet_run,
                        'alltime_con_wet_days_time': _alltime_wet_time_vh,
                        'month_rainy_days': _month_rainy_days}
-        t2= time.time()
-        logdbg2("wdRainDays SLE executed in %0.3f seconds" % (t2-t1))
+        t2 = time.time()
+        logdbg2("WdRainDays SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
 
-# ============================================================================
-#                          class wdManualAverages
-# ============================================================================
+# ==============================================================================
+#                            class WdManualAverages
+# ==============================================================================
 
 
-class wdManualAverages(weewx.cheetahgenerator.SearchList):
+class WdManualAverages(weewx.cheetahgenerator.SearchList):
     """SLE for manually set month averages defined in weewx.conf [Weewx-WD]."""
 
     def __init__(self, generator):
-        # call our parent's initialisation
-        super(wdManualAverages, self).__init__(generator)
+        # initialise our superclass
+        super(WdManualAverages, self).__init__(generator)
 
         # dict to convert [[[Xxxxx]]] to WeeWX observation groups, if you add
-        # more [[[Xxxx]]] under [[Averages]] you must add additional entries in
+        # more [[[Xxxxx]]] under [[Averages]] you must add additional entries in
         # this dict
         self.average_groups = {'Rainfall': 'group_rain',
                                'Temperature': 'group_temperature'}
         # dict to convert [[[Xxxxx]]] to labels for tags, if you add more
-        # [[[Xxxx]]] under [[Averages]] you must add additional entries in this
+        # [[[Xxxxx]]] under [[Averages]] you must add additional entries in this
         # dict
         self.average_abb = {'Rainfall': 'rain',
                             'Temperature': 'temp'}
         # dict to convert units used for manual averages to WeeWX unit types,
-        # if you add more [[[Xxxx]]] under [[Averages]] you need to add any new
+        # if you add more [[[Xxxxx]]] under [[Averages]] you need to add any new
         # units to this dict
         self.units_dict = {'mm': 'mm', 'cm': 'cm', 'in': 'inch',
                            'inch': 'inch', 'c': 'degree_C', 'f': 'degree_F'}
@@ -3646,6 +3650,6 @@ class wdManualAverages(weewx.cheetahgenerator.SearchList):
                 search_list[_key.lower()] = False
 
         t2 = time.time()
-        logdbg2("wdManualAverages SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdManualAverages SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
