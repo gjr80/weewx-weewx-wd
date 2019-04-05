@@ -99,7 +99,7 @@ import weewx.units
 import weewx.wxformulas
 
 from weewx.units import convert, obs_group_dict
-from weeutil.weeutil import accumulateLeaves, to_int
+from weeutil.weeutil import accumulateLeaves, to_int, to_bool
 
 WEEWXWD_VERSION = '1.2.0a1'
 
@@ -564,7 +564,7 @@ class WdArchive(weewx.engine.StdService):
                                                            'wd_binding')
         else:
             self.data_binding = 'wd_binding'
-        loginf("wdarchive:",
+        loginf("wdarchive",
                "WdArchive will use data binding %s" % self.data_binding)
 
         # extract the WeeWX binding for use when we check the need for backfill
@@ -606,7 +606,7 @@ class WdArchive(weewx.engine.StdService):
         # opened database
         dbmanager = self.engine.db_binder.get_manager(self.data_binding,
                                                       initialize=True)
-        loginf("wdarchive:",
+        loginf("wdarchive",
                "Using binding '%s' to database '%s'" % (self.data_binding,
                                                         dbmanager.database_name))
 
@@ -618,17 +618,17 @@ class WdArchive(weewx.engine.StdService):
                                                          initialize=False)
 
         # then backfill the WeeWX-WD daily summaries
-        loginf("wdarchive:", "Starting backfill of daily summaries")
+        loginf("wdarchive", "Starting backfill of daily summaries")
         t1 = time.time()
         nrecs, ndays = dbmanager_wx.backfill_day_summary()
         tdiff = time.time() - t1
         if nrecs:
-            loginf("wdarchive:",
+            loginf("wdarchive",
                    "Processed %d records to backfill %d day summaries in %.2f seconds" % (nrecs,
                                                                                           ndays,
                                                                                           tdiff))
         else:
-            loginf("wdarchive:", "Daily summaries up to date.")
+            loginf("wdarchive", "Daily summaries up to date.")
 
 
 # ==============================================================================
@@ -718,7 +718,7 @@ class WdSuppArchive(weewx.engine.StdService):
                 # first, get our binding, if it's missing use a default
                 self.binding = _supp_dict.get('data_binding',
                                               'wdsupp_binding')
-                loginf("wdsupparchive:",
+                loginf("wdsupparchive",
                        "WdSuppArchive will use data binding '%s'" % self.binding)
                 # how long to keep records in our db (default 8 days)
                 self.max_age = _supp_dict.get('max_age', 691200)
@@ -766,7 +766,7 @@ class WdSuppArchive(weewx.engine.StdService):
 
                 # we have everything we need to put a short message re supp 
                 # database
-                loginf("wdsupparchive:", "max_age=%s vacuum=%s" % (self.max_age,
+                loginf("wdsupparchive", "max_age=%s vacuum=%s" % (self.max_age,
                                                                    self.vacuum))
                 
                 # setup up any sources
@@ -785,7 +785,7 @@ class WdSuppArchive(weewx.engine.StdService):
                                                                        _source_dict)
                             self.sources[source].start()
                         else:
-                            loginf("wdsupparchive:",
+                            loginf("wdsupparchive",
                                    "Source '%s' will be ignored, incomplete or missing config settings")
 
                 # define some properties for later use
@@ -909,7 +909,7 @@ class WdSuppArchive(weewx.engine.StdService):
             try:
                 _data['vantageForecastRule'] = davis_fr_dict[self.loop_packet['forecastRule']]
             except KeyError:
-                logdbg2("wdsupparchive:",
+                logdbg2("wdsupparchive",
                         "Could not decode Vantage forecast code")
         # vantage stormRain
         if self.loop_packet['stormRain'] is not None:
@@ -931,10 +931,10 @@ class WdSuppArchive(weewx.engine.StdService):
                 dbm.addRecord(_data_record)
                 break
             except Exception, e:
-                logerr("wdsupparchive:",
+                logerr("wdsupparchive",
                        "save failed (attempt %d of %d): %s" % ((count + 1),
                                                                max_tries, e))
-                logerr("wdsupparchive:",
+                logerr("wdsupparchive",
                        "waiting %d seconds before retry" % (retry_wait, ))
                 time.sleep(retry_wait)
         else:
@@ -950,10 +950,10 @@ class WdSuppArchive(weewx.engine.StdService):
                 dbm.getSql(sql)
                 break
             except Exception, e:
-                logerr("wdsupparchive:",
+                logerr("wdsupparchive",
                        "prune failed (attempt %d of %d): %s" % ((count+1),
                                                                 max_tries, e))
-                logerr("wdsupparchive:",
+                logerr("wdsupparchive",
                        "waiting %d seconds before retry" % (retry_wait, ))
                 time.sleep(retry_wait)
         else:
@@ -976,11 +976,11 @@ class WdSuppArchive(weewx.engine.StdService):
         try:
             dbm.getSql('vacuum')
         except Exception, e:
-            logerr("wdsupparchive:",
+            logerr("wdsupparchive",
                    "Vacuuming database % failed: %s" % (dbm.database_name, e))
 
         t2 = time.time()
-        logdbg("wdsupparchive:",
+        logdbg("wdsupparchive",
                "vacuum_database executed in %0.9f seconds" % (t2-t1))
 
     def setup_database(self):
@@ -990,7 +990,7 @@ class WdSuppArchive(weewx.engine.StdService):
         # then return an opened instance of the database manager.
         dbmanager = self.engine.db_binder.get_database(self.binding,
                                                        initialize=True)
-        loginf("wdsupparchive:",
+        loginf("wdsupparchive",
                "Using binding '%s' to database '%s'" % (self.binding,
                                                         dbmanager.database_name))
 
@@ -1174,7 +1174,6 @@ class WuSource(ThreadedSource):
                        'sw-KE', 'ta-IN', 'ta-LK', 'te-IN', 'tg-TJ', 'th-TH',
                        'tk-TM', 'tl-PH', 'tr-TR', 'uk-UA', 'ur-PK', 'uz-UZ',
                        'vi-VN', 'zh-CN', 'zh-HK', 'zh-TW')
-    VALID_FORMATS = ('json',)
 
     def __init__(self, control_queue, result_queue, engine, source_config_dict):
 
@@ -1186,7 +1185,7 @@ class WuSource(ThreadedSource):
         self.setName('WdWuThread')
 
         # WuSource debug level
-        self.wu_debug = to_int(source_config_dict.get('debug', 0))
+        self.debug = to_int(source_config_dict.get('debug', 0))
 
         # interval between API calls
         self.interval = to_int(source_config_dict.get('interval', 1800))
@@ -1238,17 +1237,26 @@ class WuSource(ThreadedSource):
         # validate language
         self.language = _language if _language in self.VALID_LANGUAGES else 'en-GB'
 
-        # get format of the API response
-        _format = source_config_dict.get('format', 'json').lower()
-        # validate format
-        self.format = _format if _format in self.VALID_FORMATS else 'json'
+        # set format of the API response
+        self.format = 'json'
 
         # get a WeatherUndergroundAPI object to handle the API calls
         self.api = WeatherUndergroundAPIForecast(api_key)
 
         # log what we will do
         loginf("wdwusource",
-               "WdSuppArchive wil use Weather Underground forecast data")
+               "Weather Underground API will be used for forecast data")
+        if self.debug > 0:
+            loginf("wdwusource",
+                   "interval=%s lockout period=%s max tries=%s" % (self.interval,
+                                                                   self.lockout_period,
+                                                                   self.max_tries))
+            loginf("wdwusource", "forecast=%s units=%s language=%s" % (self.forecast,
+                                                                       self.units,
+                                                                       self.language))
+            loginf("wdwusource", "locator=%s location=%s" % (self.locator,
+                                                             self.location))
+            loginf("wdwusource", "Weather Underground debug=%s" % self.debug)
 
     def get_raw_data(self):
         """If required query the WU API and return the response.
@@ -1267,7 +1275,7 @@ class WuSource(ThreadedSource):
 
         # get the current time
         now = time.time()
-        if self.wu_debug > 0:
+        if self.debug > 0:
             loginf("wdwusource",
                    "Last Weather Underground API call at %s" % self.last_call_ts)
 
@@ -1285,7 +1293,7 @@ class WuSource(ThreadedSource):
                                                           language=self.language,
                                                           format=self.format,
                                                           max_tries=self.max_tries)
-                    if self.wu_debug > 0:
+                    if self.debug > 0:
                         if _response is not None:
                             loginf("wdwusource",
                                    "Downloaded updated Weather Underground forecast")
@@ -1361,7 +1369,7 @@ class WuSource(ThreadedSource):
                 _text = _response_json['narrative'][0]
             except KeyError:
                 # could not find the narrative so log and return None
-                if self.wu_debug > 0:
+                if self.debug > 0:
                     loginf("wdwusource", "Unable to locate 'narrative' field for "
                                          "'%s' forecast narrative" % self.forecast_text)
         else:
@@ -1390,7 +1398,7 @@ class WuSource(ThreadedSource):
                 except KeyError:
                     # couldn't find a key for one of the fields, log it and
                     # force use of night index
-                    if self.wu_debug > 0:
+                    if self.debug > 0:
                         loginf("wdwusource", "Unable to locate 'dayOrNight' field for %s "
                                              "'%s' forecast narrative" % (_period_str,
                                                                           self.forecast_text))
@@ -1398,7 +1406,7 @@ class WuSource(ThreadedSource):
                 except ValueError:
                     # could not get an index for 'D', log it and force use of
                     # night index
-                    if self.wu_debug > 0:
+                    if self.debug > 0:
                         loginf("wdwusource", "Unable to locate 'D' index for %s "
                                              "'%s' forecast narrative" % (_period_str,
                                                                           self.forecast_text))
@@ -1414,13 +1422,13 @@ class WuSource(ThreadedSource):
                 except KeyError:
                     # couldn't find a key for one of the fields, log it and
                     # return None
-                    if self.wu_debug > 0:
+                    if self.debug > 0:
                         loginf("wdwusource", "Unable to locate 'dayOrNight' field for %s "
                                              "'%s' forecast narrative" % (_period_str,
                                                                           self.forecast_text))
                 except ValueError:
                     # could not get an index for 'N', log it and return None
-                    if self.wu_debug > 0:
+                    if self.debug > 0:
                         loginf("wdwusource", "Unable to locate 'N' index for %s "
                                              "'%s' forecast narrative" % (_period_str,
                                                                           self.forecast_text))
@@ -1431,12 +1439,12 @@ class WuSource(ThreadedSource):
                 _icon = _response_json['daypart'][0]['iconCode'][_index]
             except KeyError:
                 # if we can'f find a field log the error and return None
-                if self.wu_debug > 0:
+                if self.debug > 0:
                     loginf("wdwusource", "Unable to locate 'narrative' field for "
                                          "'%s' forecast narrative" % self.forecast_text)
             except ValueError:
                 # if we can'f find an index log the error and return None
-                if self.wu_debug > 0:
+                if self.debug > 0:
                     loginf("wdwusource", "Unable to locate 'narrative' index for "
                                          "'%s' forecast narrative" % self.forecast_text)
 
@@ -1471,11 +1479,13 @@ class WeatherUndergroundAPIForecast(object):
 
     BASE_URL = 'https://api.weather.com/v3/wx/forecast/daily'
 
-    def __init__(self, api_key):
+    def __init__(self, api_key, debug=0):
         # initialise a WeatherUndergroundAPIForecast object
 
         # save the API key to be used
         self.api_key = api_key
+        # save debug level
+        self.debug = debug
 
     def forecast_request(self, locator, location, forecast='5day', units='m',
                          language='en-GB', format='json', max_tries=3):
@@ -1537,8 +1547,9 @@ class WeatherUndergroundAPIForecast(object):
                                         language_setting, format_setting,
                                         _obf_api_key])
             _obf_url = '?'.join([f_url, _obf_parameters])
-            logdbg("wuapiforecast",
-                   "Submitting Weather Underground API call using URL: %s" % (_obf_url, ))
+            if weewx.debug > 0 or self.debug > 0:
+                loginf("wuapiforecast",
+                       "Submitting Weather Underground API call using URL: %s" % (_obf_url, ))
         # we will attempt the call max_tries times
         for count in range(max_tries):
             # attempt the call
@@ -1562,12 +1573,12 @@ class WeatherUndergroundAPIForecast(object):
 
 
 class DarkSkySource(ThreadedSource):
-    """Thread that obtains Darksky forecast data and places it in a queue.
+    """Thread that obtains Dark Sky data and places it in a queue.
 
-    The DarkskyThread class queries the Darksky API and places selected
-    forecast data in JSON format in a queue used by the data consumer. The
-    Darksky API is called at a user selectable frequency. The thread listens
-    for a shutdown signal from its parent.
+    The DarkskyThread class queries the Darksky API and places selected data in
+    JSON format in a queue used by the data consumer. The Dark Sky API is
+    called at a user selectable rate. The thread listens for a shutdown signal
+    from its parent.
 
     DarkskyThread constructor parameters:
 
@@ -1576,26 +1587,29 @@ class DarkSkySource(ThreadedSource):
         result_queue:        A Queue object used to pass forecast data to the
                              destination
         engine:              A weewx.engine.StdEngine object
-        conf_dict:           A weeWX config dictionary.
+        source_config_dict:  A source config dictionary.
 
     DarkskyThread methods:
 
-        run.            Control querying of the API and monitor the control
+        run:            Control querying of the API and monitor the control
                         queue.
-        get_raw_data.   Query the API and put selected forecast data in the
+        get_raw_data:   Query the API and put selected forecast data in the
                         result queue.
-        parse_raw_data. Parse a Darksky API response and return selected data.
+        parse_raw_data: Parse a Darksky API response and return selected data.
     """
 
+    # list of valid unit codes
     VALID_UNITS = ['auto', 'ca', 'uk2', 'us', 'si']
 
+    # list of valid language codes
     VALID_LANGUAGES = ('ar', 'az', 'be', 'bg', 'bs', 'ca', 'cs', 'da', 'de',
                        'el', 'en', 'es', 'et', 'fi', 'fr', 'hr', 'hu', 'id',
                        'is', 'it', 'ja', 'ka', 'ko', 'kw', 'nb', 'nl', 'pl',
                        'pt', 'ro', 'ru', 'sk', 'sl', 'sr', 'sv', 'tet', 'tr',
                        'uk', 'x-pig-latin', 'zh', 'zh-tw')
 
-    DEFAULT_BLOCK = 'hourly'
+    # default forecast block to be used
+    DEFAULT_BLOCK = 'daily'
 
     def __init__(self, control_queue, result_queue, engine, source_config_dict):
 
@@ -1607,7 +1621,10 @@ class DarkSkySource(ThreadedSource):
         self.setName('WdDarkSkyThread')
 
         # DarkSkySource debug level
-        self.ds_debug = to_int(source_config_dict.get('debug', 0))
+        self.debug = to_int(source_config_dict.get('debug', 0))
+
+        # are we providing forecast data as well as current conditions data
+        self.do_forecast = to_bool(source_config_dict.get('forecast', True))
 
         # Dark Sky uses lat, long to 'locate' the forecast. Check if lat and
         # long are specified in the source_config_dict, if not use station lat
@@ -1631,9 +1648,9 @@ class DarkSkySource(ThreadedSource):
         # try..except loop to catch exceptions (ie one or both don't exist.
         key = source_config_dict.get('api_key', None)
         if key is None:
-            raise MissingApiKey("Cannot find valid Darksky key")
+            raise MissingApiKey("Cannot find valid Dark Sky key")
         # get a DarkskyForecastAPI object to handle the API calls
-        self.api = DarkskyForecastAPI(key, latitude, longitude)
+        self.api = DarkskyForecastAPI(key, latitude, longitude, self.debug)
         # get units to be used in forecast text
         _units = source_config_dict.get('units', 'ca').lower()
         # validate units
@@ -1646,8 +1663,21 @@ class DarkSkySource(ThreadedSource):
         self.block = source_config_dict.get('block', self.DEFAULT_BLOCK).lower()
 
         # log what we will do
-        loginf("wddarkskysource",
-               "RealTimeGaugeData scroller text will use Darksky forecast data")
+        if self.do_forecast:
+            loginf("wddarkskysource",
+                   "Dark Sky API will be used for current conditions and forecast data")
+        else:
+            loginf("wddarkskysource",
+                   "Dark Sky API will be used for current conditions data only")
+        if self.debug > 0:
+            loginf("wddarkskysource",
+                   "interval=%s lockout period=%s max tries=%s" % (self.interval,
+                                                                   self.lockout_period,
+                                                                   self.max_tries))
+            loginf("wddarkskysource", "units=%s language=%s block=%s" % (self.units,
+                                                                         self.language,
+                                                                         self.block))
+            loginf("wddarkskysource", "Dark Sky debug=%s" % self.debug)
 
     def get_raw_data(self):
         """If required query the Darksky API and return the JSON response.
@@ -1667,9 +1697,9 @@ class DarkSkySource(ThreadedSource):
 
         # get the current time
         now = time.time()
-        if self.ds_debug > 0:
+        if self.debug > 0:
             loginf("wddarkskysource",
-                   "Last Darksky API call at %s" % self.last_call_ts)
+                   "Last Dark Sky API call at %s" % weeutil.weeutil.timestamp_to_string(self.last_call_ts))
         # has the lockout period passed since the last call
         if self.last_call_ts is None or ((now + 1 - self.lockout_period) >= self.last_call_ts):
             # If we haven't made an API call previously or if its been too long
@@ -1681,13 +1711,13 @@ class DarkSkySource(ThreadedSource):
                                                   language=self.language,
                                                   units=self.units,
                                                   max_tries=self.max_tries)
-                    if self.ds_debug > 0:
+                    if self.debug > 0:
                         if _response is not None:
                             loginf("wddarkskysource",
-                                   "Downloaded Darksky forecast")
+                                   "Downloaded Dark Sky API response")
                         else:
                             loginf("wddarkskysource",
-                                   "Failed downloading Darksky forecast")
+                                   "Failed downloading Dark Sky API response")
 
                 except Exception, e:
                     # Some unknown exception occurred. Set _response to None,
@@ -1695,10 +1725,10 @@ class DarkSkySource(ThreadedSource):
                     _response = None
                     loginf("wddarkskysource",
                            "Unexpected exception of type %s" % (type(e),))
-                    weeutil.weeutil.log_traceback('rtgd: **** ')
+                    weeutil.weeutil.log_traceback('wddarkskysource: **** ')
                     loginf("wddarkskysource",
                            "Unexpected exception of type %s" % (type(e),))
-                    loginf("wddarkskysource", "Darksky forecast API query failed")
+                    loginf("wddarkskysource", "Dark Sky API call failed")
                 # if we got something back then reset our last call timestamp
                 if _response is not None:
                     self.last_call_ts = now
@@ -1706,19 +1736,19 @@ class DarkSkySource(ThreadedSource):
         else:
             # API call limiter kicked in so say so
             loginf("wddarkskysource",
-                   "Tried to make an Darksky API call within %d sec of the previous call." % (self.lockout_period,))
+                   "Tried to make an Dark Sky API call within %d sec of the previous call." % (self.lockout_period,))
             loginf("        ",
-                   "Darksky API call limit reached. API call skipped.")
+                   "Dark Sky API call limit reached. API call skipped.")
         return None
 
     def parse_raw_data(self, raw_data):
-        """Parse a Darksky forecast raw_data.
+        """Parse a Darksky raw data.
 
-        Take a Darksky forecast raw_data, check for (Darksky defined) errors
-        then extract and return the required summary text.
+        Take a Darksky raw_data, check for (Darksky defined) errors then
+        extract and return the required data.
 
         Input:
-            raw_data: A Darksky forecast API raw_data in JSON format.
+            raw_data: Darksky API response raw data in JSON format.
 
         Returns:
             Summary text or None.
@@ -1733,9 +1763,9 @@ class DarkSkySource(ThreadedSource):
         if 'flags' in raw_data:
             if 'darksky-unavailable' in raw_data['flags']:
                 loginf("wddarkskysource",
-                       "Darksky data for this location temporarily unavailable")
+                       "Dark Sky data for this location temporarily unavailable")
         else:
-            loginf("wddarkskysource", "No flag object in Darksky API raw_data.")
+            loginf("wddarkskysource", "No flag object in Dark Sky API raw data.")
 
         # get the summary data to be used
         # is our block available, can't assume it is
@@ -1746,11 +1776,11 @@ class DarkSkySource(ThreadedSource):
                 _forecast = raw_data[self.block]['summary'].encode('ascii', 'ignore')
             else:
                 # we have no summary field, so log it and return None
-                if self.ds_debug > 0:
+                if self.debug > 0:
                     loginf("wddarkskysource", "Summary data not available "
                                               "for '%s' forecast" % (self.block,))
         else:
-            if self.ds_debug > 0:
+            if self.debug > 0:
                 loginf("wddarkskysource",
                        "Dark Sky %s block not available" % self.block)
         # get the current data and icon
@@ -1762,11 +1792,11 @@ class DarkSkySource(ThreadedSource):
                 _current = raw_data['currently']['summary'].encode('ascii', 'ignore')
             else:
                 # we have no summary field, so log it and return None
-                if self.ds_debug > 0:
+                if self.debug > 0:
                     loginf("wddarkskysource",
                            "Summary data not available for 'currently' block")
         else:
-            if self.ds_debug > 0:
+            if self.debug > 0:
                 loginf("wddarkskysource",
                        "Dark Sky 'currently' block not available")
 
@@ -1789,7 +1819,7 @@ class DarkskyForecastAPI(object):
 
     DarkskyForecastAPI constructor parameters:
 
-        darksky_config_dict: Dictionary containing the following keys:
+        darksky_config_dict: Dictionary keyed as follows:
             key:       Darksky secret key to be used
             latitude:  Latitude of the location concerned
             longitude: Longitude of the location concerned
@@ -1813,7 +1843,7 @@ class DarkskyForecastAPI(object):
     # conditions
     BLOCKS = ('minutely', 'hourly', 'daily', 'alerts')
 
-    def __init__(self, key, latitude, longitude):
+    def __init__(self, key, latitude, longitude, debug=0):
         # initialise a DarkskyForecastAPI object
 
         # save the secret key to be used
@@ -1821,6 +1851,8 @@ class DarkskyForecastAPI(object):
         # save lat and long
         self.latitude = latitude
         self.longitude = longitude
+        # save DS debug level
+        self.debug = debug
 
     def get_data(self, block='hourly', language='en', units='auto',
                  max_tries=3):
@@ -1856,13 +1888,13 @@ class DarkskyForecastAPI(object):
         if len(optional_string) > 0:
             url = '?'.join([url, optional_string])
 
-        # if debug >=1 log the URL used but obfuscate the key
-        if weewx.debug >= 1:
+        # if debug >= 1 log the URL used but obfuscate the key
+        if weewx.debug > 0 or self.debug > 0:
             _obfuscated_url = '/'.join([self.BASE_URL,
                                         self.obfuscated_key,
                                         '%s,%s' % (self.latitude, self.longitude)])
             _obfuscated_url = '?'.join([_obfuscated_url, optional_string])
-            logdbg("wddarkskyapi",
+            loginf("wddarkskyapi",
                    "Submitting API call using URL: %s" % (_obfuscated_url,))
         # make the API call
         _response = self._hit_api(url, max_tries)
@@ -1891,8 +1923,7 @@ class DarkskyForecastAPI(object):
         # return the resulting string
         return opt_params
 
-    @staticmethod
-    def _hit_api(url, max_tries=3):
+    def _hit_api(self, url, max_tries=3):
         """Make the API call and return the result."""
 
         # we will attempt the call max_tries times
@@ -1902,6 +1933,9 @@ class DarkskyForecastAPI(object):
                 w = urllib2.urlopen(url)
                 response = w.read()
                 w.close()
+                if self.debug > 1:
+                    loginf("wddarkskyapi",
+                           "Dark Sky API response=%s" % (response, ))
                 return response
             except (urllib2.URLError, socket.timeout), e:
                 logerr("wddarkskyapi",
@@ -1991,7 +2025,7 @@ def check_enable(cfg_dict, service, *args):
     try:
         wdsupp_dict = accumulateLeaves(cfg_dict[service], max_level=1)
     except KeyError:
-        logdbg2("weewxwd3: check_enable:",
+        logdbg2("weewxwd: check_enable:",
                 "%s: No config info. Skipped." % service)
         return None
 
@@ -2002,293 +2036,11 @@ def check_enable(cfg_dict, service, *args):
             if wdsupp_dict[option] == 'replace_me':
                 raise KeyError(option)
     except KeyError, e:
-        logdbg2("weewxwd3: check_enable:",
+        logdbg2("weewxwd: check_enable:",
                 "%s: Missing option %s" % (service, e))
         return None
 
     return wdsupp_dict
-
-
-# ===============================================================================
-#                            Class WuData
-# ===============================================================================
-
-
-class WuData(object):
-    """Class to query the WeatherUnderground API.
-
-
-        Calling the getWuApiData() method returns a data record of selected WU
-        API data.
-    """
-
-    def __init__(self, config_dict):
-
-        if 'Weewx-WD' in config_dict:
-            # we have a [Weewx-WD] stanza so get the supp dict
-            _supp_dict = config_dict['Weewx-WD'].get('Supplementary')
-
-            # Do we have necessary config info for WU ie a [[[WU]]] stanza,
-            # apiKey and location. If we were called from WdSuppArchive we
-            # probably do but we may have been called from main() so we need
-            # to check a couple of conditions.
-            _wu_dict = check_enable(_supp_dict, 'WU', 'apiKey')
-            if _wu_dict is None:
-                self.do_WU = False
-                # we are missing some/all essential WU API settings so set a
-                # flag and return
-                loginf("WuData:", "WU API calls will not be made")
-                loginf("              ", "**** Incomplete or missing config settings")
-                return
-
-            # if we got this far we have the essential WU API settings so carry
-            # on with the rest of the initialisation
-            # set a flag indicating we are doing WU API queries
-            self.do_WU = True
-            # get station info required for almanac/Sun related calcs
-            _stn_dict = config_dict.get('Station')
-            self.latitude = float(_stn_dict.get('latitude'))
-            self.longitude = float(_stn_dict.get('longitude'))
-            altitude_t = weeutil.weeutil.option_as_list(_stn_dict.get('altitude',
-                                                                      (None, None)))
-            altitude_vt = weewx.units.ValueTuple(float(altitude_t[0]),
-                                                 altitude_t[1],
-                                                 "group_altitude")
-            self.altitude = convert(altitude_vt, 'meter').value
-            # create a list of the WU API calls we need
-            self.WU_queries = WU_queries
-            # set interval between API calls for each API call type we need
-            for q in self.WU_queries:
-                q['interval'] = int(_wu_dict.get('%s_interval' % q['name'],
-                                                 q['def_interval']))
-            # set max no of tries we will make in any one attempt to contact WU
-            # via API
-            self.max_WU_tries = _wu_dict.get('max_WU_tries', 3)
-            self.max_WU_tries = toint(self.max_WU_tries, 3)
-            # set API call lockout period in sec (default 60 sec)
-            self.api_lockout_period = _wu_dict.get('api_lockout_period', 60)
-            self.api_lockout_period = toint(self.api_lockout_period, 60)
-            # create holder for last WU API call ts
-            self.last_WU_query = None
-            # Get our API key
-            self.api_key = _wu_dict.get('apiKey')
-            # get our 'location' for use in WU API calls. Default to station
-            # lat/long.
-            self.location = _wu_dict.get('location', '%s,%s' % (self.latitude,
-                                                                self.longitude))
-            if self.location == 'replace_me':
-                self.location = '%s,%s' % (self.latitude, self.longitude)
-            # get the language to use, must be one of the WU supported
-            # languages listed at
-            # https://www.wunderground.com/weather/api/d/docs?d=language-support&MR=1
-            _language = _wu_dict.get('language', 'English')
-            self.language = WU_languages.get(_language.lower(), 'EN')
-            # get current condiitons text label
-            self.current_label = _wu_dict.get('current_label', '')
-            # set fixed part of WU API call url
-            self.default_url = 'http://api.wunderground.com/api'
-            # we have everything we need to put a short message in the log
-            loginf("WuData:", "WU API calls will be made")
-            _m = ["%s interval=%s" % (a['name'], a['interval']) for a in self.WU_queries]
-            loginf("WuData:", " ".join(_m))
-            loginf("WuData:",
-                   "api_key=xxxxxxxxxxxx%s location=%s" % (self.api_key[-4:],
-                                                           self.location))
-            if self.language != 'EN':
-                loginf("WuData:",
-                       "WU API results will use the %s language" % _language.title())
-
-    def getWuApiData(self, event=None):
-        """Make a WU API call and return a data dict."""
-
-        if self.do_WU:
-            # get time now as a ts
-            now = time.time()
-            # create a holder dict for our data record
-            _rec = {}
-
-            # almanac gives more accurate results with current temp and
-            # pressure
-            # first, initialise some defaults
-            temperature_c = 15.0
-            pressure_mbar = 1010.0
-            _datetime = now
-            if event:
-                _datetime = event.record['dateTime']
-
-                # get current outTemp and barometer if they exist
-                if 'outTemp' in event.record:
-                    temperature_c = weewx.units.convert(weewx.units.as_value_tuple(event.record, 'outTemp'),
-                                                        "degree_C").value
-                if 'barometer' in event.record:
-                    pressure_mbar = weewx.units.convert(weewx.units.as_value_tuple(event.record, 'barometer'),
-                                                        "mbar").value
-            # get an almanac object
-            _almanac = weewx.almanac.Almanac(_datetime,
-                                             self.latitude,
-                                             self.longitude,
-                                             self.altitude,
-                                             temperature_c,
-                                             pressure_mbar)
-            # Work out sunrise and sunset ts so we can determine if it is night
-            # or day. Needed so we can set day or night icons when translating
-            # WU icons to Saratoga icons
-            sunrise_ts = _almanac.sun.rise.raw
-            sunset_ts = _almanac.sun.set.raw
-            # set the night flag
-            self.night = not (sunrise_ts < _datetime < sunset_ts)
-            # get the fully constructed URL for those API feature calls that
-            # are to be made
-            _wu_url, _features = self.construct_wu_url(now)
-            _response = None
-            if _wu_url is not None:
-                if self.last_WU_query is None or ((now + 1 - self.api_lockout_period) >= self.last_WU_query):
-                    # if we haven't made this API call previously or if its
-                    # been too long since the last call then make the call,
-                    # wrap in a try..except just in case
-                    try:
-                        _response = self.get_wu_response(_wu_url,
-                                                         self.max_WU_tries)
-                        _msg = "Downloaded updated Weather Underground information for %s" % (_features,)
-                        logdbg2("getWuApiData:", _msg)
-                    except Exception, e:
-                        loginf("getWuApiData:",
-                               "Weather Underground API query failure: %s" % e)
-                    self.last_WU_query = max(q['last'] for q in self.WU_queries)
-                else:
-                    # API call limiter kicked in so say so
-                    _msg = "API call limit reached. Tried to make an API call within %d sec of the previous call. API call skipped." % (
-                    self.api_lockout_period,)
-                    loginf("getWuApiData:", _msg)
-            # parse the WU responses and put into a dictionary
-            _tgt_units = _rec['usUnits'] if 'usUnits' in _rec else weewx.METRIC
-            _wu_record = self.parse_wu_response(_response, _tgt_units)
-            # update the data record with any WU data
-            _rec.update(_wu_record)
-            # return the updated record
-            return _rec
-
-    def construct_wu_url(self, now):
-        """ Construct a multi-feature WU API URL
-
-            WU API allows multiple feature requests to be combined into a single
-            http request (thus cutting down on API calls. Look at each of our WU
-            queries then construct and return a WU API URL string that will
-            request all features that are due. If no features are due then
-            return None.
-        """
-
-        _feature_string = ''
-        for _q in self.WU_queries:
-            # if we haven't made this feature request previously or if its been
-            # too long since the last call then make the call
-            if (_q['last'] is None) or ((now + 1 - _q['interval']) >= _q['last']):
-                # we need to request this feature so add the feature code to our
-                # feature string
-                if len(_feature_string) > 0:
-                    _feature_string += '/' + _q['name']
-                else:
-                    _feature_string += _q['name']
-                _q['last'] = now
-        if len(_feature_string) > 0:
-            # we have a feature we need so construct the URL
-            url = '%s/%s/%s/lang:%s/pws:1/q/%s.json' % (self.default_url,
-                                                        self.api_key,
-                                                        _feature_string,
-                                                        self.language,
-                                                        self.location)
-            return url, _feature_string
-        return None, None
-
-    @staticmethod
-    def get_wu_response(url, max_tries):
-        """Make a WU API call and return the raw response."""
-
-        # we will attempt the call max_tries times
-        for count in range(max_tries):
-            # attempt the call
-            try:
-                w = urllib2.urlopen(url)
-                _response = w.read()
-                w.close()
-                return _response
-            except:
-                loginf("WdSuppArchive:",
-                       "Failed to get Weather Underground API response on attempt %d" % (count + 1,))
-        else:
-            loginf("WdSuppArchive:",
-                   "Failed to get Weather Underground API response")
-        return None
-
-    def parse_wu_response(self, response, units):
-        """ Parse a WU response and construct a packet packet."""
-
-        # create a holder dict for the data we will gather
-        _data = {}
-        # do some pre-processing and error checking
-        if response is not None:
-            # we have a response so deserialise our JSON response
-            _json_response = json.loads(response)
-            # check for recognised format
-            if 'response' not in _json_response:
-                loginf("WdSuppArchive:",
-                       "Unknown format in Weather Underground API response")
-                return _data
-            # get the WU 'response' field so we can check for errors
-            _response = _json_response['response']
-            # check for WU provided error otherwise start pulling in the
-            # fields/data we want
-            if 'error' in _response:
-                loginf("WdSuppArchive:",
-                       "Error in Weather Underground API response")
-                return _data
-            # pull out our individual 'feature' responses, this way in the
-            # future we can populate our results even if we did not get a
-            # 'feature' response that time round
-            for _q in self.WU_queries:
-                if _q['json_title'] in _json_response:
-                    _q['response'] = _json_response[_q['json_title']]
-        # iterate over each of possible queries and parse as required
-        for _q in self.WU_queries:
-            _resp = _q['response']
-            # forecast data
-            if _q['name'] == 'forecast' and _resp is not None:
-                # Look up Saratoga icon number given WU icon name
-                _data['forecastIcon'] = icon_dict[_resp['txt_forecast']['forecastday'][0]['icon']]
-                _data['forecastText'] = _resp['txt_forecast']['forecastday'][0]['fcttext']
-                _data['forecastTextMetric'] = _resp['txt_forecast']['forecastday'][0]['fcttext_metric']
-            # conditions data
-            elif _q['name'] == 'conditions' and _resp is not None:
-                # WU does not seem to provide day/night icon name in their
-                # 'conditions' response so we need to do. Just need to add
-                # 'nt_' to front of name before looking up in out Saratoga
-                # icons dictionary
-                if self.night:
-                    _data['currentIcon'] = icon_dict['nt_' + _resp['icon']]
-                else:
-                    _data['currentIcon'] = icon_dict[_resp['icon']]
-                # get the current conditions text prepending a label if we have
-                # one
-                if _resp['weather']:
-                    _data['currentText'] = ''.join((self.current_label,
-                                                    _resp['weather']))
-                else:
-                    _data['currentText'] = None
-            # almanac data
-            elif _q['name'] == 'almanac' and _resp is not None:
-                if units is weewx.US:
-                    _data['tempRecordHigh'] = _resp['temp_high']['record']['F']
-                    _data['tempNormalHigh'] = _resp['temp_high']['normal']['F']
-                    _data['tempRecordLow'] = _resp['temp_low']['record']['F']
-                    _data['tempNormalLow'] = _resp['temp_low']['normal']['F']
-                else:
-                    _data['tempRecordHigh'] = _resp['temp_high']['record']['C']
-                    _data['tempNormalHigh'] = _resp['temp_high']['normal']['C']
-                    _data['tempRecordLow'] = _resp['temp_low']['record']['C']
-                    _data['tempNormalLow'] = _resp['temp_low']['normal']['C']
-                _data['tempRecordHighYear'] = _resp['temp_high']['recordyear']
-                _data['tempRecordLowYear'] = _resp['temp_low']['recordyear']
-        return _data
 
 
 # ============================================================================
@@ -2320,7 +2072,7 @@ if __name__ == '__main__':
     usage = """sudo PYTHONPATH=/home/weewx/bin python
                /home/weewx/bin/user/%prog [--option]"""
 
-    syslog.openlog('weewxwd3', syslog.LOG_PID | syslog.LOG_CONS)
+    syslog.openlog('weewxwd', syslog.LOG_PID | syslog.LOG_CONS)
     syslog.setlogmask(syslog.LOG_UPTO(syslog.LOG_DEBUG))
     parser = optparse.OptionParser(usage=usage)
     parser.add_option('--config', dest='config_path', type=str,
@@ -2337,7 +2089,7 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     if options.version:
-        print "weewxwd3 version %s" % WEEWXWD_VERSION
+        print "weewxwd version %s" % WEEWXWD_VERSION
         exit(0)
 
     # get config_dict to use
