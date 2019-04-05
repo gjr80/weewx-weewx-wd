@@ -86,6 +86,7 @@ import syslog
 import threading
 import urllib2
 import json
+import os
 import time
 from datetime import datetime
 
@@ -509,6 +510,10 @@ def logerr(src, msg):
 
 
 class MissingApiKey(IOError):
+    """Raised when an API key cannot be found for an external source/service."""
+
+
+class MissingFile(IOError):
     """Raised when an API key cannot be found for an external source/service."""
 
 
@@ -1139,7 +1144,7 @@ class WuSource(ThreadedSource):
     user selectable frequency. The thread listens for a shutdown signal from
     its parent.
 
-    WUThread constructor parameters:
+    WuSource constructor parameters:
 
         control_queue:      A Queue object used by our parent to control
                             (shutdown) this thread.
@@ -1148,7 +1153,7 @@ class WuSource(ThreadedSource):
         engine:             An instance of class weewx.weewx.Engine
         source_config_dict: A weeWX config dictionary.
 
-    WUThread methods:
+    WuSource methods:
 
         run.               Control querying of the API and monitor the control
                            queue.
@@ -1744,7 +1749,7 @@ class DarkSkySource(ThreadedSource):
     def parse_raw_data(self, raw_data):
         """Parse a Darksky raw data.
 
-        Take a Darksky raw_data, check for (Darksky defined) errors then
+        Take a Darksky raw data, check for (Darksky defined) errors then
         extract and return the required data.
 
         Input:
@@ -1809,9 +1814,9 @@ class DarkSkySource(ThreadedSource):
             return None
 
 
-# ============================================================================
-#                         class DarkskyForecastAPI
-# ============================================================================
+# ==============================================================================
+#                           class DarkskyForecastAPI
+# ==============================================================================
 
 
 class DarkskyForecastAPI(object):
@@ -1952,6 +1957,147 @@ class DarkskyForecastAPI(object):
         # replace all characters in the key with an asterisk except for the
         # last 4
         return '*' * (len(self.key) - 4) + self.key[-4:]
+
+
+# ==============================================================================
+#                               class FileSource
+# ==============================================================================
+
+
+class FileSource(ThreadedSource):
+    """Class to obtain forecast and current conditions from a formatted text
+       file.
+
+    FileSource constructor parameters:
+
+        control_queue:      A Queue object used by our parent to control
+                            (shutdown) this thread.
+        result_queue:       A Queue object used to pass forecast data to the
+                            destination
+        engine:             An instance of class weewx.weewx.Engine
+        source_config_dict: source config dictionary.
+
+    FileSource methods:
+
+        run: Control fetching the text and monitor the control queue.
+    """
+
+    # structure of the text file, one entry per line
+    FILE_STRUCT = ('forecastText', 'forecastIcon', 'currentText', 'currentIcon')
+
+    def __init__(self, control_queue, result_queue, engine, source_config_dict):
+
+        # initialize my base class
+        super(FileSource, self).__init__(control_queue,
+                                         result_queue,
+                                         engine,
+                                         source_config_dict)
+
+        # set thread name
+        self.setName('WdFileThread')
+
+        # FileSource debug level
+        self.debug = to_int(source_config_dict.get('debug', 0))
+
+        # interval between file reads
+        self.interval = to_int(source_config_dict.get('interval', 1800))
+        # get the file to be read, check it refers to a file
+        self.file = source_config_dict.get('file')
+        if self.file is None or not os.path.isfile(self.file):
+            raise MissingFile("Source file not specified or not a valid path/file")
+
+        # initialise the time of last file read
+        self.last_read_ts = None
+
+        # log what we will do
+        loginf("wdfilesource",
+               "Formatted text file will be used for current conditions and forecast data")
+        if self.debug > 0:
+            loginf("wdfilesource",
+                   "file=%s interval=%s" % (self.file, self.interval))
+            loginf("wdfilesource", "File debug=%s" % self.debug)
+
+    def get_raw_data(self):
+        """Get forecast and current conditions data from a formatted text file.
+
+        Checks to see if it is time to read the file, if so the file is read
+        and the stripped raw text returned.
+
+        Inputs:
+            None.
+
+        Returns:
+            The first line of text from the file.
+        """
+
+        # get the current time
+        now = time.time()
+        if self.debug > 0:
+            loginf("wdfilesource",
+                   "Last file read attempted at %s" % weeutil.weeutil.timestamp_to_string(self.last_read_ts))
+        if self.last_read_ts is None or (now + 1 - self.interval) >= self.last_read_ts:
+            # read the file, wrap in a try..except just in case
+            _data = None
+            try:
+                if self.file is not None:
+                    with open(self.file) as f:
+                        _data = f.readlines()
+                if self.debug > 0:
+                    loginf("wdfilesource", "File '%s' read" % self.file)
+            except Exception, e:
+                # Some unknown exception occurred, likely IOError. Set _data to
+                # None, log it and continue.
+                _data = None
+                loginf("wdfilesource",
+                       "Unexpected exception of type %s" % (type(e),))
+                weeutil.weeutil.log_traceback('wdfilesource: **** ')
+                loginf("wdfilesource",
+                       "Unexpected exception of type %s" % (type(e),))
+                loginf("wdfilesource", "Read of file '%s' failed" % self.file)
+            # we got something so reset our last read timestamp
+            if _data is not None:
+                self.last_read_ts = now
+            # and finally return the read data
+            return _data
+        return None
+
+    def parse_raw_data(self, raw_data):
+        """Parse raw file data.
+
+        Take the raw file data, extract and return the required data.
+
+        Input:
+            raw_data: List of lines of data read from a formatted text file.
+
+        Returns:
+            dict of data.
+        """
+
+        # do we have any data
+        if raw_data is not None:
+            # initialise holder dict for our parsed data
+            _parsed = dict()
+            # iterate over each field we are looking for
+            for index, key in enumerate(self.FILE_STRUCT):
+                # assign the relevant data to the relevant key in the dict,
+                # wrap in a try..except in case something is missing or
+                # otherwise wrong
+                try:
+                    # icon numbers need to be integers
+                    if 'Icon' in key:
+                        # it's an icon so convert to an integer
+                        _parsed[key] = int(raw_data[index].strip())
+                    else:
+                        # it's text so leave as it
+                        _parsed[key] = raw_data[index].strip()
+                except (IndexError, ValueError):
+                    # could find the entry in our raw data so set to None
+                    _parsed[key] = None
+            # return the dict of data
+            return _parsed
+        else:
+            # there was no raw data so return None
+            return None
 
 
 # ==============================================================================
@@ -2134,4 +2280,5 @@ if __name__ == '__main__':
     # if we made it here display our help message
 
 KNOWN_SOURCES = {'WU': WuSource,
-                 'DS': DarkSkySource}
+                 'DS': DarkSkySource,
+                 'File': FileSource}
