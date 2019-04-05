@@ -235,7 +235,10 @@ $rainHourArray[$i].mm.toString($addLabel=False, $localize=False) #slurp
 #*WD|159*#0 #slurp
 #*WD|160*#$almanac.lat #slurp
 #*WD|161*##if $station.longitude[2] == 'E'#-#end if#$almanac.lon #slurp
-#*WD|162*#$nineamrain.mm.toString($addLabel=False, $localize=False) #slurp
+#*WD|162*#$since($hour=9).rain.sum.mm.toString($addLabel=False, $localize=False) #slurp
+##
+###*WD|162*#$nineamrain.mm.toString($addLabel=False, $localize=False) #slurp
+##
 #*WD|163*#$day.outHumidity.max.toString($addLabel=False, $localize=False) #slurp
 #*WD|164*#$day.outHumidity.min.toString($addLabel=False, $localize=False) #slurp
 #*WD|165*#$day.rain.sum.mm.toString($addLabel=False, $localize=False) #slurp

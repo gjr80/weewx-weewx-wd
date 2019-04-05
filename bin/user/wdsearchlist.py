@@ -17,7 +17,7 @@ Version: 1.2.0a1                                    Date: 29 March 2019
 Revision History
     29 March 2019       v1.2.0
         - simplified logic used in WdHourRainTags calculation
-        - simplified logic used in wdGdDays calculations
+        - simplified logic used in WdGdDays calculations
         - fixed typo where wet bulb was returned as feels_like temperature
         - Easter is now calculated on report time not system time
 
@@ -57,7 +57,7 @@ Previous Bitbucket revision history
         - WdSundryTags SLE now provides current_text and current_icon from
           current conditions text file if it exists
         - added additional tags to WdWindRunTags SLE
-        - new SLEs wdGdDays, WdForToday, WdRainThisDay and WdRainDays
+        - new SLEs WdGdDays, WdForToday, WdRainThisDay and WdRainDays
         - added helper functions get_first_day and doygen
         - added GNU license text
     August 2013         v0.1
@@ -87,6 +87,7 @@ import weewx.almanac
 import weewx.cheetahgenerator
 import weewx.tags
 import weewx.units
+import weewx.wxformulas
 import weeutil.weeutil
 
 from weewx.tags import TimespanBinder
@@ -900,6 +901,31 @@ class WdTimeSpanTags(weewx.cheetahgenerator.SearchList):
                                       formatter=self.formatter,
                                       converter=self.converter)
 
+            def since(self, data_binding=None, hour=0, minute=0, second=0):
+                """Return a TimeSpanBinder since the a given time."""
+
+                # obtain the report time as a datetime object
+                stop_dt = datetime.datetime.fromtimestamp(timespan.stop)
+                # assume the 'since' time is today so obtain it as a datetime
+                # object
+                since_dt = stop_dt.replace(hour=hour, minute=minute, second=second)
+                # but 'since' must be before the report time so check if the
+                # assumption is correct, if not then 'since' must be yesterday
+                # so subtract 1 day
+                if since_dt > stop_dt:
+                    since_dt -= datetime.timedelta(days=1)
+                # now convert it to unix epoch time:
+                since_ts = time.mktime(since_dt.timetuple())
+                # get our timespan
+                since_tspan = TimeSpan(since_ts, timespan.stop)
+                # now return a TimespanBinder object, using the timespan we just
+                # calculated
+                return TimespanBinder(since_tspan,
+                                      self.db_lookup, context='current',
+                                      data_binding=data_binding,
+                                      formatter=self.formatter,
+                                      converter=self.converter)
+
         time_binder = WdBinder(db_lookup,
                                timespan.stop,
                                self.generator.formatter,
@@ -1089,7 +1115,6 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
         curr_rec = db_lookup().getRecord(self.generator.gen_ts)
         curr_wd_rec = db_lookup().getRecord(self.generator.gen_wd_ts)
         # get the unit in use for each group
-        (r_type, r_group) = getStandardUnitType(curr_rec['usUnits'], 'rain')
         (t_type, t_group) = getStandardUnitType(curr_rec['usUnits'],
                                                 'dateTime')
 
@@ -1104,37 +1129,6 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
                                     formatter=self.generator.formatter,
                                     converter=self.generator.converter)
 
-        # get rainfall since 9am
-        # first, need a ts for '9am', but is it 9am today or 9am yesterday
-        # get datetime obj for the time of our report
-        today_dt = datetime.datetime.fromtimestamp(timespan.stop)
-        # get time obj for midnight
-        midnight_t = datetime.time(0)
-        # get datetime obj for midnight at start of today
-        midnight_dt = datetime.datetime.combine(today_dt, midnight_t)
-        # if its earlier than 9am want 9am yesterday
-        if today_dt.hour < 9:
-            nineam_dt = midnight_dt - datetime.timedelta(hours=15)
-        # otherwise we want 9am today
-        else:
-            nineam_dt = midnight_dt + datetime.timedelta(hours=9)
-        # get it as a timestamp
-        nineam_ts = time.mktime(nineam_dt.timetuple())
-        # get a TimeSpan object for our time span
-        tspan = TimeSpan(nineam_ts, timespan.stop)
-        try:
-            (_vt1, _vt2, r_vt) = db_lookup().getSqlVectors(tspan,
-                                                           'rain',
-                                                           'sum',
-                                                           (timespan.stop - nineam_ts))
-            rain_vh = ValueHelper(ValueTuple(r_vt.value[0], r_type, r_group),
-                                  formatter=self.generator.formatter,
-                                  converter=self.generator.converter)
-        except (ValueError, KeyError):
-            rain_vh = ValueHelper(ValueTuple(None, r_type, r_group),
-                                  formatter=self.generator.formatter,
-                                  converter=self.generator.converter)
-
         # heat color word
         heat_color_words = ['Unknown', 'Extreme Heat Danger', 'Heat Danger',
                             'Extreme Heat Caution', 'Extremely Hot',
@@ -1143,46 +1137,37 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
                             'Extreme Cold']
         curr_rec_metric = weewx.units.to_METRIC(curr_rec)
         curr_wd_rec_metric = weewx.units.to_METRIC(curr_wd_rec)
-        if 'outTemp' in curr_rec_metric:
-            outTemp_C = curr_rec_metric['outTemp']
-        else:
-            outTemp_C = None
-        if 'windchill' in curr_rec_metric:
-            windchill_C = curr_rec_metric['windchill']
-        else:
-            windchill_C = None
-        if 'humidex' in curr_wd_rec_metric:
-            humidex_C = curr_wd_rec_metric['humidex']
-        else:
-            humidex_C = None
+        temperature = curr_rec_metric.get('outTemp')
+        windchill = curr_rec_metric.get('windchill')
+        humidex = curr_wd_rec_metric.get('humidex')
         heat_color_word = heat_color_words[0]
-        if curr_rec_metric['outTemp'] is not None:
-            if curr_rec_metric['outTemp'] > 32:
-                if humidex_C is not None:
-                    if humidex_C > 54:
+        if temperature is not None:
+            if temperature > 32:
+                if humidex is not None:
+                    if humidex > 54:
                         heat_color_word = heat_color_words[1]
-                    elif humidex_C > 45:
+                    elif humidex > 45:
                         heat_color_word = heat_color_words[2]
-                    elif humidex_C > 39:
+                    elif humidex > 39:
                         heat_color_word = heat_color_words[4]
-                    elif humidex_C > 29:
+                    elif humidex > 29:
                         heat_color_word = heat_color_words[6]
                 else:
                     heat_color_word = heat_color_words[0]
-            elif windchill_C is not None:
-                if windchill_C < 16:
-                    if windchill_C < -18:
+            elif windchill is not None:
+                if windchill < 16:
+                    if windchill < -18:
                         heat_color_word = heat_color_words[13]
-                    elif windchill_C < -9:
+                    elif windchill < -9:
                         heat_color_word = heat_color_words[12]
-                    elif windchill_C < -1:
+                    elif windchill < -1:
                         heat_color_word = heat_color_words[11]
-                    elif windchill_C < 8:
+                    elif windchill < 8:
                         heat_color_word = heat_color_words[10]
-                    elif windchill_C < 16:
+                    elif windchill < 16:
                         heat_color_word = heat_color_words[9]
-                elif windchill_C >= 16 and outTemp_C <= 32:
-                    if outTemp_C < 26:
+                elif windchill >= 16 and temperature <= 32:
+                    if temperature < 26:
                         heat_color_word = heat_color_words[8]
                     else:
                         heat_color_word = heat_color_words[7]
@@ -1194,85 +1179,79 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
             heat_color_word = heat_color_words[0]
 
         # feels like
-        if outTemp_C is not None:
-            if outTemp_C <= 16:
-                feels_like_vt = ValueTuple(windchill_C,
+        if temperature is not None:
+            if temperature <= 16:
+                feels_like_vt = ValueTuple(windchill,
                                            'degree_C',
                                            'group_temperature')
-            elif outTemp_C >= 27:
-                feels_like_vt = ValueTuple(humidex_C,
+            elif temperature >= 27:
+                feels_like_vt = ValueTuple(humidex,
                                            'degree_C',
                                            'group_temperature')
             else:
-                feels_like_vt = ValueTuple(outTemp_C,
+                feels_like_vt = ValueTuple(temperature,
                                            'degree_C',
                                            'group_temperature')
         else:
             feels_like_vt = ValueTuple(None, 'degree_C', 'group_temperature')
         feels_like_vh = ValueHelper(feels_like_vt,
-                                   formatter=self.generator.formatter,
-                                   converter=self.generator.converter)
+                                    formatter=self.generator.formatter,
+                                    converter=self.generator.converter)
 
         # air density
-        if 'dewpoint' in curr_rec_metric:
-            dpC = curr_rec_metric['dewpoint']
-        else:
-            dpC = None
-        if 'pressure' in curr_rec_metric:
-            Phpa = curr_rec_metric['pressure']
-        else:
-            Phpa = None
-        if dpC is not None and outTemp_C is not None and Phpa is not None:
-            Tk = outTemp_C + 273.15
-            p = (0.99999683 + dpC *(-0.90826951E-2 + dpC * (0.78736169E-4 +
-                dpC * (-0.61117958E-6 + dpC * (0.43884187E-8 +
-                dpC * (-0.29883885E-10 + dpC * (0.21874425E-12 +
-                dpC * (-0.17892321E-14 + dpC * (0.11112018E-16 +
-                dpC * (-0.30994571E-19))))))))))
-            Pv = 100 * 6.1078 / (p**8)
-            Pd = Phpa * 100 - Pv
-            density = round((Pd/(287.05 * Tk)) + (Pv/(461.495 * Tk)),3)
+        dp = curr_rec_metric.get('dewpoint')
+        p = curr_rec_metric.get('pressure')
+        if dp is not None and temperature is not None and p is not None:
+            kelvin = temperature + 273.15
+            p = (0.99999683 + dp * (-0.90826951E-2 + dp * (0.78736169E-4 +
+                 dp * (-0.61117958E-6 + dp * (0.43884187E-8 +
+                       dp * (-0.29883885E-10 + dp * (0.21874425E-12 +
+                             dp * (-0.17892321E-14 + dp * (0.11112018E-16 +
+                                   dp * (-0.30994571E-19))))))))))
+            pv = 100 * 6.1078 / (p**8)
+            pd = p * 100 - pv
+            density = round((pd/(287.05 * kelvin)) + (pv/(461.495 * kelvin)), 3)
         else:
             density = 0
 
         # Beaufort wind
         if 'windSpeed' in curr_rec_metric:
             if curr_rec_metric['windSpeed'] is not None:
-                wS = curr_rec_metric['windSpeed']
-                if wS >= 117.4:
+                w_s = curr_rec_metric['windSpeed']
+                if w_s >= 117.4:
                     beaufort = 12
                     beaufort_desc = "Hurricane"
-                elif wS >= 102.4:
+                elif w_s >= 102.4:
                     beaufort = 11
                     beaufort_desc = "Violent Storm"
-                elif wS >= 88.1:
+                elif w_s >= 88.1:
                     beaufort = 10
                     beaufort_desc = "Storm"
-                elif wS >= 74.6:
+                elif w_s >= 74.6:
                     beaufort = 9
                     beaufort_desc = "Strong Gale"
-                elif wS >= 61.8:
+                elif w_s >= 61.8:
                     beaufort = 8
                     beaufort_desc = "Gale"
-                elif wS >= 49.9:
+                elif w_s >= 49.9:
                     beaufort = 7
                     beaufort_desc = "Moderate Gale"
-                elif wS >= 38.8:
+                elif w_s >= 38.8:
                     beaufort = 6
                     beaufort_desc = "Strong Breeze"
-                elif wS >= 28.7:
+                elif w_s >= 28.7:
                     beaufort = 5
                     beaufort_desc = "Fresh Breeze"
-                elif wS >= 19.7:
+                elif w_s >= 19.7:
                     beaufort = 4
                     beaufort_desc = "Moderate Breeze"
-                elif wS >= 11.9:
+                elif w_s >= 11.9:
                     beaufort = 3
                     beaufort_desc = "Gentle Breeze"
-                elif wS >= 5.5:
+                elif w_s >= 5.5:
                     beaufort = 2
                     beaufort_desc = "Light Breeze"
-                elif wS >= 1.1:
+                elif w_s >= 1.1:
                     beaufort = 1
                     beaufort_desc = "Light Air"
                 else:
@@ -1286,20 +1265,16 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
             beaufort_desc = "N/A"
 
         # wet bulb
-        if 'outHumidity' in curr_rec_metric:
-            outHumidity = curr_rec_metric['outHumidity']
-        else:
-            outHumidity = None
-        if outTemp_C is not None and outHumidity is not None and Phpa is not None:
-            Tc = outTemp_C
-            RH = outHumidity
-            P = Phpa
-            Tdc = ((Tc - (14.55 + 0.114 * Tc) * (1 - (0.01 * RH)) -
-                   ((2.5 + 0.007 * Tc) * (1 - (0.01 * RH))) ** 3 -
-                   (15.9 + 0.117 * Tc) * (1 - (0.01 * RH)) ** 14))
-            E = (6.11 * 10 ** (7.5 * Tdc / (237.7 + Tdc)))
-            wb = ((((0.00066 * P) * Tc) + ((4098 * E) / ((Tdc + 237.7) ** 2) * Tdc)) /
-                  ((0.00066 * P) + (4098 * E) / ((Tdc + 237.7) ** 2)))
+        humidity = curr_rec_metric.get('outHumidity')
+        if temperature is not None and humidity is not None and p is not None:
+            tc = temperature
+            rh = humidity
+            tdc = ((tc - (14.55 + 0.114 * tc) * (1 - (0.01 * rh)) -
+                   ((2.5 + 0.007 * tc) * (1 - (0.01 * rh))) ** 3 -
+                   (15.9 + 0.117 * tc) * (1 - (0.01 * rh)) ** 14))
+            e = (6.11 * 10 ** (7.5 * tdc / (237.7 + tdc)))
+            wb = ((((0.00066 * p) * tc) + ((4098 * e) / ((tdc + 237.7) ** 2) * tdc)) /
+                  ((0.00066 * p) + (4098 * e) / ((tdc + 237.7) ** 2)))
             wb_vt = ValueTuple(wb, 'degree_C', 'group_temperature')
         else:
             wb_vt = ValueTuple(None, 'degree_C', 'group_temperature')
@@ -1308,10 +1283,10 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
                             converter=self.generator.converter)
 
         # chandler burning index
-        if outHumidity is not None and outTemp_C is not None:
-          cbi = max(0.0, round((((110 - 1.373 * outHumidity) - 0.54 *
-                    (10.20 - outTemp_C)) *
-                    (124 * 10 ** (-0.0142 * outHumidity)))/60,1))
+        if humidity is not None and temperature is not None:
+            cbi = max(0.0, round((((110 - 1.373 * humidity) - 0.54 *
+                      (10.20 - temperature)) *
+                      (124 * 10 ** (-0.0142 * humidity)))/60, 1))
         else:
             cbi = 0.0
         cbi_vt = ValueTuple(cbi, 'count', 'group_count')
@@ -1330,19 +1305,21 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
             cbi_text = "LOW"
 
         # cloud base
-        alt_vt = weewx.units.convert(self.generator.stn_info.altitude_vt, 'foot')
-        if outTemp_C is not None and dpC is not None and alt_vt.value is not None:
-            spread = outTemp_C - dpC
-            cloudbase = max(0, 1000 * spread / 2.5 + alt_vt.value)
-        else:
-            cloudbase = 0
-        cloudbase_vt = ValueTuple(cloudbase, 'foot', 'group_altitude')
+        alt_vt = weewx.units.convert(self.generator.stn_info.altitude_vt, 'meter')
+        try:
+            cloudbase = weewx.wxformulas.cloudbase_Metric(temperature,
+                                                          humidity,
+                                                          alt_vt.value)
+        except TypeError:
+            # we likely have a None value for temperature or humidity
+            cloudbase = None
+        cloudbase_vt = ValueTuple(cloudbase, 'meter', 'group_altitude')
         cloudbase_vh = ValueHelper(cloudbase_vt,
                                    formatter=self.generator.formatter,
                                    converter=self.generator.converter)
 
         # Easter. Calculate date for Easter Sunday this year
-        def calcEaster(year):
+        def calc_easter(year):
 
             g = year % 19
             e = 0
@@ -1354,18 +1331,18 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
             p = i - j + e
             _day = 1 + (p + 27 + (p + 6) / 40) % 31
             _month = 3 + (p + 26) / 30
-            Easter_dt = datetime.datetime(year=year, month=_month, day=_day)
-            Easter_ts = time.mktime(Easter_dt.timetuple())
-            return Easter_ts
+            easter_dt = datetime.datetime(year=year, month=_month, day=_day)
+            easter_ts = time.mktime(easter_dt.timetuple())
+            return easter_ts
 
         _year = date.fromtimestamp(timespan.stop).year
-        Easter_ts = calcEaster(_year)
+        easter_ts = calc_easter(_year)
         # check to see if we have past this calculated date, if so we want next
         # years date so increment year and recalculate
-        if date.fromtimestamp(Easter_ts) < date.fromtimestamp(timespan.stop):
-            Easter_ts = calcEaster(_year + 1)
-        Easter_vt = ValueTuple(Easter_ts, 'unix_epoch', 'group_time')
-        Easter_vh = ValueHelper(Easter_vt,
+        if date.fromtimestamp(easter_ts) < date.fromtimestamp(timespan.stop):
+            easter_ts = calc_easter(_year + 1)
+        easter_vt = ValueTuple(easter_ts, 'unix_epoch', 'group_time')
+        easter_vh = ValueHelper(easter_vt,
                                 formatter=self.generator.formatter,
                                 converter=self.generator.converter)
 
@@ -1423,21 +1400,17 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
         # system free memory
         meminfo = {}
         try:
-            f=open('/proc/meminfo')
-            for line in f:
-                meminfo[line.split(':')[0]] = line.split(':')[1].strip()
-            freemem = meminfo['MemFree']
-        except:
+            with open('/proc/meminfo') as f:
+                for line in f:
+                    meminfo[line.split(':')[0]] = line.split(':')[1].strip()
+        except IOError:
             freemem = None
+        else:
+            freemem = meminfo.get('MemFree')
 
         # time of next update
-        if 'interval' in curr_rec:
-            if curr_rec['interval'] is not None:
-                _next_update_ts = timespan.stop + 60.0 * curr_rec['interval']
-            else:
-                _next_update_ts = None
-        else:
-            _next_update_ts = None
+        interval = curr_rec.get('interval')
+        _next_update_ts = timespan.stop + 60.0 * interval if interval else None
         next_update_vt = ValueTuple(_next_update_ts,
                                     'unix_epoch',
                                     'group_time')
@@ -1478,7 +1451,6 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
                        'current_text':   current_text,
                        'current_icon':   current_icon,
                        'launchtime':     launchtime_vh,
-                       'nineamrain':     rain_vh,
                        'heatColorWord':  heat_color_word,
                        'feelsLike':      feels_like_vh,
                        'density':        density,
@@ -1488,7 +1460,7 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
                        'cbi':            cbi_vh,
                        'cbitext':        cbi_text,
                        'cloudbase':      cloudbase_vh,
-                       'Easter':         Easter_vh,
+                       'Easter':         easter_vh,
                        'trend_60_baro':  trend_60,
                        'trend_180_baro': trend_180,
                        'freeMemory':     freemem,
@@ -1502,17 +1474,17 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
         return [search_list]
 
 
-# ============================================================================
-#                            class wdTaggedStats
-# ============================================================================
+# ==============================================================================
+#                              class WdTaggedStats
+# ==============================================================================
 
 
-class wdTaggedStats(weewx.cheetahgenerator.SearchList):
+class WdTaggedStats(weewx.cheetahgenerator.SearchList):
     """SLE to return custom tagged stats drawn from the daily summaries."""
 
     def __init__(self, generator):
         # call our parent's initialisation
-        super(wdTaggedStats, self).__init__(generator)
+        super(WdTaggedStats, self).__init__(generator)
 
     def get_extension_list(self, timespan, db_lookup):
         """Returns a search list with custom tagged stats drawn from the daily
@@ -1576,22 +1548,22 @@ class wdTaggedStats(weewx.cheetahgenerator.SearchList):
                                                  converter=self.generator.converter)
 
         t2 = time.time()
-        logdbg2("wdTaggedStats SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdTaggedStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [_stats]
 
 
-# ============================================================================
-#                        class wdTaggedArchiveStats
-# ============================================================================
+# ==============================================================================
+#                           class WdTaggedArchiveStats
+# ==============================================================================
 
 
-class wdTaggedArchiveStats(weewx.cheetahgenerator.SearchList):
+class WdTaggedArchiveStats(weewx.cheetahgenerator.SearchList):
     """SLE to return custom tagged stats drawn from the archive."""
 
     def __init__(self, generator):
         # call our parent's initialisation
-        super(wdTaggedArchiveStats, self).__init__(generator)
+        super(WdTaggedArchiveStats, self).__init__(generator)
 
     def get_extension_list(self, timespan, db_lookup):
         """Returns a search list with custom tagged stats drawn from archive.
@@ -1661,22 +1633,22 @@ class wdTaggedArchiveStats(weewx.cheetahgenerator.SearchList):
                                                         converter=self.generator.converter)
 
         t2 = time.time()
-        logdbg2("wdTaggedArchiveStats SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdTaggedArchiveStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [_stats]
 
 
-# ============================================================================
-#                            class wdYestAlmanac
-# ============================================================================
+# ==============================================================================
+#                              class WdYestAlmanac
+# ==============================================================================
 
 
-class wdYestAlmanac(weewx.cheetahgenerator.SearchList):
+class WdYestAlmanac(weewx.cheetahgenerator.SearchList):
     """SLE to return an Almanac object for yesterday."""
 
     def __init__(self, generator):
         # call our parent's initialisation
-        super(wdYestAlmanac, self).__init__(generator)
+        super(WdYestAlmanac, self).__init__(generator)
 
         t1 = time.time()
 
@@ -1686,7 +1658,7 @@ class wdYestAlmanac(weewx.cheetahgenerator.SearchList):
         # and barometric pressure, so retrieve them from the default archive,
         # using celestial_ts as the time
 
-        temperature_C = pressure_mbar = None
+        temperature_c = pressure_mbar = None
 
         db = generator.db_binder.get_manager()
         if not celestial_ts:
@@ -1696,14 +1668,14 @@ class wdYestAlmanac(weewx.cheetahgenerator.SearchList):
         rec = db.getRecord(celestial_ts, max_delta=3600)
 
         if rec is not None:
-            outTemp_vt = weewx.units.as_value_tuple(rec, 'outTemp')
+            out_temp_vt = weewx.units.as_value_tuple(rec, 'outTemp')
             pressure_vt = weewx.units.as_value_tuple(rec, 'barometer')
 
-            if not isinstance(outTemp_vt, weewx.units.UnknownType):
-                temperature_C = weewx.units.convert(outTemp_vt, 'degree_C')[0]
+            if not isinstance(out_temp_vt, weewx.units.UnknownType):
+                temperature_c = weewx.units.convert(out_temp_vt, 'degree_C')[0]
             if not isinstance(pressure_vt, weewx.units.UnknownType):
                 pressure_mbar = weewx.units.convert(pressure_vt, 'mbar')[0]
-        if temperature_C is None: temperature_C = 15.0
+        if temperature_c is None: temperature_c = 15.0
         if pressure_mbar is None: pressure_mbar = 1010.0
 
         _almanac_skin_dict = generator.skin_dict.get('Almanac', {})
@@ -1715,46 +1687,46 @@ class wdYestAlmanac(weewx.cheetahgenerator.SearchList):
                                                  generator.stn_info.latitude_f,
                                                  generator.stn_info.longitude_f,
                                                  altitude=altitude_vt.value,
-                                                 temperature=temperature_C,
+                                                 temperature=temperature_c,
                                                  pressure=pressure_mbar,
                                                  moon_phases=self.moonphases,
                                                  formatter=generator.formatter)
 
         t2 = time.time()
-        logdbg2("wdYestAlmanac SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdYestAlmanac SLE executed in %0.3f seconds" % (t2-t1))
 
 
-# ==============================================================================
-#                             class wdSkinDict
-# ==============================================================================
+# ================================================================================
+#                                 class WdSkinDict
+# ================================================================================
 
 
-class wdSkinDict(weewx.cheetahgenerator.SearchList):
+class WdSkinDict(weewx.cheetahgenerator.SearchList):
     """SLE to return skin settings."""
 
     def __init__(self, generator):
         # call our parent's initialisation
-        super(wdSkinDict, self).__init__(generator)
+        super(WdSkinDict, self).__init__(generator)
 
         t1 = time.time()
 
         self.skin_dict = generator.skin_dict
 
         t2 = time.time()
-        logdbg2("wdSkinDict SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdSkinDict SLE executed in %0.3f seconds" % (t2-t1))
 
 
-# ==============================================================================
-#                        class wdMonthlyReportStats
-# ==============================================================================
+# ================================================================================
+#                            class WdMonthlyReportStats
+# ================================================================================
 
 
-class wdMonthlyReportStats(weewx.cheetahgenerator.SearchList):
+class WdMonthlyReportStats(weewx.cheetahgenerator.SearchList):
     """SLE to return various date/time tags used in WD monthly report."""
 
     def __init__(self, generator):
         # call our parent's initialisation
-        super(wdMonthlyReportStats, self).__init__(generator)
+        super(WdMonthlyReportStats, self).__init__(generator)
 
     def get_extension_list(self, timespan, db_lookup):
         """Returns a search list extension with various date/time tags
@@ -1792,15 +1764,15 @@ class wdMonthlyReportStats(weewx.cheetahgenerator.SearchList):
         search_list = {'month_name':      time.strftime("%b", timespan_start_tt),
                        'month_long_name': time.strftime("%B", timespan_start_tt),
                        'month_number':    timespan_start_tt[1],
-                       'year_name' :      timespan_start_tt[0],
+                       'year_name':       timespan_start_tt[0],
                        'curr_minute':     stop_tt[4],
-                       'curr_hour' :      stop_tt[3],
+                       'curr_hour':       stop_tt[3],
                        'curr_day':        stop_tt[2],
                        'curr_month':      stop_tt[1],
                        'curr_year':       stop_tt[0]}
 
         t2 = time.time()
-        logdbg2("wdMonthlyReportStats SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdMonthlyReportStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -1877,12 +1849,6 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
         _usUnits = current_rec['usUnits']
         (windrun_type, windrun_group) = getStandardUnitType(_usUnits,
                                                             'windrun')
-###Unused variables?
-        (windSpeed_type, windSpeed_group) = getStandardUnitType(_usUnits,
-                                                                'windSpeed')
-###Unused variables?
-        (dateTime_type, dateTime_group) = getStandardUnitType(_usUnits,
-                                                              'dateTime')
 
         # Get timestamp for our first (earliest) and last record
         _first_ts = db_lookup().firstGoodStamp()
@@ -1904,7 +1870,8 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
         _week_start = int(self.generator.config_dict['Station'].get('week_start', 6))
         _day_of_week = _today_d.weekday()
         _delta = _day_of_week - _week_start
-        if _delta < 0: _delta += 7
+        if _delta < 0:
+            _delta += 7
         _week_date = _today_d - datetime.timedelta(days=_delta)
         _week_dt = datetime.datetime.combine(_week_date, _mn_t)
         _mn_week_ts = time.mktime(_week_dt.timetuple())
@@ -1921,24 +1888,24 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
         _mn_first_of_year_dt = datetime.datetime.combine(_first_of_year_dt, _mn_t)
         _mn_first_of_year_ts = time.mktime(_mn_first_of_year_dt.timetuple())
 
-        # Todays windrun
-        # First get todays elapsed hours
+        # today's windrun
+        # First get today's elapsed hours
         if _first_ts <= _mn_ts:
             # We have from midnight to now
             _day_hours = (_last_ts - _mn_ts)/3600.0
         else:
             # Our data starts some time after midnight
             _day_hours = (_last_ts - _first_ts)/3600.0
-        # Get todays average wind speed
-        windSpeed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_ts, _last_ts),
-                                                    'windSpeed', 'avg')
-        if windSpeed_avg_vt.value is not None:
+        # Get today's average wind speed
+        wind_speed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_ts, _last_ts),
+                                                     'windSpeed', 'avg')
+        if wind_speed_avg_vt.value is not None:
             if _usUnits == weewx.METRICWX:
                 # METRICWX so wind speed is m/s, div by 1000 for km
-                _day_run = windSpeed_avg_vt.value * _day_hours / 1000.0
+                _day_run = wind_speed_avg_vt.value * _day_hours / 1000.0
             else:
                 # METRIC or US so its just a straight multiply
-                _day_run = windSpeed_avg_vt.value * _day_hours
+                _day_run = wind_speed_avg_vt.value * _day_hours
         else:
             # No avg wind speed so set to None
             _day_run = None
@@ -1958,15 +1925,15 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
             # Our data starts some time after midnight
             _yest_hours = (_mn_ts - _first_ts)/3600.0
         # Get yesterdays average wind speed
-        windSpeed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_yest_ts, _mn_ts),
-                                                    'windSpeed', 'avg')
-        if windSpeed_avg_vt.value is not None:
+        wind_speed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_yest_ts, _mn_ts),
+                                                     'windSpeed', 'avg')
+        if wind_speed_avg_vt.value is not None:
             if _usUnits == weewx.METRICWX:
                 # METRICWX so wind speed is m/s, div by 1000 for km
-                _yest_run = windSpeed_avg_vt.value * _yest_hours / 1000.0
+                _yest_run = wind_speed_avg_vt.value * _yest_hours / 1000.0
             else:
                 # METRIC or US so its just a straight multiply
-                _yest_run = windSpeed_avg_vt.value * _yest_hours
+                _yest_run = wind_speed_avg_vt.value * _yest_hours
         else:
             # No avg wind speed so set to None
             _yest_run = None
@@ -1977,7 +1944,6 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
                                   formatter=self.generator.formatter,
                                   converter=self.generator.converter)
 
-
         # Week windrun
         # First get week elapsed hours
         if _first_ts <= _mn_week_ts:
@@ -1987,15 +1953,15 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
             # Our data starts some time after midnight on start of week
             _week_hours = (_last_ts - _first_ts)/3600.0
         # Get week average wind speed
-        windSpeed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_week_ts, _last_ts),
-                                                    'windSpeed', 'avg')
-        if windSpeed_avg_vt.value is not None:
+        wind_speed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_week_ts, _last_ts),
+                                                     'windSpeed', 'avg')
+        if wind_speed_avg_vt.value is not None:
             if _usUnits == weewx.METRICWX:
                 # METRICWX so wind speed is m/s, div by 1000 for km
-                _week_run = windSpeed_avg_vt.value * _week_hours / 1000.0
+                _week_run = wind_speed_avg_vt.value * _week_hours / 1000.0
             else:
                 # METRIC or US so its just a straight multiply
-                _week_run = windSpeed_avg_vt.value * _week_hours
+                _week_run = wind_speed_avg_vt.value * _week_hours
         else:
             # No avg wind speed so set to None
             _week_run = None
@@ -2015,15 +1981,15 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
             # Our data starts some time after midnight
             _seven_days_hours = (_last_ts - _first_ts)/3600.0
         # Get 'seven days' average wind speed
-        windSpeed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_seven_days_ts, _last_ts),
-                                                    'windSpeed', 'avg')
-        if windSpeed_avg_vt.value is not None:
+        wind_speed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_seven_days_ts, _last_ts),
+                                                     'windSpeed', 'avg')
+        if wind_speed_avg_vt.value is not None:
             if _usUnits == weewx.METRICWX:
                 # METRICWX so wind speed is m/s, div by 1000 for km
-                _seven_days_run = windSpeed_avg_vt.value * _seven_days_hours / 1000.0
+                _seven_days_run = wind_speed_avg_vt.value * _seven_days_hours / 1000.0
             else:
                 # METRIC or US so its just a straight multiply
-                _seven_days_run = windSpeed_avg_vt.value * _seven_days_hours
+                _seven_days_run = wind_speed_avg_vt.value * _seven_days_hours
         else:
             # No avg wind speed so set to None
             _seven_days_hours = None
@@ -2043,15 +2009,15 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
             # Our data starts some time after midnight on 1st of month
             _month_hours = (_last_ts - _first_ts)/3600.0
         # Get month average wind speed
-        windSpeed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_first_of_month_ts, _last_ts),
-                                                    'windSpeed', 'avg')
-        if windSpeed_avg_vt.value is not None:
+        wind_speed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_first_of_month_ts, _last_ts),
+                                                     'windSpeed', 'avg')
+        if wind_speed_avg_vt.value is not None:
             if _usUnits == weewx.METRICWX:
                 # METRICWX so wind speed is m/s, div by 1000 for km
-                _month_run = windSpeed_avg_vt.value * _month_hours / 1000.0
+                _month_run = wind_speed_avg_vt.value * _month_hours / 1000.0
             else:
                 # METRIC or US so its just a straight multiply
-                _month_run = windSpeed_avg_vt.value * _month_hours
+                _month_run = wind_speed_avg_vt.value * _month_hours
         else:
             # No avg wind speed so set to None
             _month_run = None
@@ -2071,15 +2037,15 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
             # Our data starts some time after midnight on 1 Jan
             _year_hours = (_last_ts - _first_ts)/3600.0
         # Get year average wind speed
-        windSpeed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_first_of_year_ts, _last_ts),
-                                                    'windSpeed', 'avg')
-        if windSpeed_avg_vt.value is not None:
+        wind_speed_avg_vt = db_lookup().getAggregate(TimeSpan(_mn_first_of_year_ts, _last_ts),
+                                                     'windSpeed', 'avg')
+        if wind_speed_avg_vt.value is not None:
             if _usUnits == weewx.METRICWX:
                 # METRICWX so wind speed is m/s, div by 1000 for km
-                _year_run = windSpeed_avg_vt.value * _year_hours / 1000.0
+                _year_run = wind_speed_avg_vt.value * _year_hours / 1000.0
             else:
                 # METRIC or US so its just a straight multiply
-                _year_run = windSpeed_avg_vt.value * _year_hours
+                _year_run = wind_speed_avg_vt.value * _year_hours
         else:
             # No avg wind speed so set to None
             _year_run = None
@@ -2094,15 +2060,15 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
         # First get alltime elapsed hours
         _alltime_hours = (_last_ts - _first_ts)/3600.0
         # Get alltime average wind speed
-        windSpeed_avg_vt = db_lookup().getAggregate(TimeSpan(_first_ts, _last_ts),
-                                                    'windSpeed', 'avg')
-        if windSpeed_avg_vt.value is not None:
+        wind_speed_avg_vt = db_lookup().getAggregate(TimeSpan(_first_ts, _last_ts),
+                                                     'windSpeed', 'avg')
+        if wind_speed_avg_vt.value is not None:
             if _usUnits == weewx.METRICWX:
                 # METRICWX so wind speed is m/s, div by 1000 for km
-                _alltime_run = windSpeed_avg_vt.value * _alltime_hours / 1000.0
+                _alltime_run = wind_speed_avg_vt.value * _alltime_hours / 1000.0
             else:
                 # METRIC or US so its just a straight multiply
-                _alltime_run = windSpeed_avg_vt.value * _alltime_hours
+                _alltime_run = wind_speed_avg_vt.value * _alltime_hours
         else:
             # No avg wind speed so set to None
             _alltime_run = None
@@ -2124,7 +2090,8 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
             _start_ts = weeutil.weeutil.startOfDay(_first_ts) + 86400
         else:
             _start_ts = _first_ts
-        _row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed WHERE dateTime >= ? AND dateTime < ?", (_start_ts, _mn_ts))
+        _row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed "
+                                  "WHERE dateTime >= ? AND dateTime < ?", (_start_ts, _mn_ts))
         # Now get our max_day_windrun excluding first day and today
         if _row:
             if _row[0] is not None:
@@ -2158,7 +2125,8 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
 
         # Get our first days windrun and ts
         _first_mn_ts = weeutil.weeutil.startOfDay(_first_ts)
-        _first_row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed WHERE dateTime = ?", (_first_mn_ts,))
+        _first_row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed "
+                                        "WHERE dateTime = ?", (_first_mn_ts,))
         if _first_row:
             if _first_row[0] is not None:
                 _first_windrun_ts = _first_row[0]
@@ -2224,7 +2192,8 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
         # Year
         # Get ts and MAX(avg) of windSpeed from statsdb
         # ts value returned is ts for midnight on the day the MAX(avg) occurred
-        _row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed WHERE dateTime >= ? AND dateTime < ?", (_mn_first_of_year_ts, _mn_ts))
+        _row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed "
+                                  "WHERE dateTime >= ? AND dateTime < ?", (_mn_first_of_year_ts, _mn_ts))
         # Now get our max_day_windrun excluding first day and today
         if _row:
             if _row[0] is not None:
@@ -2260,7 +2229,8 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
         if _first_ts > _mn_first_of_year_ts:
             # we have a partial day that will not have been included
             _first_mn_ts = weeutil.weeutil.startOfDay(_first_ts)
-            _first_row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed WHERE dateTime = ?", (_first_mn_ts,))
+            _first_row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed "
+                                            "WHERE dateTime = ?", (_first_mn_ts,))
             if _first_row:
                 if _first_row[0] is not None:
                     _first_windrun_ts = _first_row[0]
@@ -2331,7 +2301,8 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
         # Month
         # Get ts and MAX(avg) of windSpeed from statsdb
         # ts value returned is ts for midnight on the day the MAX(avg) occurred
-        _row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed WHERE dateTime >= ? AND dateTime < ?", (_mn_first_of_month_ts, _mn_ts))
+        _row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed "
+                                  "WHERE dateTime >= ? AND dateTime < ?", (_mn_first_of_month_ts, _mn_ts))
         # Now get our max_day_windrun excluding first day and today
         if _row:
             if _row[0] is not None:
@@ -2367,7 +2338,8 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
         if _first_ts > _mn_first_of_month_ts:
             # we have a partial day that will not have been included
             _first_mn_ts = weeutil.weeutil.startOfDay(_first_ts)
-            _first_row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed WHERE dateTime = ?", (_first_mn_ts,))
+            _first_row = db_lookup().getSql("SELECT dateTime, MAX(sum/count) FROM archive_day_windSpeed "
+                                            "WHERE dateTime = ?", (_first_mn_ts,))
             if _first_row:
                 if _first_row[0] is not None:
                     _first_windrun_ts = _first_row[0]
@@ -2569,17 +2541,17 @@ class WdHourRainTags(weewx.cheetahgenerator.SearchList):
         return [search_list]
 
 
-# ============================================================================
-#                              class wdGdDays
-# ============================================================================
+# ==============================================================================
+#                                 class WdGdDays
+# ==============================================================================
 
 
-class wdGdDays(weewx.cheetahgenerator.SearchList):
+class WdGdDays(weewx.cheetahgenerator.SearchList):
     """SLE to return Growing Degree Days tags."""
 
     def __init__(self, generator):
         # call our parent's initialisation
-        super(wdGdDays, self).__init__(generator)
+        super(WdGdDays, self).__init__(generator)
 
         # Get temperature group, this determines whether we return GDD in F or
         # C, enclose in try..except just in case. Default to degree_C if any
@@ -2670,8 +2642,8 @@ class wdGdDays(weewx.cheetahgenerator.SearchList):
         _sql = "SELECT SUM(max), SUM(min), COUNT(*) FROM archive_day_outTemp "\
                "WHERE dateTime >= %(start)s AND dateTime < %(stop)s "\
                "ORDER BY dateTime"
-        interpolate = {'start' : _mn_first_of_month_ts,
-                       'stop'  : _mn_stop_ts-1}
+        interpolate = {'start': _mn_first_of_month_ts,
+                       'stop': _mn_stop_ts-1}
         _row = db_lookup().getSql(_sql % interpolate)
         if _row:
                 _max_sum = _row[0]
@@ -2735,7 +2707,7 @@ class wdGdDays(weewx.cheetahgenerator.SearchList):
                        }
 
         t2 = time.time()
-        logdbg2("wdGdDays SLE executed in %0.3f seconds" % (t2-t1))
+        logdbg2("WdGdDays SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2887,12 +2859,6 @@ class WdForToday(weewx.cheetahgenerator.SearchList):
                                                'minyear': _min_year}
                                    }
                        }
-
-        #search_list = {'max_temp_today':      _max_vh,
-        #               'max_temp_today_year': _max_year,
-        #               'min_temp_today':      _min_vh,
-        #               'min_temp_today_year': _min_year,
-        #               }
 
         t2 = time.time()
         logdbg2("WdForToday SLE executed in %0.3f seconds" % (t2-t1))
