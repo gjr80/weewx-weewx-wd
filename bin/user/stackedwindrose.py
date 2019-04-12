@@ -66,6 +66,7 @@ import weewx.reportengine
 import weewx.units
 
 from weeplot.utilities import get_font_handle
+from weeutil.config import search_up
 
 WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0a1'
 
@@ -102,6 +103,11 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                                                             first_run,
                                                             stn_info,
                                                             record)
+        # determine how much logging is desired
+        self.log_success = weeutil.weeutil.to_bool(search_up(self.skin_dict,
+                                                             'log_success',
+                                                             True))
+
         # get the data binding to use
         self.data_binding = config_dict['StdArchive'].get('data_binding',
                                                           'wx_binding')
@@ -496,10 +502,11 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                 image.save(img_file)
                 # increment number of images generated
                 ngen += 1
-        t2 = time.time()
-        loginf("Generated %d images for %s in %.2f seconds" % (ngen,
-                                                               self.skin_dict['REPORT_NAME'],
-                                                               t2 - t1))
+        if self.log_success:
+            t2 = time.time()
+            loginf("Generated %d images for %s in %.2f seconds" % (ngen,
+                                                                   self.skin_dict['REPORT_NAME'],
+                                                                   t2 - t1))
 
 
 # ==============================================================================
