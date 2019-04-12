@@ -2001,4 +2001,8 @@ $lighteningcountlast30minutesnextstorm = '0';
 // ----------------------------------------------------------------------------------------------------
 // end of testtags.txt/testtags.php
 //
+//Include Weewx specific tags if they exist
+//
+if(file_exists($SITE['Extratags'])) { include_once($SITE['Extratags']); }
+//
 ?>#end raw

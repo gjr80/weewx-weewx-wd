@@ -64,9 +64,9 @@ GNU General Public License for more details.
 #*WD|007*#$day.rain.sum.mm.toString($addLabel=False, $localize=False) #slurp
 #*WD|008*#$month.rain.sum.mm.toString($addLabel=False, $localize=False) #slurp
 #*WD|009*#$year.rain.sum.mm.toString($addLabel=False, $localize=False) #slurp
-#set $currentRainRateMinute = $current.rainRate.mm_per_hour.raw/60.0
+#set $currentRainRateMinute = round($current.rainRate.mm_per_hour.raw/60.0, 1)
 #*WD|010*#$currentRainRateMinute #slurp
-#set $dayMaxRainRateMinute = $day.rainRate.max.mm_per_hour.raw/60.0
+#set $dayMaxRainRateMinute = round($day.rainRate.max.mm_per_hour.raw/60.0, 1)
 #*WD|011*#$dayMaxRainRateMinute #slurp
 #*WD|012*#$current.inTemp.degree_C.toString($addLabel=False, $localize=False) #slurp
 #*WD|013*#$current.inHumidity.toString($addLabel=False, $localize=False) #slurp
