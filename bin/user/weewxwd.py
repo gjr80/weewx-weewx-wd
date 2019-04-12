@@ -1682,7 +1682,7 @@ class DarkSkySource(ThreadedSource):
         self.max_tries = to_int(source_config_dict.get('max_tries', 3))
         # Get API call lockout period. This is the minimum period between API
         # calls for the same feature. This prevents an error condition making
-        # multiple rapid API calls and thus breac the API usage conditions.
+        # multiple rapid API calls and thus breach the API usage conditions.
         self.lockout_period = to_int(source_config_dict.get('api_lockout_period',
                                                             60))
         # Dark Sky can provide both forecast and current conditions data. Some
@@ -1852,7 +1852,7 @@ class DarkSkySource(ThreadedSource):
                                 pass
                             else:
                                 # use a day from 6am to 6pm
-                                day = 6 <= _dt.hour < 6
+                                day = 6 <= _dt.hour < 18
                         # get the appropriate icon tuple from our dict, default to
                         # 'clear-day' if the icon does not exist
                         icons = self.ICON_DICT.get(raw_data[self.block]['icon'].lower(),
@@ -1893,7 +1893,7 @@ class DarkSkySource(ThreadedSource):
                                 pass
                             else:
                                 # use a day from 6am to 6pm
-                                day = 6 <= _dt.hour < 6
+                                day = 6 <= _dt.hour < 18
                         # get the appropriate icon tuple from our dict, default to
                         # 'clear-day' if the icon does not exist
                         icons = self.ICON_DICT.get(raw_data['currently']['icon'].lower(),
