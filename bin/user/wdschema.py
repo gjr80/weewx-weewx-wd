@@ -12,10 +12,10 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 1.2.0a1                                    Date: 12 April 2019
+Version: 1.2.0a2                                    Date: 12 April 2019
 
 Revision History
-    12 April 2019       v1.2.0a1
+    12 April 2019       v1.2.0
       - initial release
       - removed WeeWX-WD schema data from weewxwd.py
       - removed forecastTextMetric field
@@ -32,7 +32,7 @@ in saving as much space as you may think - most of the space is taken up by the
 primary key indexes (type "dateTime").
 """
 
-WDSCHEMA_VERSION = '1.2.0a1'
+WDSCHEMA_VERSION = '1.2.0a2'
 
 # define schema for archive table
 weewxwd_schema = [

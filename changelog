@@ -15,10 +15,10 @@ v1.2.0
 
 v1.0.3
 *   bug fixes:
-    -   fixed bug in wdSearchX3.py wdMonthStats SLE that caused problems with
+    -   fixed bug in wdSearchX3.py WdMonthStats SLE that caused problems with
         monthRainMax_vh for archives with small amounts (partial months) of
         data
-*   removed two lines of old commented out code from wdSearchX3.py wdMonthStats
+*   removed two lines of old commented out code from wdSearchX3.py WdMonthStats
     SLE
 v1.0.2
 *   bug fixes:
@@ -33,9 +33,9 @@ v1.0.1
     -   $almanac.sunrise and $almanac.sunset are now expected as ValueHelpers
         rather than formatted strings
 *   installer now checks for minimum required weewx version
-*   added heatColorWord, feelsLike and density tags to wdSundryTags SLE
+*   added heatColorWord, feelsLike and density tags to WdSundryTags SLE
 *   added day_windrun, yest_windrun, week_windrun, seven_day_windrun,
-    month_windrun, year_windrun tags and alltime_windrun tags to wdWindRunTags
+    month_windrun, year_windrun tags and alltime_windrun tags to WdWindRunTags
     SLE
 *   ignore locale for non-datetime ValueHelpers in clientraw files using the
     undocumented .toString() method
@@ -43,13 +43,13 @@ v1.0.1
     stanzas in weewx.conf for those reports where date-time formats and units
     can be customized making it easier for users to customize these settings
 *   database management utility functions in weewxwd3.py removed and placed in
-    new wd_databse utility
+    new wd_database utility
 *   bug fixes:
-    -   fixed bug in wdMonthStats SLE where it could crash if there was an
+    -   fixed bug in WdMonthStats SLE where it could crash if there was an
         included month or greater of no data in the archive
-    -   fixed bug in wdForToday SLE where it would crash if a query on
+    -   fixed bug in WdForToday SLE where it would crash if a query on
         archive_day_outTemp returned no (a None) result
-    -   fixed another bug in wdMonthStats SLE whereby a gap of at least one
+    -   fixed another bug in WdMonthStats SLE whereby a gap of at least one
         full calendar month of temp stats would result in all outTemp min stats
         being None
     -   clientraw.txt field 48 now correctly provides current conditions icon
@@ -64,9 +64,9 @@ v1.0.1
     -   reformat a number of equations
 *   testtags.php.tmpl:
     -   revised day length and change in day length calculations
-    -   removed old code used for tags that have been moved to the wdSundryTags and wdWindRunTags SLEs
-    -   now uses additional sundry tags from revised wdSundryTags SLE
-    -   now uses windrun tags from revised wdWindRunTags SLE
+    -   removed old code used for tags that have been moved to the WdSundryTags and WdWindRunTags SLEs
+    -   now uses additional sundry tags from revised WdSundryTags SLE
+    -   now uses windrun tags from revised WdWindRunTags SLE
     -   removed template calculations that have now been moved to a SLE
         (free memory, Easter, latitude/longitude strings, time of next update,
         wet bulb, Chandler, cloud base, feels like, heat color word,
@@ -82,7 +82,7 @@ v1.0.1
     -   force sunrise, sunset, moonrise and moonset time formats to HH:MM
 *   wdSearchX3.py:
     -   removed unused imports
-    -   revised wdSundryTags SLE to pickup many sundry tags that were previously calculated in-template
+    -   revised WdSundryTags SLE to pickup many sundry tags that were previously calculated in-template
 *   weewxwd3.py:
     -   implemented syslog wrapper functions
     -   replaced calls to superseded DBBinder.get_database method with
@@ -102,7 +102,7 @@ v1.0.1
 *   Steelgauges/skin.conf:
     -   add group_distance and associated formats and labels
     -   bump version to 12
-    -   now uses wdHourRainTags SLE
+    -   now uses WdHourRainTags SLE
 *   Testtags/skin.conf, Clientraw/skin.conf:
     -   add group_distance and associated formats and labels
 
