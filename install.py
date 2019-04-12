@@ -11,10 +11,10 @@ details.
 
                          Installer for Weewx-WD
 
-Version: 1.2.0a1                                      Date: 29 March 2019
+Version: 1.2.0a1                                      Date: 12 April 2019
 
 Revision History
-    29 March 2019         v1.2.0a1
+    12 April 2019       v1.2.0a1
         - WeeWX-WD now requires WeeWX v3.5.0 or later
         - revised Databases and DataBindings config options to support wdSchema
           and wd supp database
@@ -27,6 +27,8 @@ Revision History
         - removed no longer used file wd_database
         - renamed various install files
         - reformatted these comments
+        - removed SteelGauges skin
+        - added new [[[WU]]], [[[DS]]] and [[[File]]] stanzas to [[Supplementary]]
 
 Previous Bitbucket revision history
     31 March 2017       v1.0.3
@@ -75,9 +77,9 @@ class WeewxWdInstaller(ExtensionInstaller):
             description='WeeWX support for Weather Display Live and Carter Lake/Saratoga weather web site templates.',
             author="Gary Roderick",
             author_email="gjroderick<@>gmail.com",
-            process_services=['user.weewxwd3.WdWXCalculate'],
-            archive_services=['user.weewxwd3.WdArchive',
-                              'user.weewxwd3.WdSuppArchive'],
+            process_services=['user.weewxwd.WdWXCalculate'],
+            archive_services=['user.weewxwd.WdArchive',
+                              'user.weewxwd.WdSuppArchive'],
             config={
                 'StdReport': {
                     'wdPWS': {
@@ -131,21 +133,6 @@ class WeewxWdInstaller(ExtensionInstaller):
                             },
                         },
                     },
-                    'wdSteelGauges': {
-                        'skin': 'SteelGauges',
-                        'enabled': 'True',
-                        'HTML_ROOT': 'WD',
-                        'Units': {
-                            'Groups': {
-                                'group_pressure': 'hPa',
-                                'group_rain': 'mm',
-                                'group_rainrate': 'mm_per_hour',
-                                'group_speed': 'km_per_hour',
-                                'group_speed2': 'km_per_hour2',
-                                'group_temperature': 'degree_C'
-                            },
-                        },
-                    },
                     'wdClientraw': {
                         'skin': 'Clientraw',
                         'enabled': 'True',
@@ -190,7 +177,16 @@ class WeewxWdInstaller(ExtensionInstaller):
                     'Supplementary': {
                         'binding': 'wdsupp_binding',
                         'WU': {
-                            'apiKey': 'replace_me'
+                            'api_key': 'replace_me',
+                            'enable': 'False'
+                        },
+                        'DS': {
+                            'api_key': 'replace_me',
+                            'enable': 'False'
+                        },
+                        'File': {
+                            'file': '/path/and/filename',
+                            'enable': 'False'
                         }
                     }
                 }
@@ -198,7 +194,7 @@ class WeewxWdInstaller(ExtensionInstaller):
             files=[('bin/user', ['bin/user/stackedwindrose.py',
                                  'bin/user/wdastro.py',
                                  'bin/user/wdschema.py',
-                                 'bin/user/wdSearchX3.py',
+                                 'bin/user/wdsearchlist.py',
                                  'bin/user/wdtaggedstats.py',
                                  'bin/user/weewxwd.py']),
                    ('skins/Clientraw', ['skins/Clientraw/clientraw.txt.tmpl',
