@@ -66,7 +66,12 @@ import weewx.reportengine
 import weewx.units
 
 from weeplot.utilities import get_font_handle
-from weeutil.config import search_up
+# search_up moved from weeutil.weeutil to weeutil.config in v3.9.0 s we need to
+# try each until we find it
+try:
+    from weeutil.config import search_up
+except ImportError:
+    from weeutil.weeutil import search_up
 
 WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0a1'
 
