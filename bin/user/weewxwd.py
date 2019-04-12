@@ -13,10 +13,10 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
-Version: 1.2.0a1                                    Date: 29 March 2019
+Version: 1.2.0a1                                    Date: 12 April 2019
 
 Revision History
-    29 March 2019       v1.2.0a1
+    12 April 2019       v1.2.0a1
         - revised for WeeWX v3.5.0
         - moved __main__ code to weewxwd_config utility
         - now uses appTemp and humidex as provided by StdWXCalculate

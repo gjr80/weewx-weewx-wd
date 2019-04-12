@@ -12,12 +12,13 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 1.2.0a1                                    Date: 29 March 2019
+Version: 1.2.0a1                                    Date: 12 April 2019
 
 Revision History
-    29 March 2019       v1.2.0a1
+    12 April 2019       v1.2.0a1
       - initial release
       - removed WeeWX-WD schema data from weewxwd.py
+      - removed forecastTextMetric field
 
 Below are the default schemas for the weeWX-WD archive table and weeWX-WD
 supplementary database supp table. They are only used for initialization, or
