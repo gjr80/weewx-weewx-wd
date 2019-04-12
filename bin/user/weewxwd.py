@@ -772,29 +772,48 @@ class WdSuppArchive(weewx.engine.StdService):
                 # we have everything we need to put a short message re supp 
                 # database
                 loginf("wdsupparchive", "max_age=%s vacuum=%s" % (self.max_age,
-                                                                   self.vacuum))
-                
+                                                                  self.vacuum))
+
                 # setup up any sources
                 self.sources = dict()
                 self.queues = dict()
+                # iterate over each source definition under [[Supplementary]]
                 for source in _supp_dict.sections:
+                    # is it a source we know how to handle
                     if source in KNOWN_SOURCES:
+                        # get the source config dict
                         _source_dict = _supp_dict[source]
-                        if _source_dict is not None:
-                            # setup the result and control queues
+                        # check if the source is enabled, default to False unless
+                        # enable = True
+                        _enable = to_bool(_source_dict.get('enable', False))
+                        if _source_dict is not None and _enable:
+                            # we have a source config dict and the source is
+                            # enabled so setup the result and control queues
                             self.queues[source] = {'control': Queue.Queue(),
                                                    'result': Queue.Queue()}
+                            # obtain an appropriate source object
                             self.sources[source] = self.source_factory(source,
                                                                        self.queues[source],
                                                                        engine,
                                                                        _source_dict)
+                            # start the source object
                             self.sources[source].start()
+                        elif not _enable:
+                            # the source was explicitly disabled so tell the
+                            # user
+                            loginf("wdsupparchive", "Source '%s' not enabled." % source)
                         else:
+                            # no usable source config dict so log it
                             loginf("wdsupparchive",
                                    "Source '%s' will be ignored, incomplete or missing config settings")
 
                 # define some properties for later use
                 self.last_ts = None
+
+                self.source_record = {'forecastIcon': None,
+                                      'forecastText': None,
+                                      'currentIcon': None,
+                                      'currentText': None}
 
     @staticmethod
     def source_factory(source, queues_dict, engine, source_dict):
@@ -821,7 +840,7 @@ class WdSuppArchive(weewx.engine.StdService):
 
         # If we have a result queue check to see if we have received
         # any forecast data. Use get_nowait() so we don't block the
-        # rtgd control queue. Wrap in a try..except to catch the error
+        # control queue. Wrap in a try..except to catch the error
         # if there is nothing in the queue.
 
         # get time now as a ts
@@ -850,10 +869,15 @@ class WdSuppArchive(weewx.engine.StdService):
                         # we have forecast text so log and add it to the archive record
                         logdbg2("wdsupparchive",
                                 "received forecast text: %s" % _package['payload'])
-                        event.record.update(_package['payload'])
+                        self.source_record.update(_package['payload'])
+
+        _record = dict(self.source_record)
+        _record['dateTime'] = event.record['dateTime']
+        _record['usUnits'] = event.record['usUnits']
+        _record['interval'] = event.record['interval']
 
         # update our data record with any stashed loop data
-        event.record.update(self.process_loop())
+        _record.update(self.process_loop())
 
         # get a db manager dict
         dbm_dict = weewx.manager.get_manager_dict_from_config(self.config_dict,
@@ -861,9 +885,9 @@ class WdSuppArchive(weewx.engine.StdService):
         # now save the data
         with weewx.manager.open_manager(dbm_dict) as dbm:
             # save the record
-            self.save_record(dbm, event.record, self.db_max_tries, self.db_retry_wait)
+            self.save_record(dbm, _record, self.db_max_tries, self.db_retry_wait)
             # set ts of last packet processed
-            self.last_ts = event.record['dateTime']
+            self.last_ts = _record['dateTime']
             # prune older packets and vacuum if required
             if self.max_age > 0:
                 self.prune(dbm,
@@ -1100,9 +1124,10 @@ class ThreadedSource(threading.Thread):
         except Exception, e:
             # Some unknown exception occurred. This is probably a serious
             # problem. Exit with some notification.
-            logcrit("rtgd", "Unexpected exception of type %s" % (type(e),))
-            weeutil.weeutil.log_traceback('rtgd: **** ')
-            logcrit("rtgd", "Thread exiting. Reason: %s" % (e,))
+            logcrit("wdthreadedsource",
+                    "Unexpected exception of type %s" % (type(e),))
+            weeutil.weeutil.log_traceback('wdthreadedsource: **** ')
+            logcrit("wdthreadedsource", "Thread exiting. Reason: %s" % (e,))
 
     def setup(self):
         """Perform any post post-__init__() setup.
@@ -1371,7 +1396,7 @@ class WuSource(ThreadedSource):
             # we want the full day narrative, use a try..except in case the
             # response is malformed
             try:
-                _text = _response_json['narrative'][0]
+                _text = _response_json['narrative'][0]  #.encode('ascii', 'ignore')
             except KeyError:
                 # could not find the narrative so log and return None
                 if self.debug > 0:
@@ -1385,7 +1410,7 @@ class WuSource(ThreadedSource):
             # if the day narrative has disappeared. Use night narrative for 7pm
             # to 7am but start looking for day again after midnight.
             # get the current local hour
-            _hour = datetime.datetime.now().hour
+            _hour = datetime.now().hour
             # helper string for later logging
             if 7 <= _hour < 19:
                 _period_str = 'daytime'
@@ -1440,7 +1465,7 @@ class WuSource(ThreadedSource):
             # if we made it here we have an index to use so get the required
             # narrative
             try:
-                _text = _response_json['daypart'][0]['narrative'][_index]
+                _text = _response_json['daypart'][0]['narrative'][_index]  #.encode('ascii', 'ignore')
                 _icon = _response_json['daypart'][0]['iconCode'][_index]
             except KeyError:
                 # if we can'f find a field log the error and return None
@@ -1616,6 +1641,20 @@ class DarkSkySource(ThreadedSource):
     # default forecast block to be used
     DEFAULT_BLOCK = 'daily'
 
+    ICON_DICT = {'clear-day': (0, 1),
+                 'clear-night': (0, 1),
+                 'rain': (20, 14),
+                 'snow': (25, 16),
+                 'sleet': (23, 23),
+                 'wind': (33, 33),
+                 'fog': (6, 11),
+                 'cloudy': (18, 13),
+                 'partly-cloudy-day': (2, 4),
+                 'partly-cloudy-night': (2, 4),
+                 'hail': (23, 23),
+                 'thunderstorm': (31, 17),
+                 'tornado': (32, 32)}
+
     def __init__(self, control_queue, result_queue, engine, source_config_dict):
 
         # initialize my base class:
@@ -1646,6 +1685,18 @@ class DarkSkySource(ThreadedSource):
         # multiple rapid API calls and thus breac the API usage conditions.
         self.lockout_period = to_int(source_config_dict.get('api_lockout_period',
                                                             60))
+        # Dark Sky can provide both forecast and current conditions data. Some
+        # users may choose to use the forecast from another source (eg WU) but
+        # still use the Dark Sky current conditions (WU does not provide
+        # current conditions). So check what source data Dark Sky is to provide.
+        _s_data = source_config_dict.get('source_data', 'both').lower()
+        # do forecast if source_data contains 'both' or 'forecast'
+        self.do_forecast = 'both' in _s_data or 'forecast' in _s_data
+        # do current if source_data contains 'both' or 'current'
+        self.do_current = 'both' in _s_data or 'current' in _s_data
+        # if we have neither (ie source_data is nonsense) then do both
+        if not (self.do_forecast or self.do_current):
+            self.do_forecast = self.do_current = True
         # initialise container for timestamp of last API call
         self.last_call_ts = None
         # Get our API key from weewx.conf, first look in [RealtimeGaugeData]
@@ -1668,10 +1719,13 @@ class DarkSkySource(ThreadedSource):
         self.block = source_config_dict.get('block', self.DEFAULT_BLOCK).lower()
 
         # log what we will do
-        if self.do_forecast:
+        if self.do_forecast and self.do_current:
             loginf("wddarkskysource",
-                   "Dark Sky API will be used for current conditions and forecast data")
-        else:
+                   "Dark Sky API will be used for forecast and current conditions data")
+        elif self.do_forecast:
+            loginf("wddarkskysource",
+                   "Dark Sky API will be used for forecast data only")
+        elif self.do_current:
             loginf("wddarkskysource",
                    "Dark Sky API will be used for current conditions data only")
         if self.debug > 0:
@@ -1775,15 +1829,41 @@ class DarkSkySource(ThreadedSource):
         # get the summary data to be used
         # is our block available, can't assume it is
         if self.block in raw_data:
-            # we have our block, but is the summary there
-            if 'summary' in raw_data[self.block]:
-                # we have a summary field
-                _forecast = raw_data[self.block]['summary'].encode('ascii', 'ignore')
-            else:
-                # we have no summary field, so log it and return None
-                if self.debug > 0:
-                    loginf("wddarkskysource", "Summary data not available "
-                                              "for '%s' forecast" % (self.block,))
+            if self.do_forecast:
+                # we have our block and we are to provide forecast data but is
+                # the summary there
+                if 'summary' in raw_data[self.block]:
+                    # we have a summary field
+                    _forecast = raw_data[self.block]['summary'].encode('ascii',
+                                                                       'ignore')
+                    # can we extract an icon number
+                    if 'icon' in raw_data[self.block]:
+                        # assume we will use a 'day' icon
+                        day = True
+                        # but let's see if we have a time to refute our assumption
+                        if 'time' in raw_data[self.block]:
+                            try:
+                                # get a datetime object, wrap in a try..except in
+                                # case 'time' is not a valid epoch timestamp
+                                _dt = datetime.fromtimestamp(raw_data[self.block]['time'])
+                            except TypeError:
+                                # can't convert the timestamp so stick with our
+                                # assumption
+                                pass
+                            else:
+                                # use a day from 6am to 6pm
+                                day = 6 <= _dt.hour < 6
+                        # get the appropriate icon tuple from our dict, default to
+                        # 'clear-day' if the icon does not exist
+                        icons = self.ICON_DICT.get(raw_data[self.block]['icon'].lower(),
+                                                   self.ICON_DICT['clear-day'])
+                        # choose either the day or night icon
+                        _forecast_icon = icons[0] if day else icons[1]
+                else:
+                    # we have no summary field, so log it and return None
+                    if self.debug > 0:
+                        loginf("wddarkskysource", "Summary data not available "
+                                                  "for '%s' forecast" % (self.block,))
         else:
             if self.debug > 0:
                 loginf("wddarkskysource",
@@ -1791,26 +1871,61 @@ class DarkSkySource(ThreadedSource):
         # get the current data and icon
         # is the 'currently' block available, can't assume it is
         if 'currently' in raw_data:
-            # we have our currently block, but is the summary there
-            if 'summary' in raw_data['currently']:
-                # we have a summary field
-                _current = raw_data['currently']['summary'].encode('ascii', 'ignore')
-            else:
-                # we have no summary field, so log it and return None
-                if self.debug > 0:
-                    loginf("wddarkskysource",
-                           "Summary data not available for 'currently' block")
+            if self.do_current:
+                # we have our block and we are to provide current conditions
+                # data but is the summary there
+                if 'summary' in raw_data['currently']:
+                    # we have a summary field
+                    _current = raw_data['currently']['summary'].encode('ascii', 'ignore')
+                    # can we extract an icon number
+                    if 'icon' in raw_data['currently']:
+                        # assume we will use a 'day' icon
+                        day = True
+                        # but let's see if we have a time to refute our assumption
+                        if 'time' in raw_data['currently']:
+                            try:
+                                # get a datetime object, wrap in a try..except in
+                                # case 'time' is not a valid epoch timestamp
+                                _dt = datetime.fromtimestamp(raw_data['currently']['time'])
+                            except TypeError:
+                                # can't convert the timestamp so stick with our
+                                # assumption
+                                pass
+                            else:
+                                # use a day from 6am to 6pm
+                                day = 6 <= _dt.hour < 6
+                        # get the appropriate icon tuple from our dict, default to
+                        # 'clear-day' if the icon does not exist
+                        icons = self.ICON_DICT.get(raw_data['currently']['icon'].lower(),
+                                                   self.ICON_DICT['clear-day'])
+                        # choose either the day or night icon
+                        _current_icon = icons[0] if day else icons[1]
+                else:
+                    # we have no summary field, so log it and return None
+                    if self.debug > 0:
+                        loginf("wddarkskysource",
+                               "Summary data not available for 'currently' block")
         else:
             if self.debug > 0:
                 loginf("wddarkskysource",
                        "Dark Sky 'currently' block not available")
 
-        if _forecast is not None or _forecast_icon is not None:
-            return {'forecastIcon': _forecast_icon,
-                    'forecastText': _forecast,
-                    'currentIcon': _current_icon,
-                    'currentText': _current}
+        # if we have at least one non-None value then return a dict, else
+        # return None
+        if any(a is not None for a in (_forecast_icon, _forecast, _current_icon, _current)):
+            # we have something to return but only return what we were asked
+            _dict = dict()
+            # do we need to return forecast data
+            if self.do_forecast:
+                _dict.update({'forecastIcon': _forecast_icon,
+                              'forecastText': _forecast})
+            # do we need to return current data
+            if self.do_current:
+                _dict.update({'currentIcon': _current_icon,
+                              'currentText': _current})
+            return _dict
         else:
+            # we have no data so return None
             return None
 
 
@@ -1983,7 +2098,8 @@ class FileSource(ThreadedSource):
     """
 
     # structure of the text file, one entry per line
-    FILE_STRUCT = ('forecastText', 'forecastIcon', 'currentText', 'currentIcon')
+    FORECAST_STRUCT = ('forecastText', 'forecastIcon')
+    CURRENT_STRUCT = ('currentText', 'currentIcon')
 
     def __init__(self, control_queue, result_queue, engine, source_config_dict):
 
@@ -2006,12 +2122,33 @@ class FileSource(ThreadedSource):
         if self.file is None or not os.path.isfile(self.file):
             raise MissingFile("Source file not specified or not a valid path/file")
 
+        # Text file source can provide both forecast and current conditions
+        # data. Some users may choose to use the forecast from another source
+        # (eg WU) but still use the file source for current conditions (WU does
+        # not provide current conditions). So check what source data the file
+        # source is to provide.
+        _s_data = source_config_dict.get('source_data', 'both').lower()
+        # do forecast if source_data contains 'both' or 'forecast'
+        self.do_forecast = 'both' in _s_data or 'forecast' in _s_data
+        # do current if source_data contains 'both' or 'current'
+        self.do_current = 'both' in _s_data or 'current' in _s_data
+        # if we have neither (ie source_data is nonsense) then do both
+        if not (self.do_forecast or self.do_current):
+            self.do_forecast = self.do_current = True
+
         # initialise the time of last file read
         self.last_read_ts = None
 
         # log what we will do
-        loginf("wdfilesource",
-               "Formatted text file will be used for current conditions and forecast data")
+        if self.do_forecast and self.do_current:
+            loginf("wdfilesource",
+                   "Formatted text file will be used for forecast and current conditions data")
+        elif self.do_forecast:
+            loginf("wdfilesource",
+                   "Formatted text file will be used for forecast data only")
+        elif self.do_current:
+            loginf("wdfilesource",
+                   "Formatted text file will be used for current conditions data only")
         if self.debug > 0:
             loginf("wdfilesource",
                    "file=%s interval=%s" % (self.file, self.interval))
@@ -2033,8 +2170,9 @@ class FileSource(ThreadedSource):
         # get the current time
         now = time.time()
         if self.debug > 0:
-            loginf("wdfilesource",
-                   "Last file read attempted at %s" % weeutil.weeutil.timestamp_to_string(self.last_read_ts))
+            if self.last_read_ts is not None:
+                loginf("wdfilesource",
+                       "Last file read attempted at %s" % weeutil.weeutil.timestamp_to_string(self.last_read_ts))
         if self.last_read_ts is None or (now + 1 - self.interval) >= self.last_read_ts:
             # read the file, wrap in a try..except just in case
             _data = None
@@ -2075,10 +2213,19 @@ class FileSource(ThreadedSource):
 
         # do we have any data
         if raw_data is not None:
+            # work out what our data file structure was, it will depend on
+            # whether we had forecast and current data or just forecast or just
+            # current
+            if self.do_forecast and self.do_current:
+                _file_struture = self.FORECAST_STRUCT + self.CURRENT_STRUCT
+            elif self.do_forecast:
+                _file_struture = self.FORECAST_STRUCT
+            else:
+                _file_struture = self.CURRENT_STRUCT
             # initialise holder dict for our parsed data
             _parsed = dict()
             # iterate over each field we are looking for
-            for index, key in enumerate(self.FILE_STRUCT):
+            for index, key in enumerate(_file_struture):
                 # assign the relevant data to the relevant key in the dict,
                 # wrap in a try..except in case something is missing or
                 # otherwise wrong
