@@ -35,7 +35,6 @@ GNU General Public License for more details.
 #set $dayFormat = $skin_dict.Units.TimeFormats.day_f
 #set $monthFormat = $skin_dict.Units.TimeFormats.month_f
 #set $yearFormat = $skin_dict.Units.TimeFormats.year_f
-#set $current_text_underscore = $current_text.replace(' ', '_')
 ##
 ##End Setup date time format strings
 ##
@@ -120,20 +119,16 @@ GNU General Public License for more details.
 #*WD|045*#$current($data_binding='wd_binding').humidex.degree_C.toString($addLabel=False, $localize=False) #slurp
 #*WD|046*#$day.outTemp.max.degree_C.toString($addLabel=False, $localize=False) #slurp
 #*WD|047*#$day.outTemp.min.degree_C.toString($addLabel=False, $localize=False) #slurp
-#if $varExists('current_icon') and $current_icon != '' and $current_icon != None
-#*WD|048*#$current_icon #slurp
-#elif $current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.exists
+#try
 #*WD|048*#$current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.nolabel("%d", "--- ") #slurp
-#else
+#except
 #*WD|048*#0 #slurp
-#end if
-#if $varExists('current_text') and $current_text != '' and $current_text != None
-#*WD|049*#$current_text_underscore #slurp
-#elif $current($data_binding='wdsupp_binding', $max_delta=600).currentText.exists
+#end try
+#try
 #*WD|049*#$current($data_binding='wdsupp_binding', $max_delta=600).currentText.nolabel("%s", "--- ").replace(' ', '_') #slurp
-#else
+#except
 #*WD|049*#--- #slurp
-#end if
+#end try
 #*WD|050*##if $varExists('trend') then $trend.barometer.toString($useThisFormat="%+.2f", $NONE_string='0', $localize=False) else 0# #slurp
 #*WD|051*##*Previous 20 Hours Wind Knots Readings*##slurp
 #for $i in range (4,24):

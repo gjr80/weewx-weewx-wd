@@ -1028,21 +1028,8 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
                        only parameter, will return a database manager object.
 
         Returns:
-            forecast_text: A string with weather forecast text read from a file
-                           specified in the relevant skin.conf.
-            forecast_icon: An integer representing the weather forecast icon
-                           read from a file specified in the relevant
-                           skin.conf.
-            current_text: A string with the current weather conditions summary
-                          read from a file specified in the relevant skin.conf.
-            current_icon: An integer representing the weather forecast icon
-                          read from a file specified in the relevant skin.conf.
             launchtime: A ValueHelper containing the epoch time that weewx was
                         started.
-            nineamrain: A ValueHelper containing the rainfall since 9am. Note
-                        that if it is before 9am the result will be the total
-                        rainfall since 9am the previous day. At 9am the value
-                        is None.
             heatColorWord: A string describing the current temperature
                            conditions. Based on outTemp, outHumidity and
                            humidex.
@@ -1065,46 +1052,6 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
         """
 
         t1 = time.time()
-
-        # A forecast data text file can be used to provide forecast_text,
-        # forecast_icon, current_text and current_icon tags. The format of the
-        # file is text only with the forecast_text value being on the 1st line,
-        # the forecast_icon value on the 2nd line, current_text value being on
-        # the 3rd line and current_icon on the 4th line. No other lines are
-        # read. This file is specified in the [Extras] section of the the
-        # skin.conf concerned as follows:
-        # [Extras]
-        #     [[Forecast]]
-        #         Forecast_File_Location = /path/to/filename.txt
-        #
-        # Where filename.txt is the name of the file holding the forecast data.
-
-        # get forecast file setting
-        _file = self.generator.skin_dict['Extras']['Forecast'].get('Forecast_File_Location')
-        # if the file exists get the data
-        if _file:
-            try:
-                with open(_file, "r") as f:
-                    raw_text = f.readline()
-                    forecast_text = raw_text.strip(' \t\n\r')
-                    raw_text = f.readline()
-                    forecast_icon = int(raw_text.strip(' \t\n\r'))
-                    raw_text = f.readline()
-                    current_text = raw_text.strip(' \t\n\r')
-                    raw_text = f.readline()
-                    current_icon = raw_text.strip(' \t\n\r')
-            except IOError:
-                logdbg("WdSundryTags: Could not read file '%s'" % _file)
-                forecast_text = ""
-                forecast_icon = None
-                current_text = ""
-                current_icon = None
-        # otherwise set the forecast data to empty strings
-        else:
-            forecast_text = ""
-            forecast_icon = None
-            current_text = ""
-            current_icon = None
 
         # get units for possible use later with ValueHelpers
 
@@ -1446,11 +1393,7 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
         long_str = ll_to_str(_long_f)
 
         # create a small dictionary with the tag names (keys) we want to use
-        search_list = {'forecast_text':  forecast_text,
-                       'forecast_icon':  forecast_icon,
-                       'current_text':   current_text,
-                       'current_icon':   current_icon,
-                       'launchtime':     launchtime_vh,
+        search_list = {'launchtime':     launchtime_vh,
                        'heatColorWord':  heat_color_word,
                        'feelsLike':      feels_like_vh,
                        'density':        density,
