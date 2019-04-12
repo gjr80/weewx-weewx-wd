@@ -51,7 +51,6 @@ wdsupp_schema = [
     ('interval',            'INTEGER NOT NULL'),
     ('forecastIcon',        'INTEGER'),
     ('forecastText',        'VARCHAR(256)'),
-    ('forecastTextMetric',  'VARCHAR(256)'),
     ('currentIcon',         'INTEGER'),
     ('currentText',         'VARCHAR(256)'),
     ('tempRecordHigh',      'REAL'),
