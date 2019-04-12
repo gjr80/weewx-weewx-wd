@@ -1006,7 +1006,7 @@ class WdSuppArchive(weewx.engine.StdService):
             dbm.getSql('vacuum')
         except Exception, e:
             logerr("wdsupparchive",
-                   "Vacuuming database % failed: %s" % (dbm.database_name, e))
+                   "Vacuuming database %s failed: %s" % (dbm.database_name, e))
 
         t2 = time.time()
         logdbg("wdsupparchive",
