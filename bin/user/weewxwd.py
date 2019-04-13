@@ -1271,7 +1271,7 @@ class WuSource(ThreadedSource):
         self.format = 'json'
 
         # get a WeatherUndergroundAPI object to handle the API calls
-        self.api = WeatherUndergroundAPIForecast(api_key)
+        self.api = WeatherUndergroundAPIForecast(api_key, debug=self.debug)
 
         # log what we will do
         loginf("wdwusource",
@@ -1570,16 +1570,15 @@ class WeatherUndergroundAPIForecast(object):
         url = '?'.join([f_url, parameters])
 
         # if debug >=1 log the URL used but obfuscate the API key
-        if weewx.debug >= 1:
+        if weewx.debug > 0 or self.debug > 0:
             _obf_api_key = '='.join(['apiKey',
                                      '*'*(len(self.api_key) - 4) + self.api_key[-4:]])
             _obf_parameters = '&'.join([location_setting, units_setting,
                                         language_setting, format_setting,
                                         _obf_api_key])
             _obf_url = '?'.join([f_url, _obf_parameters])
-            if weewx.debug > 0 or self.debug > 0:
-                loginf("wuapiforecast",
-                       "Submitting Weather Underground API call using URL: %s" % (_obf_url, ))
+            loginf("wuapi",
+                   "Submitting Weather Underground API call using URL: %s" % (_obf_url, ))
         # we will attempt the call max_tries times
         for count in range(max_tries):
             # attempt the call
@@ -1589,11 +1588,11 @@ class WeatherUndergroundAPIForecast(object):
                 w.close()
                 return _response
             except (urllib2.URLError, socket.timeout), e:
-                logerr("wuapiforecast",
+                logerr("wuapi",
                        "Failed to get Weather Underground forecast on attempt %d" % (count+1, ))
-                logerr("wuapiforecast", "   **** %s" % e)
+                logerr("wuapi", "   **** %s" % e)
         else:
-            logerr("wuapiforecast", "Failed to get Weather Underground forecast")
+            logerr("wuapi", "Failed to get Weather Underground forecast")
         return None
 
 
