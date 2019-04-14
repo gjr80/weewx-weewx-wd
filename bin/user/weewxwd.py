@@ -1100,6 +1100,9 @@ class ThreadedSource(threading.Thread):
                 if _raw_data is not None:
                     # parse the raw data response and extract the required data
                     _data = self.parse_raw_data(_raw_data)
+                    if self.debug > 0:
+                        loginf("wdthreadedsource",
+                               "Parsed data=%s" % self._data)
                     # if we have some data then place it in the result queue
                     if _data is not None:
                         # construct our data dict for the queue
@@ -1307,7 +1310,7 @@ class WuSource(ThreadedSource):
         now = time.time()
         if self.debug > 0:
             loginf("wdwusource",
-                   "Last Weather Underground API call at %s" % self.last_call_ts)
+                   "Last Weather Underground API call at %s" % weeutil.weeutil.timestamp_to_string(self.last_call_ts))
 
         # has the lockout period passed since the last call
         if self.last_call_ts is None or ((now + 1 - self.lockout_period) >= self.last_call_ts):
