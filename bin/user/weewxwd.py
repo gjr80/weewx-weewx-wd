@@ -1101,8 +1101,7 @@ class ThreadedSource(threading.Thread):
                     # parse the raw data response and extract the required data
                     _data = self.parse_raw_data(_raw_data)
                     if self.debug > 0:
-                        loginf("wdthreadedsource",
-                               "Parsed data=%s" % self._data)
+                        loginf("wdthreadedsource", "Parsed data=%s" % _data)
                     # if we have some data then place it in the result queue
                     if _data is not None:
                         # construct our data dict for the queue
