@@ -2541,6 +2541,44 @@ class SimpleDarkSkySource(DarkSkySource):
 
 
 # ============================================================================
+#                           class SimpleFileSource
+# ============================================================================
+
+
+class SimpleFileSource(FileSource):
+    """Simplified version of FileSource object for testing.
+
+    A simplified version of the FileSource object for use in testing. Has all
+    the same properties and methods of a FileSource object but instead on
+    continuously polling the WU API it polls once only. The source is still
+    closed by placing the value None in the control queue.
+    """
+
+    def __init__(self, control_queue, result_queue,
+                 engine, source_config_dict=None):
+
+        # initialize my superclass
+        super(SimpleFileSource, self).__init__(control_queue, result_queue,
+                                               engine, source_config_dict)
+
+    def run(self):
+        _package = None
+        # get the raw data
+        _raw_data = self.get_raw_data()
+        # if we have a non-None response then we have data so parse it,
+        # gather the required data and put it in the result queue
+        if _raw_data is not None:
+            # parse the raw data response and extract the required data
+            _data = self.parse_raw_data(_raw_data)
+            # if we have some data then place it in the result queue
+            if _data is not None:
+                # construct our data dict for the queue
+                _package = {'type': 'data',
+                            'payload': _data}
+        self.result_queue.put(_package)
+
+
+# ============================================================================
 #                             class SimpleEngine
 # ============================================================================
 
@@ -2581,12 +2619,14 @@ services overhead. To invoke this module without WeeWX:
     $ PYTHONPATH=/home/weewx/bin python /home/weewx/bin/user/weewxwd.py --option
 
     where option is one of the following options:
-        --help           - display command line help
-        --version        - display version
-        --get-wu-data    - display WU API data
-        --get-wu-config  - display WU API config parameters to be used 
-        --get-ds-data    - display Dark Sky API data
-        --get-ds-config  - display Dark Sky API config parameters to be used 
+        --help            - display command line help
+        --version         - display version
+        --get-wu-data     - display WU API data
+        --get-wu-config   - display WU API config parameters to be used 
+        --get-ds-data     - display Dark Sky API data
+        --get-ds-config   - display Dark Sky API config parameters to be used 
+        --get-file-data   - display Dark Sky API data
+        --get-file-config - display Dark Sky API config parameters to be used 
 """
 
 if __name__ == '__main__':
@@ -2621,6 +2661,12 @@ if __name__ == '__main__':
     parser.add_option('--get-ds-config', dest='ds_config',
                       action='store_true',
                       help='Display config data used to access the Dark Sky API.')
+    parser.add_option('--get-file-data', dest='file_data',
+                      action='store_true',
+                      help='Display data from a file source.')
+    parser.add_option('--get-file-config', dest='file_config',
+                      action='store_true',
+                      help='Display config data used to access the a file source.')
     (options, args) = parser.parse_args()
 
     if options.version:
@@ -2659,6 +2705,16 @@ if __name__ == '__main__':
                                          result_queue,
                                          _engine,
                                          source_config_dict)
+        elif options.file_data or options.file_config:
+            # get a simplified engine to feed to our source object
+            _engine = SimpleEngine(config_dict)
+            # get the WU source config dict
+            source_config_dict = weewxwd_dict['Supplementary'].get('File')
+            # now get a modified WU source object
+            source = SimpleFileSource(control_queue,
+                                      result_queue,
+                                      _engine,
+                                      source_config_dict)
         # finally start the simplified source object
         source.start()
     else:
@@ -2778,6 +2834,51 @@ if __name__ == '__main__':
                                  source.VALID_LANGUAGES[source.language])
         if source.api.key is None:
             print "Dark Sky API will not be accessed."
+        control_queue.put(None)
+        sys.exit(0)
+
+    if options.file_data:
+        # now get any data in the queue
+        try:
+            # use nowait() so we don't block
+            _package = result_queue.get(True, 15)
+        except Queue.Empty:
+            # nothing in the queue so exit with appropriate message
+            print "No data obtained from file source"
+            print "Suggest file source config data be checked"
+        else:
+            # we did get something in the queue but was it a data package
+            if isinstance(_package, dict):
+                if 'type' in _package and _package['type'] == 'data':
+                    # we have something so print it
+                    print
+                    print "The following data was extracted from the file source:"
+                    pprint.pprint(_package['payload'])
+                else:
+                    # received an invalid data package
+                    print "Invalid data obtained from the file source:"
+                    print pprint.pprint(_package)
+            else:
+                # received an invalid data package
+                print "Invalid data obtained from the file source:"
+                print pprint.pprint(_package)
+        # sent the shutdown signal to our source thread
+        control_queue.put(None)
+        sys.exit(0)
+
+    if options.file_config:
+        print
+        print "The following config data will be used to access a file source:"
+        print "%18s: %s" % ('File', source.file)
+        if source.do_forecast and source.do_current:
+            print "%18s: %s" % ('Data to be sourced',
+                                'Forecast and current conditions')
+        elif source.do_forecast:
+            print "%18s: %s" % ('Data to be sourced', 'Forecast only')
+        elif source.do_current:
+            print "%18s: %s" % ('Data to be sourced', 'Current conditions only')
+        else:
+            print "%18s: %s" % ('Data to be sourced', 'Nothing selected')
         control_queue.put(None)
         sys.exit(0)
 
