@@ -1192,20 +1192,95 @@ class WuSource(ThreadedSource):
     VALID_FORECASTS = ('3day', '5day', '7day', '10day', '15day')
     VALID_NARRATIVES = ('day', 'day-night')
     VALID_LOCATORS = ('geocode', 'iataCode', 'icaoCode', 'placeid', 'postalKey')
-    VALID_UNITS = ('e', 'm', 's', 'h')
-    VALID_LANGUAGES = ('ar-AE', 'az-AZ', 'bg-BG', 'bn-BD', 'bn-IN', 'bs-BA',
-                       'ca-ES', 'cs-CZ', 'da-DK', 'de-DE', 'el-GR', 'en-GB',
-                       'en-IN', 'en-US', 'es-AR', 'es-ES', 'es-LA', 'es-MX',
-                       'es-UN', 'es-US', 'et-EE', 'fa-IR', 'fi-FI', 'fr-CA',
-                       'fr-FR', 'gu-IN', 'he-IL', 'hi-IN', 'hr-HR', 'hu-HU',
-                       'in-ID', 'is-IS', 'it-IT', 'iw-IL', 'ja-JP', 'jv-ID',
-                       'ka-GE', 'kk-KZ', 'kn-IN', 'ko-KR', 'lt-LT', 'lv-LV',
-                       'mk-MK', 'mn-MN', 'ms-MY', 'nl-NL', 'no-NO', 'pl-PL',
-                       'pt-BR', 'pt-PT', 'ro-RO', 'ru-RU', 'si-LK', 'sk-SK',
-                       'sl-SI', 'sq-AL', 'sr-BA', 'sr-ME', 'sr-RS', 'sv-SE',
-                       'sw-KE', 'ta-IN', 'ta-LK', 'te-IN', 'tg-TJ', 'th-TH',
-                       'tk-TM', 'tl-PH', 'tr-TR', 'uk-UA', 'ur-PK', 'uz-UZ',
-                       'vi-VN', 'zh-CN', 'zh-HK', 'zh-TW')
+    VALID_UNITS = {'e': 'English units',
+                   'm': 'Metric units',
+                   's': 'Metric SI units',
+                   'h': 'Hybrid units (UK)'}
+    VALID_LANGUAGES = {'ar-AE': 'Arabic - (United Arab Emirates)',
+                       'az-AZ': 'Azerbaijani - (Azerbaijan)',
+                       'bg-BG': 'Bulgarian - (Bulgaria)',
+                       'bn-BD': 'Bengali, Bangla - (Bangladesh)',
+                       'bn-IN': 'Bengali, Bangla - (India)',
+                       'bs-BA': 'Bosnian - (Bosnia and Herzegovina)',
+                       'ca-ES': 'Catalan - (Spain)',
+                       'cs-CZ': 'Czech - (Czechia)',
+                       'da-DK': 'Danish - (Denmark)',
+                       'de-DE': 'German - (Germany)',
+                       'el-GR': 'Greek (modern) - (Greece)',
+                       'en-GB': 'English - (Great Britain)',
+                       'en-IN': 'English (India)',
+                       'en-US': 'English - (United States of America)',
+                       'es-AR': 'Spanish - (Argentina)',
+                       'es-ES': 'Spanish - (Spain)',
+                       'es-LA': 'Spanish - (Latin America)',
+                       'es-MX': 'Spanish - (Mexico)',
+                       'es-UN': 'Spanish - (International)',
+                       'es-US': 'Spanish - (United States of America)',
+                       'et-EE': 'Estonian - (Estonia)',
+                       'fa-IR': 'Persian (Farsi) - (Iran)',
+                       'fi-FI': 'Finnish - (Finland)',
+                       'fr-CA': 'French - (Canada)',
+                       'fr-FR': 'French - (France',
+                       'gu-IN': 'Gujarati - (India)',
+                       'he-IL': 'Hebrew (modern) - (Israel)',
+                       'hi-IN': 'Hindi - (India)',
+                       'hr-HR': 'Croatian - (Croatia)',
+                       'hu-HU': 'Hungarian - (Hungary)',
+                       'in-ID': 'Indonesian - (Indonesia)',
+                       'is-IS': 'Icelandic - (Iceland)',
+                       'it-IT': 'Italian - (Italy)',
+                       'iw-IL': 'Hebrew - (Israel)',
+                       'ja-JP': 'Japanese - (Japan)',
+                       'jv-ID': 'Javanese - (Indonesia)',
+                       'ka-GE': 'Georgian - (Georgia',
+                       'kk-KZ': 'Kazakh - (Kazakhstan)',
+                       'km-KH': 'Khmer - (Cambodia)',
+                       'kn-IN': 'Kannada - (India)',
+                       'ko-KR': 'Korean - (South Korea)',
+                       'lo-LA': 'Lao - (Laos)',
+                       'lt-LT': 'Lithuanian - (Lithuania)',
+                       'lv-LV': 'Latvian - (Latvia)',
+                       'mk-MK': 'Macedonian - (Macedonia)',
+                       'mn-MN': 'Mongolian - (Mongolia)',
+                       'mr-IN': 'Marathi - (India)',
+                       'ms-MY': 'Malay - (Malaysia)',
+                       'my-NM': 'Burmese - (Myanmar)',
+                       'ne-IN': 'Nepali - (India)',
+                       'ne-NP': 'Nepali - (Nepal)',
+                       'nl-NL': 'Dutch - (Netherlands)',
+                       'no-NO': 'Norwegian - (Norway)',
+                       'pa-PL': 'Panjabi - (Pakistan)',
+                       'pl-PL': 'Polish - (Poland)',
+                       'pt-BR': 'Portuguese - (Brazil)',
+                       'pt-PT': 'Portuguese - (Portugal)',
+                       'ro-RO': 'Romanian - (Romania)',
+                       'ru-RU': 'Russian - (Russia)',
+                       'si-LK': 'Sinhalese, Sinhala - (Sri Lanka)',
+                       'sk-SK': 'Slovak - (Slovakia)',
+                       'sl-SI': 'Slovenian - (Slovenia)',
+                       'sq-AL': 'Albanian - (Albania)',
+                       'sr-BA': 'Serbian - (Bosnia and Herzegovina)',
+                       'sr-ME': 'Serbian - (Montenegro)',
+                       'sr-RS': 'Serbian - (Serbia)',
+                       'sv-SE': 'Swedish - (Sweden)',
+                       'sw-KE': 'Swahili - (Kenya)',
+                       'ta-IN': 'Tamil - (India)',
+                       'ta-LK': 'Tamil - (Sri Lanka)',
+                       'te-IN': 'Telugu - (India)',
+                       'ti-ER': 'Tigrinya - (Eritrea)',
+                       'ti-ET': 'Trigrinya - (Eritrea)',
+                       'tg-TJ': 'Tajik - (Tajikistan)',
+                       'th-TH': 'Thai - (Thailand)',
+                       'tk-TM': 'Turkmen - (Turkmenistan)',
+                       'tl-PH': 'Tagalog - (Philippines)',
+                       'tr-TR': 'Turkish - (Turkey)',
+                       'uk-UA': 'Ukrainian - (Ukraine)',
+                       'ur-PK': 'Urdu - (Pakistan)',
+                       'uz-UZ': 'Uzbek - (Uzbekistan)',
+                       'vi-VN': 'Vietnamese - (Viet Nam)',
+                       'zh-CN': 'Chinese - (China)',
+                       'zh-HK': 'Chinese - (Hong Kong)',
+                       'zh-TW': 'Chinese - (Taiwan)'}
 
     def __init__(self, control_queue, result_queue, engine, source_config_dict):
 
@@ -2336,21 +2411,89 @@ def check_enable(cfg_dict, service, *args):
 
     return wdsupp_dict
 
+# ============================================================================
+#                            class SimpleWuSource
+# ============================================================================
+
+
+class SimpleWuSource(WuSource):
+    """Simplified version of WuSource object for testing.
+
+    A simplified version of the WuSource object for use in testing. Has all the
+    same properties and methods of a WuSource object but instead on
+    continuously polling the WU API it polls once only. The source is still
+    closed by placing the value None in the control queue.
+    """
+
+    def __init__(self, control_queue, result_queue,
+                 engine, source_config_dict=None):
+
+        # initialize my superclass
+        super(SimpleWuSource, self).__init__(control_queue, result_queue,
+                                             engine, source_config_dict)
+
+    def run(self):
+        _package = None
+        # get the raw data
+        _raw_data = self.get_raw_data()
+        # if we have a non-None response then we have data so parse it,
+        # gather the required data and put it in the result queue
+        if _raw_data is not None:
+            # parse the raw data response and extract the required data
+            _data = self.parse_raw_data(_raw_data)
+            # if we have some data then place it in the result queue
+            if _data is not None:
+                # construct our data dict for the queue
+                _package = {'type': 'data',
+                            'payload': _data}
+        self.result_queue.put(_package)
+
+
+# ============================================================================
+#                             class SimpleEngine
+# ============================================================================
+
+
+class SimpleEngine(object):
+    """Simplified version of a WeeWX engine object.
+
+    Used to simulate a WeeWX engine object that only provides station latitude
+    and longitude.
+    """
+
+    def __init__(self, config_dict):
+        # create our stn_info property
+        self.stn_info = self.SimpleStationInfo(**config_dict['Station'])
+
+    class SimpleStationInfo(object):
+        """Simplified version of a Station object.
+
+        Used to provide latitude_f and longitude_f properties to a SimpleEngine
+        object.
+        """
+
+        def __init__(self, **stn_dict):
+            # create latitude_f and longitude_f properties
+            self.latitude_f = float(stn_dict['latitude'])
+            self.longitude_f = float(stn_dict['longitude'])
+
 
 # ============================================================================
 #                          Main Entry for Testing
 # ============================================================================
+
+
 """
 Define a main entry point for basic testing without the WeeWX engine and 
 services overhead. To invoke this module without WeeWX:
 
-    $ sudo PYTHONPATH=/home/weewx/bin python /home/weewx/bin/user/weewxwd.py --option
+    $ PYTHONPATH=/home/weewx/bin python /home/weewx/bin/user/weewxwd.py --option
 
     where option is one of the following options:
-        --help               - display command line help
-        --version            - display version
-        --get-wu-api-data    - display WU API data
-        --get-wu-api-config  - display WU API config parameters to be used 
+        --help           - display command line help
+        --version        - display version
+        --get-wu-data    - display WU API data
+        --get-wu-config  - display WU API config parameters to be used 
 """
 
 if __name__ == '__main__':
@@ -2363,8 +2506,7 @@ if __name__ == '__main__':
     # WeeWX imports
     import weecfg
 
-    usage = """sudo PYTHONPATH=/home/weewx/bin python
-               /home/weewx/bin/user/%prog [--option]"""
+    usage = """PYTHONPATH=/home/weewx/bin python /home/weewx/bin/user/%prog [--option]"""
 
     syslog.openlog('weewxwd', syslog.LOG_PID | syslog.LOG_CONS)
     syslog.setlogmask(syslog.LOG_UPTO(syslog.LOG_DEBUG))
@@ -2374,12 +2516,12 @@ if __name__ == '__main__':
                       help="Use configuration file CONFIG_FILE.")
     parser.add_option('--version', dest='version', action='store_true',
                       help='Display module version.')
-    parser.add_option('--get-wu-api-data', dest='api_data', 
+    parser.add_option('--get-wu-data', dest='wu_data',
                       action='store_true',
                       help='Query WU API and display results.')
-    parser.add_option('--get-wu-api-config', dest='api_config', 
+    parser.add_option('--get-wu-config', dest='wu_config',
                       action='store_true',
-                      help='Query WU API and display results.')
+                      help='Display config data used to access the WU API.')
     (options, args) = parser.parse_args()
 
     if options.version:
@@ -2395,37 +2537,85 @@ if __name__ == '__main__':
     
     # get a WuData object
     if weewxwd_dict is not None:
-        wu_api = WuData(config_dict)
+        # get result and control queues for our sourcwe
+        result_queue = Queue.Queue()
+        control_queue = Queue.Queue()
+        # get a simplified engine to feed to our source object
+        _engine = SimpleEngine(config_dict)
+        # get the WU source config dict
+        wu_source_config_dict = weewxwd_dict['Supplementary'].get('WU')
+        # now get a modified WU source object
+        wu_source = SimpleWuSource(control_queue,
+                                   result_queue,
+                                   _engine,
+                                   wu_source_config_dict)
+        # finally start the modified WU source object
+        wu_source.start()
     else:
         exit_str = "'Weewx-WD' stanza not found in config file '%s'. Exiting." % config_path
         sys.exit(exit_str)
     
-    if options.api_data:
-        _result = wu_api.getWuApiData()
-        print
-        print "The following data was extracted from the Weather Underground API:"
-        print
-        pprint.pprint(_result)
+    if options.wu_data:
+        # now get any data in the queue
+        try:
+            # use nowait() so we don't block
+            _package = result_queue.get(True, 15)
+        except Queue.Empty:
+            # nothing in the queue so exit with appropriate message
+            print "No data obtained from Weather Underground API"
+            print "Suggest Weather Underground config data be checked"
+        else:
+            # we did get something in the queue but was it a
+            # 'forecast' package
+            if isinstance(_package, dict):
+                if 'type' in _package and _package['type'] == 'data':
+                    # we have forecast text so print it
+                    print
+                    print "The following data was extracted from the Weather Underground API:"
+                    print
+                    pprint.pprint(_package['payload'])
+                else:
+                    # received an invalid data package
+                    print "Invalid data obtained from Weather Underground API:"
+                    print
+                    print pprint.pprint(_package)
+            else:
+                # received an invalid data package
+                print "Invalid data obtained from Weather Underground API:"
+                print
+                print pprint.pprint(_package)
+        # sent the shutdown signal to our source thread
+        control_queue.put(None)
         sys.exit(0)
 
-    if options.api_config:
+    if options.wu_config:
         print
         print "The following config data will be used to access the Weather Underground API:"
         print
-        if wu_api.api_key is not None and wu_api.location is not None:
-            print "API key: xxxxxxxxxxxx%s" % (wu_api.api_key[-4:],)
-            print "Location: %s" % wu_api.location
+        if wu_source.api.api_key is not None:
+            _len = len(wu_source.api.api_key)
+            print "%24s: %s%s" % ('API key',
+                                  (_len - 4) * 'x',
+                                  wu_source.api.api_key[-4:])
         else:
-            if wu_api.api_key is not None:
-                print "API key: xxxxxxxxxxxx%s" % (wu_api.api_key[-4:],)
-                print "Cannot find location."
-            else:
-                print "Cannot find valid Weather Underground API key."
-                print "Location: %s" % wu_api.location
+            print "Cannot find valid Weather Underground API key."
+        print "%24s: %s" % ('Forecast type', wu_source.forecast)
+        print "%24s: %s" % ('Forecast text to display', wu_source.forecast_text)
+        print "%24s: %s" % ('Locator', wu_source.locator)
+        print "%24s: %s" % ('Location', wu_source.location)
+        print "%24s: %s (%s)" % ('Units',
+                                 wu_source.units,
+                                 wu_source.VALID_UNITS[wu_source.units])
+        print "%24s: %s (%s)" % ('Language',
+                                 wu_source.language,
+                                 wu_source.VALID_LANGUAGES[wu_source.language])
+        if wu_source.api.api_key is None:
             print "Weather Underground API will not be accessed."
+        control_queue.put(None)
         sys.exit(0)
 
     # if we made it here display our help message
+    parser.print_help()
 
 KNOWN_SOURCES = {'WU': WuSource,
                  'DS': DarkSkySource,
