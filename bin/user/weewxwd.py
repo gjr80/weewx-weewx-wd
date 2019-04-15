@@ -1705,14 +1705,67 @@ class DarkSkySource(ThreadedSource):
     """
 
     # list of valid unit codes
-    VALID_UNITS = ['auto', 'ca', 'uk2', 'us', 'si']
+    VALID_UNITS = {'auto': 'Automatic based on geolocation',
+                   'ca': 'SI units but with kilometres per hour',
+                   'uk2': 'SI units but with mile/miles per hour',
+                   'us': 'Imperial units',
+                   'si': 'SI units'}
 
     # list of valid language codes
-    VALID_LANGUAGES = ('ar', 'az', 'be', 'bg', 'bs', 'ca', 'cs', 'da', 'de',
-                       'el', 'en', 'es', 'et', 'fi', 'fr', 'hr', 'hu', 'id',
-                       'is', 'it', 'ja', 'ka', 'ko', 'kw', 'nb', 'nl', 'pl',
-                       'pt', 'ro', 'ru', 'sk', 'sl', 'sr', 'sv', 'tet', 'tr',
-                       'uk', 'x-pig-latin', 'zh', 'zh-tw')
+
+    VALID_LANGUAGES = {'ar': 'Arabic',
+                       'az': 'Azerbaijani',
+                       'be': 'Belarusian',
+                       'bg': 'Bulgarian',
+                       'bn': 'Bengali',
+                       'bs': 'Bosnian',
+                       'ca': 'Catalan',
+                       'cs': 'Czech',
+                       'da': 'Danish',
+                       'de': 'German',
+                       'el': 'Greek',
+                       'en': 'English',
+                       'eo': 'Esperanto',
+                       'es': 'Spanish',
+                       'et': 'Estonian',
+                       'fi': 'Finnish',
+                       'fr': 'French',
+                       'he': 'Hebrew',
+                       'hi': 'Hindi',
+                       'hr': 'Croatian',
+                       'hu': 'Hungarian',
+                       'id': 'Indonesian',
+                       'is': 'Icelandic',
+                       'it': 'Italian',
+                       'ja': 'Japanese',
+                       'ka': 'Georgian',
+                       'kn': 'Kannada',
+                       'ko': 'Korean',
+                       'kw': 'Cornish',
+                       'lv': 'Latvian',
+                       'ml': 'Malayam',
+                       'mr': 'Marathi',
+                       'nb': 'Norwegian Bokmal',
+                       'nl': 'Dutch',
+                       'no': 'Norwegian Bokmal',
+                       'pa': 'Punjabi',
+                       'pl': 'Polish',
+                       'pt': 'Portuguese',
+                       'ro': 'Romanian',
+                       'ru': 'Russian',
+                       'sk': 'Slovak',
+                       'sl': 'Slovenian',
+                       'sr': 'Serbian',
+                       'sv': 'Swedish',
+                       'ta': 'Tamil',
+                       'te': 'Telugu',
+                       'tet': 'Tetum',
+                       'tr': 'Turkish',
+                       'uk': 'Ukrainian',
+                       'ur': 'Urdu',
+                       'x-pig-latin': 'Igpay Atinlay',
+                       'zh': 'simplified Chinese',
+                       'zh-tw': 'traditional Chinese'}
 
     # default forecast block to be used
     DEFAULT_BLOCK = 'daily'
@@ -2450,6 +2503,44 @@ class SimpleWuSource(WuSource):
 
 
 # ============================================================================
+#                         class SimpleDarkSkySource
+# ============================================================================
+
+
+class SimpleDarkSkySource(DarkSkySource):
+    """Simplified version of DarkSkySource object for testing.
+
+    A simplified version of the DarkSkySource object for use in testing. Has
+    all the same properties and methods of a DarkSkySource object but instead on
+    continuously polling the WU API it polls once only. The source is still
+    closed by placing the value None in the control queue.
+    """
+
+    def __init__(self, control_queue, result_queue,
+                 engine, source_config_dict=None):
+
+        # initialize my superclass
+        super(SimpleDarkSkySource, self).__init__(control_queue, result_queue,
+                                                  engine, source_config_dict)
+
+    def run(self):
+        _package = None
+        # get the raw data
+        _raw_data = self.get_raw_data()
+        # if we have a non-None response then we have data so parse it,
+        # gather the required data and put it in the result queue
+        if _raw_data is not None:
+            # parse the raw data response and extract the required data
+            _data = self.parse_raw_data(_raw_data)
+            # if we have some data then place it in the result queue
+            if _data is not None:
+                # construct our data dict for the queue
+                _package = {'type': 'data',
+                            'payload': _data}
+        self.result_queue.put(_package)
+
+
+# ============================================================================
 #                             class SimpleEngine
 # ============================================================================
 
@@ -2494,6 +2585,8 @@ services overhead. To invoke this module without WeeWX:
         --version        - display version
         --get-wu-data    - display WU API data
         --get-wu-config  - display WU API config parameters to be used 
+        --get-ds-data    - display Dark Sky API data
+        --get-ds-config  - display Dark Sky API config parameters to be used 
 """
 
 if __name__ == '__main__':
@@ -2522,6 +2615,12 @@ if __name__ == '__main__':
     parser.add_option('--get-wu-config', dest='wu_config',
                       action='store_true',
                       help='Display config data used to access the WU API.')
+    parser.add_option('--get-ds-data', dest='ds_data',
+                      action='store_true',
+                      help='Query Dark Sky API and display results.')
+    parser.add_option('--get-ds-config', dest='ds_config',
+                      action='store_true',
+                      help='Display config data used to access the Dark Sky API.')
     (options, args) = parser.parse_args()
 
     if options.version:
@@ -2537,20 +2636,31 @@ if __name__ == '__main__':
     
     # get a WuData object
     if weewxwd_dict is not None:
-        # get result and control queues for our sourcwe
+        # get result and control queues for our source
         result_queue = Queue.Queue()
         control_queue = Queue.Queue()
-        # get a simplified engine to feed to our source object
-        _engine = SimpleEngine(config_dict)
-        # get the WU source config dict
-        wu_source_config_dict = weewxwd_dict['Supplementary'].get('WU')
-        # now get a modified WU source object
-        wu_source = SimpleWuSource(control_queue,
-                                   result_queue,
-                                   _engine,
-                                   wu_source_config_dict)
-        # finally start the modified WU source object
-        wu_source.start()
+        if options.wu_data or options.wu_config:
+            # get a simplified engine to feed to our source object
+            _engine = SimpleEngine(config_dict)
+            # get the WU source config dict
+            source_config_dict = weewxwd_dict['Supplementary'].get('WU')
+            # now get a modified WU source object
+            source = SimpleWuSource(control_queue,
+                                    result_queue,
+                                    _engine,
+                                    source_config_dict)
+        elif options.ds_data or options.ds_config:
+            # get a simplified engine to feed to our source object
+            _engine = SimpleEngine(config_dict)
+            # get the WU source config dict
+            source_config_dict = weewxwd_dict['Supplementary'].get('DS')
+            # now get a modified WU source object
+            source = SimpleDarkSkySource(control_queue,
+                                         result_queue,
+                                         _engine,
+                                         source_config_dict)
+        # finally start the simplified source object
+        source.start()
     else:
         exit_str = "'Weewx-WD' stanza not found in config file '%s'. Exiting." % config_path
         sys.exit(exit_str)
@@ -2565,24 +2675,20 @@ if __name__ == '__main__':
             print "No data obtained from Weather Underground API"
             print "Suggest Weather Underground config data be checked"
         else:
-            # we did get something in the queue but was it a
-            # 'forecast' package
+            # we did get something in the queue but was it a data package
             if isinstance(_package, dict):
                 if 'type' in _package and _package['type'] == 'data':
                     # we have forecast text so print it
                     print
                     print "The following data was extracted from the Weather Underground API:"
-                    print
                     pprint.pprint(_package['payload'])
                 else:
                     # received an invalid data package
                     print "Invalid data obtained from Weather Underground API:"
-                    print
                     print pprint.pprint(_package)
             else:
                 # received an invalid data package
                 print "Invalid data obtained from Weather Underground API:"
-                print
                 print pprint.pprint(_package)
         # sent the shutdown signal to our source thread
         control_queue.put(None)
@@ -2592,25 +2698,86 @@ if __name__ == '__main__':
         print
         print "The following config data will be used to access the Weather Underground API:"
         print
-        if wu_source.api.api_key is not None:
-            _len = len(wu_source.api.api_key)
+        if source.api.api_key is not None:
+            _len = len(source.api.api_key)
             print "%24s: %s%s" % ('API key',
                                   (_len - 4) * 'x',
-                                  wu_source.api.api_key[-4:])
+                                  source.api.api_key[-4:])
         else:
             print "Cannot find valid Weather Underground API key."
-        print "%24s: %s" % ('Forecast type', wu_source.forecast)
-        print "%24s: %s" % ('Forecast text to display', wu_source.forecast_text)
-        print "%24s: %s" % ('Locator', wu_source.locator)
-        print "%24s: %s" % ('Location', wu_source.location)
+        print "%24s: %s" % ('Forecast type', source.forecast)
+        print "%24s: %s" % ('Forecast text to display', source.forecast_text)
+        print "%24s: %s" % ('Locator', source.locator)
+        print "%24s: %s" % ('Location', source.location)
         print "%24s: %s (%s)" % ('Units',
-                                 wu_source.units,
-                                 wu_source.VALID_UNITS[wu_source.units])
+                                 source.units,
+                                 source.VALID_UNITS[source.units])
         print "%24s: %s (%s)" % ('Language',
-                                 wu_source.language,
-                                 wu_source.VALID_LANGUAGES[wu_source.language])
-        if wu_source.api.api_key is None:
+                                 source.language,
+                                 source.VALID_LANGUAGES[source.language])
+        if source.api.api_key is None:
             print "Weather Underground API will not be accessed."
+        control_queue.put(None)
+        sys.exit(0)
+
+    if options.ds_data:
+        # now get any data in the queue
+        try:
+            # use nowait() so we don't block
+            _package = result_queue.get(True, 15)
+        except Queue.Empty:
+            # nothing in the queue so exit with appropriate message
+            print "No data obtained from Dark Sky API"
+            print "Suggest Dark Sky config data be checked"
+        else:
+            # we did get something in the queue but was it a data package
+            if isinstance(_package, dict):
+                if 'type' in _package and _package['type'] == 'data':
+                    # we have something so print it
+                    print
+                    print "The following data was extracted from the Dark Sky API:"
+                    pprint.pprint(_package['payload'])
+                else:
+                    # received an invalid data package
+                    print "Invalid data obtained from Dark Sky API:"
+                    print pprint.pprint(_package)
+            else:
+                # received an invalid data package
+                print "Invalid data obtained from Dark Sky API:"
+                print pprint.pprint(_package)
+        # sent the shutdown signal to our source thread
+        control_queue.put(None)
+        sys.exit(0)
+
+    if options.ds_config:
+        print
+        print "The following config data will be used to access the Dark Sky API:"
+        if source.api.key is not None:
+            _len = len(source.api.key)
+            print "%18s: %s%s" % ('API key',
+                                  (_len - 4) * 'x',
+                                  source.api.key[-4:])
+        else:
+            print "Cannot find valid Dark Sky API key."
+        print "%18s: %s" % ('Block', source.block)
+        if source.do_forecast and source.do_current:
+            print "%18s: %s" % ('Data to be sourced',
+                                'Forecast and current conditions')
+        elif source.do_forecast:
+            print "%18s: %s" % ('Data to be sourced', 'Forecast only')
+        elif source.do_current:
+            print "%18s: %s" % ('Data to be sourced', 'Current conditions only')
+        else:
+            print "%18s: %s" % ('Data to be sourced', 'Nothing selected')
+        print "%18s: %s,%s" % ('Location', _engine.stn_info.latitude_f, _engine.stn_info.longitude_f)
+        print "%18s: %s (%s)" % ('Units',
+                                 source.units,
+                                 source.VALID_UNITS[source.units])
+        print "%18s: %s (%s)" % ('Language',
+                                 source.language,
+                                 source.VALID_LANGUAGES[source.language])
+        if source.api.key is None:
+            print "Dark Sky API will not be accessed."
         control_queue.put(None)
         sys.exit(0)
 
