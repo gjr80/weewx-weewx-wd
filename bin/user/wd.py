@@ -1,5 +1,5 @@
 """
-weewxwd.py
+wd.py
 
 Service classes used by WeeWX-WD
 
@@ -13,7 +13,7 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
-Version: 1.2.0a2                                    Date: 12 April 2019
+Version: 1.2.0a3                                    Date: 12 April 2019
 
 Revision History
     12 April 2019       v1.2.0
@@ -29,7 +29,7 @@ Revision History
           short term information such as theoretical solar max, WU current 
           conditions, WU forecast and WU almanac data
         - added WU API language support
-        - added ability to exercise WU aspects of weewxwd.py without the
+        - added ability to exercise WU aspects of wd.py without the
           overheads of running a WeeWX instance
         - added current_label config option to allow a user defined label to be
           prepended to the current conditions text
@@ -42,6 +42,8 @@ Revision History
           all pre-requisite obs exist and are non-None then the derived obs is 
           calculated and added to the packet/record as normal.
         - simplified WdArchive new_archive_record() method
+        - renamed from weewxwd3.py to wd.py in line with simplified file naming
+          of WeeWX-WD files
 Previous Bitbucket revision history
     31 March 2017       v1.0.3
         - no change, version number change only
@@ -102,7 +104,7 @@ import weewx.wxformulas
 from weewx.units import convert, obs_group_dict
 from weeutil.weeutil import accumulateLeaves, to_int, to_bool
 
-WEEWXWD_VERSION = '1.2.0a2'
+WEEWXWD_VERSION = '1.2.0a3'
 
 
 # define a dictionary with our API call query details
@@ -931,23 +933,24 @@ class WdSuppArchive(weewx.engine.StdService):
         # holder dictionary for our gathered data
         _data = dict()
         # vantage forecast icon
-        if self.loop_packet['forecastIcon'] is not None:
+        if self.loop_packet.get('forecastIcon') is not None:
             _data['vantageForecastIcon'] = self.loop_packet['forecastIcon']
         # vantage forecast rule
-        if self.loop_packet['forecastRule'] is not None:
+        if self.loop_packet.get('forecastRule') is not None:
             try:
                 _data['vantageForecastRule'] = davis_fr_dict[self.loop_packet['forecastRule']]
             except KeyError:
                 logdbg2("wdsupparchive",
                         "Could not decode Vantage forecast code")
         # vantage stormRain
-        if self.loop_packet['stormRain'] is not None:
+        if self.loop_packet.get('stormRain') is not None:
             _data['stormRain'] = self.loop_packet['stormRain']
         # vantage stormStart
-        if self.loop_packet['stormStart'] is not None:
+        if self.loop_packet.get('stormStart') is not None:
             _data['stormStart'] = self.loop_packet['stormStart']
         # theoretical solar radiation value
-        _data['maxSolarRad'] = self.loop_packet['maxSolarRad']
+        if self.loop_packet.get('maxSolarRad') is not None:
+            _data['maxSolarRad'] = self.loop_packet['maxSolarRad']
         return _data
 
     @staticmethod
@@ -2616,7 +2619,7 @@ class SimpleEngine(object):
 Define a main entry point for basic testing without the WeeWX engine and 
 services overhead. To invoke this module without WeeWX:
 
-    $ PYTHONPATH=/home/weewx/bin python /home/weewx/bin/user/weewxwd.py --option
+    $ PYTHONPATH=/home/weewx/bin python /home/weewx/bin/user/wd.py --option
 
     where option is one of the following options:
         --help            - display command line help

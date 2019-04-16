@@ -417,7 +417,7 @@ class WdSuppArchive(weewx.engine.StdService):
         # Extract our binding from the [Weewx-WD][[Supplementary]] section of 
         # the config file. If it's missing, fill with a default
         if 'Weewx-WD' in config_dict:
-            self.binding = config_dict['Weewx-WD']['Supplementary'].get('data_binding', 'wdsupp_binding')
+            self.binding = config_dict['Weewx-WD']['Supplementary'].get('binding', 'wdsupp_binding')
         else:
             self.binding = 'wdsupp_binding'
             
@@ -468,7 +468,7 @@ class WdSuppArchive(weewx.engine.StdService):
         """
         
         t = wdSuppThread(self.wdSupp_main, event)
-        t.setName('wdSuppThread')
+        t.setName('WdSuppThread')
         t.start()
         self.wdSupp_main(event)
 

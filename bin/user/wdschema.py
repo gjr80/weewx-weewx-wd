@@ -12,15 +12,15 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 1.2.0a2                                    Date: 12 April 2019
+Version: 1.2.0a3                                    Date: 17 April 2019
 
 Revision History
     12 April 2019       v1.2.0
       - initial release
-      - removed WeeWX-WD schema data from weewxwd.py
+      - removed WeeWX-WD schema data from wd.py
       - removed forecastTextMetric field
 
-Below are the default schemas for the weeWX-WD archive table and weeWX-WD
+Below are the default schemas for the WeeWX-WD archive table and WeeWX-WD
 supplementary database supp table. They are only used for initialization, or
 in conjunction with the weewxwd_config --create-database and --reconfigure
 options. Otherwise, once the tables are created the schema is obtained
@@ -32,7 +32,7 @@ in saving as much space as you may think - most of the space is taken up by the
 primary key indexes (type "dateTime").
 """
 
-WDSCHEMA_VERSION = '1.2.0a2'
+WDSCHEMA_VERSION = '1.2.0a3'
 
 # define schema for archive table
 weewxwd_schema = [

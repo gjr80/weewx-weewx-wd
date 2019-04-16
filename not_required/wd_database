@@ -19,8 +19,8 @@
 #       - no change, version number change only
 #   30 November 2016    v1.0.1
 #       - initial implementation, database management functions taken from
-#         weewxwd3.py
-#       - fix numerous issues with old version embedded in weewxwd3.py
+#         wd.py
+#       - fix numerous issues with old version embedded in wd.py
 #
 """Configure the database used by weewx-WD"""
 import optparse
@@ -783,14 +783,14 @@ def get_bindings(config_dict):
     # Extract our binding from the weewx-WD section of the config file. If
     # it's missing, fill with a default
     if 'WeewxWD' in config_dict:
-        db_binding_wd = config_dict['WeewxWD'].get('data_binding', 'wd_binding')
+        db_binding_wd = config_dict['WeewxWD'].get('binding', 'wd_binding')
     else:
         db_binding_wd = 'wd_binding'
 
     # Extract the weewx binding for use when we check the need for backfill
     # from the weewx archive
     if 'StdArchive' in config_dict:
-        db_binding_wx = config_dict['StdArchive'].get('data_binding',
+        db_binding_wx = config_dict['StdArchive'].get('binding',
                                                       'wx_binding')
     else:
         db_binding_wx = 'wx_binding'

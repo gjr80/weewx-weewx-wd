@@ -11,7 +11,7 @@ details.
 
                          Installer for Weewx-WD
 
-Version: 1.2.0a2                                      Date: 12 April 2019
+Version: 1.2.0a3                                      Date: 17 April 2019
 
 Revision History
     12 April 2019       v1.2.0
@@ -57,7 +57,7 @@ import weewx
 from setup import ExtensionInstaller
 
 REQUIRED_VERSION = "3.5.0"
-WEEWX_WD_VERSION = "1.2.0a2"
+WEEWX_WD_VERSION = "1.2.0a3"
 
 
 def loader():
@@ -196,7 +196,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                                  'bin/user/wdschema.py',
                                  'bin/user/wdsearchlist.py',
                                  'bin/user/wdtaggedstats.py',
-                                 'bin/user/weewxwd.py']),
+                                 'bin/user/wd.py']),
                    ('skins/Clientraw', ['skins/Clientraw/clientraw.txt.tmpl',
                                         'skins/Clientraw/clientrawdaily.txt.tmpl',
                                         'skins/Clientraw/clientrawextra.txt.tmpl',

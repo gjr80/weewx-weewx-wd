@@ -12,7 +12,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 1.2.0a2                                        Date: 12 April 2019
+Version: 1.2.0a3                                        Date: 17 April 2019
 
 Revision History
   12 April 2019       v1.2.0
@@ -73,7 +73,7 @@ try:
 except ImportError:
     from weeutil.weeutil import search_up
 
-WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0a2'
+WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0a3'
 
 
 def logmsg(level, msg):
