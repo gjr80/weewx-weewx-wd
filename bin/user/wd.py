@@ -1476,7 +1476,7 @@ class WuSource(ThreadedSource):
             # we want the full day narrative, use a try..except in case the
             # response is malformed
             try:
-                _text = _response_json['narrative'][0]  #.encode('ascii', 'ignore')
+                _text = _response_json['narrative'][0]
             except KeyError:
                 # could not find the narrative so log and return None
                 if self.debug > 0:
@@ -1545,7 +1545,7 @@ class WuSource(ThreadedSource):
             # if we made it here we have an index to use so get the required
             # narrative
             try:
-                _text = _response_json['daypart'][0]['narrative'][_index]  #.encode('ascii', 'ignore')
+                _text = _response_json['daypart'][0]['narrative'][_index]
                 _icon = _response_json['daypart'][0]['iconCode'][_index]
             except KeyError:
                 # if we can'f find a field log the error and return None
@@ -1966,8 +1966,7 @@ class DarkSkySource(ThreadedSource):
                 # the summary there
                 if 'summary' in raw_data[self.block]:
                     # we have a summary field
-                    _forecast = raw_data[self.block]['summary'].encode('ascii',
-                                                                       'ignore')
+                    _forecast = raw_data[self.block]['summary']
                     # can we extract an icon number
                     if 'icon' in raw_data[self.block]:
                         # assume we will use a 'day' icon
@@ -2008,7 +2007,7 @@ class DarkSkySource(ThreadedSource):
                 # data but is the summary there
                 if 'summary' in raw_data['currently']:
                     # we have a summary field
-                    _current = raw_data['currently']['summary'].encode('ascii', 'ignore')
+                    _current = raw_data['currently']['summary']
                     # can we extract an icon number
                     if 'icon' in raw_data['currently']:
                         # assume we will use a 'day' icon
