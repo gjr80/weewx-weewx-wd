@@ -1285,6 +1285,56 @@ class WuSource(ThreadedSource):
                        'zh-HK': 'Chinese - (Hong Kong)',
                        'zh-TW': 'Chinese - (Taiwan)'}
 
+    ICON_MAP = {0: 32,   # Tornado (Night and Day) --> Tornado
+                1: 31,   # Tropical Storm (Night and Day) --> Thunderstorms
+                2: 32,   # Hurricane (Night and Day) --> Tornado
+                3: 31,   # Strong Storms (Night and Day) --> Thunderstorms
+                4: 8,    # Thunder and Hail (Night and Day) --> Heavy Rain
+                5: 27,   # Rain to Snow Showers (Night and Day) --> Snow Showers2
+                6: 24,   # Rain/Sleet (Night and Day) --> Sleet Showers
+                7: 27,   # Wintry Mix Snow/Sleet (Night and Day) --> Snow Showers2
+                8: 24,   # Freezing Drizzle (Night and Day) --> Sleet Showers
+                9: 22,   # Drizzle (Night and Day) --> Showers2
+                10: 23,  # Freezing Rain (Night and Day) --> Sleet
+                11: 22,  # Light Rain (Night and Day) --> Showers2
+                12: 20,  # Rain (Night and Day) --> Rain
+                13: 25,  # Scattered Flurries (Night and Day) --> Snow
+                14: 25,  # Light Snow (Night and Day) --> Snow
+                15: 25,  # Blowing/Drifting Snow (Night and Day) --> Snow
+                16: 25,  # Snow (Night and Day) --> Snow
+                17: 8,   # Hail (Night and Day) --> Heavy Rain
+                18: 23,  # Sleet (Night and Day) --> Sleet
+                19: 33,  # Blowing Dust/Sandstorm (Night and Day) --> Windy
+                20: 6,   # Foggy (Night and Day) --> Fog
+                21: 7,   # Haze/Windy (Night and Day) --> Haze
+                22: 33,  # Smoke/Windy (Night and Day) --> Windy
+                23: 33,  # Breezy (Night and Day) --> Windy
+                24: 33,  # Blowing Spray/Windy (Night and Day) --> Windy
+                25: 25,  # Frigid/Ice Crystals (Night and Day) --> Snow
+                26: 2,   # Cloudy (Night and Day) --> Cloudy
+                27: 19,  # Mostly Cloudy (Night and Day) --> Partly Cloudy
+                28: 2,   # Mostly Cloudy (Day) --> Cloudy
+                29: 4,   # Partly Cloudy (Night) --> Cloudy (Night)
+                30: 19,  # Partly Cloudy (Day) --> Partly Cloudy
+                31: 1,   # Clear (Night) --> Clear (Night)
+                32: 0,   # Sunny (Day) --> Sunny
+                33: 1,   # Fair/Mostly Clear (Night) --> Clear (Night)
+                34: 9,   # Fair/Mostly Sunny (Day) --> Mainly Fine
+                35: 8,   # Mixed Rain & Hail (Day) --> Heavy Rain
+                36: 5,   # Hot (Day) --> Dry
+                37: 31,  # Isolated Thunderstorms (Day) --> Thunderstorms
+                38: 31,  # Thunderstorms (Night and Day) --> Thunderstorms
+                39: 22,  # Scattered Showers (Day) --> Showers2
+                40: 8,   # Heavy Rain (Night and Day) --> Heavy Rain
+                41: 27,  # Scattered Snow Showers (Day) --> Snow Showers2
+                42: 25,  # Heavy Snow (Night and Day) --> Snow
+                43: 25,  # Blizzard (Night and Day) --> Snow
+                44: None,  # Not Available (N/A) (Night and Day) --> None
+                45: 15,  # Scattered Showers (Night) --> Showers (Night)
+                46: 16,  # Scattered Snow Showers (Night) --> Snow (Night)
+                47: 31,  # Scattered Thunderstorms (Night and Day) -->  Thunderstorms
+                }
+    
     def __init__(self, control_queue, result_queue, engine, source_config_dict):
 
         # initialize my superclass
@@ -1352,6 +1402,9 @@ class WuSource(ThreadedSource):
 
         # get a WeatherUndergroundAPI object to handle the API calls
         self.api = WeatherUndergroundAPIForecast(api_key, debug=self.debug)
+        
+        # do we map WU icons numbers to clientraw.txt icon numbers
+        self.map_icons = source_config_dict.get("map_to_clientraw_icons", True)
 
         # log what we will do
         loginf("wdwusource",
@@ -1558,6 +1611,12 @@ class WuSource(ThreadedSource):
                     loginf("wdwusource", "Unable to locate 'narrative' index for "
                                          "'%s' forecast narrative" % self.forecast_text)
 
+            if _icon is not None and self.map_icons:
+                _raw_icon = _icon
+                _icon = self.ICON_MAP.get(_icon)
+                if self.debug or weewx.debug > 0:
+                    loginf("wdwusource",
+                           "Forecast icon mapped from '%d' to '%d'" % (_raw_icon, _icon))
             if _text is not None or _icon is not None:
                 return {'forecastIcon': _icon,
                         'forecastText': _text}
