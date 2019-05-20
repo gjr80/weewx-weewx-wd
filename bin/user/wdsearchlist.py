@@ -12,10 +12,10 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 1.2.0a3                                    Date: 17 April 2019
+Version: 1.2.0b1                                    Date: 20 May 2019
 
 Revision History
-    12 April 2019       v1.2.0
+    20 May 2019         v1.2.0
         - simplified logic used in WdHourRainTags calculation
         - simplified logic used in WdGdDays calculations
         - fixed typo where wet bulb was returned as feels_like temperature
@@ -94,7 +94,7 @@ from weewx.tags import TimespanBinder
 from weeutil.weeutil import TimeSpan, genMonthSpans
 from weewx.units import ValueHelper, getStandardUnitType, ValueTuple
 
-WEEWXWD_SLE_VERSION = '1.2.0a3'
+WEEWXWD_SLE_VERSION = '1.2.0b1'
 
 
 def logmsg(level, msg):

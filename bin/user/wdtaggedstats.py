@@ -12,10 +12,10 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 1.2.0a3                                        Date: 17 April 2019
+Version: 1.2.0b1                                        Date: 20 May 2019
 
 Revision History
-    12 April 2019       v1.2.0
+    20 May 2019         v1.2.0
       - minor formatting/comment changes
 
 Previous bitbucket revision history
@@ -51,7 +51,7 @@ import weewx
 import weewx.units
 import weeutil.weeutil
 
-WEEWXWD_TAGGED_STATS_VERSION = '1.2.0a3'
+WEEWXWD_TAGGED_STATS_VERSION = '1.2.0b1'
 
 
 # ==============================================================================
@@ -906,7 +906,7 @@ class WdArchiveObservationBinder(object):
                     else:
                         vc += 1
                         try:
-                            res = s(top_vt.value[vc] + (min_time - curr_vector_ts) /
+                            res = (stop_vt.value[vc] + (min_time - curr_vector_ts) /
                                     float(self.interval) * (stop_vt.value[vc] - stop_vt.value[vc - 1]))
                         except IndexError:
                             res = 0

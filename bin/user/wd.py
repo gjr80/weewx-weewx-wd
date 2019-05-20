@@ -13,10 +13,10 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
-Version: 1.2.0a4                                    Date: 20 April 2019
+Version: 1.2.0b1                                    Date: 20 May 2019
 
 Revision History
-    20 April 2019       v1.2.0
+    20 May 2019       v1.2.0
         - revised for WeeWX v3.5.0
         - moved __main__ code to weewxwd_config utility
         - now uses appTemp and humidex as provided by StdWXCalculate
@@ -26,20 +26,20 @@ Revision History
         - simplified outTempDay and outTempNight calculations
         - simplified function toint()
         - added support for a WeeWX-WD supplementary database for recording
-          short term information such as theoretical solar max, WU current 
+          short term information such as theoretical solar max, WU current
           conditions, WU forecast and WU almanac data
         - added WU API language support
         - added ability to exercise WU aspects of wd.py without the
           overheads of running a WeeWX instance
         - added current_label config option to allow a user defined label to be
           prepended to the current conditions text
-        - fixed bug that occurred on partial packet stations that occasionally 
+        - fixed bug that occurred on partial packet stations that occasionally
           omit outTemp from packets/records
-        - changed behaviour for calculating derived obs. If any one of the 
-          pre-requisite obs are missing then the derived obs is not calculated 
-          and not added to the packet/record. If all of the pre-requisite obs 
-          exist but one or more is None then the derived obs is set to None. If 
-          all pre-requisite obs exist and are non-None then the derived obs is 
+        - changed behaviour for calculating derived obs. If any one of the
+          pre-requisite obs are missing then the derived obs is not calculated
+          and not added to the packet/record. If all of the pre-requisite obs
+          exist but one or more is None then the derived obs is set to None. If
+          all pre-requisite obs exist and are non-None then the derived obs is
           calculated and added to the packet/record as normal.
         - simplified WdArchive new_archive_record() method
         - renamed from weewxwd3.py to wd.py in line with simplified file naming
@@ -101,10 +101,10 @@ import weewx.manager
 import weewx.units
 import weewx.wxformulas
 
-from weewx.units import convert, obs_group_dict
+from weewx.units import obs_group_dict
 from weeutil.weeutil import accumulateLeaves, to_int, to_bool
 
-WEEWXWD_VERSION = '1.2.0a4'
+WEEWXWD_VERSION = '1.2.0b1'
 
 
 # define a dictionary with our API call query details
@@ -2407,15 +2407,15 @@ class FileSource(ThreadedSource):
             # whether we had forecast and current data or just forecast or just
             # current
             if self.do_forecast and self.do_current:
-                _file_struture = self.FORECAST_STRUCT + self.CURRENT_STRUCT
+                _file_structure = self.FORECAST_STRUCT + self.CURRENT_STRUCT
             elif self.do_forecast:
-                _file_struture = self.FORECAST_STRUCT
+                _file_structure = self.FORECAST_STRUCT
             else:
-                _file_struture = self.CURRENT_STRUCT
+                _file_structure = self.CURRENT_STRUCT
             # initialise holder dict for our parsed data
             _parsed = dict()
             # iterate over each field we are looking for
-            for index, key in enumerate(_file_struture):
+            for index, key in enumerate(_file_structure):
                 # assign the relevant data to the relevant key in the dict,
                 # wrap in a try..except in case something is missing or
                 # otherwise wrong

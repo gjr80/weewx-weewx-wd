@@ -11,10 +11,10 @@ details.
 
                          Installer for Weewx-WD
 
-Version: 1.2.0a3                                      Date: 17 April 2019
+Version: 1.2.0b1                                      Date: 20 May 2019
 
 Revision History
-    12 April 2019       v1.2.0
+    20 May 2019         v1.2.0
         - WeeWX-WD now requires WeeWX v3.5.0 or later
         - revised Databases and DataBindings config options to support wdSchema
           and wd supp database
@@ -57,7 +57,7 @@ import weewx
 from setup import ExtensionInstaller
 
 REQUIRED_VERSION = "3.5.0"
-WEEWX_WD_VERSION = "1.2.0a3"
+WEEWX_WD_VERSION = "1.2.0b1"
 
 
 def loader():
