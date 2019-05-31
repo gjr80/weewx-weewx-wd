@@ -907,7 +907,7 @@ class WdArchiveObservationBinder(object):
                         vc += 1
                         try:
                             res = (stop_vt.value[vc] + (min_time - curr_vector_ts) /
-                                    float(self.interval) * (stop_vt.value[vc] - stop_vt.value[vc - 1]))
+                                   float(self.interval) * (stop_vt.value[vc] - stop_vt.value[vc - 1]))
                         except IndexError:
                             res = 0
                         final.append(weewx.units.ValueHelper((res, stop_vt.unit, stop_vt.group),
