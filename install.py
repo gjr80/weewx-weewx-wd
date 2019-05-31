@@ -136,7 +136,22 @@ class WeewxWdInstaller(ExtensionInstaller):
                     'wdClientraw': {
                         'skin': 'Clientraw',
                         'enabled': 'True',
-                        'HTML_ROOT': 'WD'
+                        'HTML_ROOT': 'WD',
+                        'Units': {
+                            'StringFormats': {
+                                'degree_C': '%.1f',
+                                'degree_compass': '%.0f',
+                                'foot': '%.0f',
+                                'hPa': '%.1f',
+                                'km': '%.1f',
+                                'knot': '%.1f',
+                                'mm': '%.1f',
+                                'percent': '%.0f',
+                                'uv_index': '%.1f',
+                                'watt_per_meter_squared': '%.0f',
+                                'NONE': '--'
+                            },
+                        },
                     }
                 },
                 'DataBindings': {
