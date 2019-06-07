@@ -263,7 +263,7 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                     # ImageGenerator sections
                     label = line_options.get('label')
                     if label:
-                        self.label = str(label, 'utf8')
+                        self.label = label.decode('utf8')
                     else:
                         # no explicit label so set label to nothing
                         self.label = label
