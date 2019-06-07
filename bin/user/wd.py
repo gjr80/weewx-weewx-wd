@@ -82,15 +82,19 @@ Previous Bitbucket revision history
 """
 
 # python imports
-import Queue
 import socket
 import syslog
 import threading
-import urllib2
+# import urllib.request, urllib.error, urllib.parse
 import json
 import os
 import time
 from datetime import datetime
+
+# python 2/3 compatibility shims
+from six import iteritems
+from six.moves import queue
+from six.moves import urllib
 
 # WeeWX imports
 import weeutil.weeutil
@@ -656,10 +660,10 @@ class WdGenerateDerived(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
 
         # get our next record
-        _rec = self.input_generator.next()
+        _rec = next(self.input_generator)
         _mwx = weewx.units.to_METRICWX(_rec)
 
         # get our historical humidex, if not available then calculate it
@@ -791,8 +795,8 @@ class WdSuppArchive(weewx.engine.StdService):
                         if _source_dict is not None and _enable:
                             # we have a source config dict and the source is
                             # enabled so setup the result and control queues
-                            self.queues[source] = {'control': Queue.Queue(),
-                                                   'result': Queue.Queue()}
+                            self.queues[source] = {'control': queue.Queue(),
+                                                   'result': queue.Queue()}
                             # obtain an appropriate source object
                             self.sources[source] = self.source_factory(source,
                                                                        self.queues[source],
@@ -849,7 +853,7 @@ class WdSuppArchive(weewx.engine.StdService):
         now = time.time()
 
         # get any data from the sources
-        for source_name, source_object in self.sources.iteritems():
+        for source_name, source_object in iteritems(self.sources):
             _result_queue = self.queues[source_name]['result']
             if _result_queue:
                 # if packets have backed up in the result queue, trim it until
@@ -860,7 +864,7 @@ class WdSuppArchive(weewx.engine.StdService):
             try:
                 # use nowait() so we don't block
                 _package = _result_queue.get_nowait()
-            except Queue.Empty:
+            except queue.Empty:
                 # nothing in the queue so continue
                 pass
             else:
@@ -962,7 +966,7 @@ class WdSuppArchive(weewx.engine.StdService):
                 # save our data to the database
                 dbm.addRecord(_data_record)
                 break
-            except Exception, e:
+            except Exception as e:
                 logerr("wdsupparchive",
                        "save failed (attempt %d of %d): %s" % ((count + 1),
                                                                max_tries, e))
@@ -981,7 +985,7 @@ class WdSuppArchive(weewx.engine.StdService):
             try:
                 dbm.getSql(sql)
                 break
-            except Exception, e:
+            except Exception as e:
                 logerr("wdsupparchive",
                        "prune failed (attempt %d of %d): %s" % ((count+1),
                                                                 max_tries, e))
@@ -1007,7 +1011,7 @@ class WdSuppArchive(weewx.engine.StdService):
         # do the vacuum, wrap in try..except in case it fails
         try:
             dbm.getSql('vacuum')
-        except Exception, e:
+        except Exception as e:
             logerr("wdsupparchive",
                    "Vacuuming database %s failed: %s" % (dbm.database_name, e))
 
@@ -1035,7 +1039,7 @@ class WdSuppArchive(weewx.engine.StdService):
         signal and then go and check that each has indeed shutdown.
         """
 
-        for source_name, source_object in self.sources.iteritems():
+        for source_name, source_object in iteritems(self.sources):
             if self.queues[source_name]['control'] and source_object.isAlive():
                 # put a None in the control queue to signal the thread to
                 # shutdown
@@ -1117,7 +1121,7 @@ class ThreadedSource(threading.Thread):
                     # seconds. If nothing is there an empty queue exception
                     # will be thrown after 60 seconds
                     _package = self.control_queue.get(block=True, timeout=60)
-                except Queue.Empty:
+                except queue.Empty:
                     # nothing in the queue so continue
                     pass
                 else:
@@ -1126,7 +1130,7 @@ class ThreadedSource(threading.Thread):
                     if _package is None:
                         # we have a shutdown signal so return to exit
                         return
-        except Exception, e:
+        except Exception as e:
             # Some unknown exception occurred. This is probably a serious
             # problem. Exit with some notification.
             logcrit("wdthreadedsource",
@@ -1383,7 +1387,7 @@ class WuSource(ThreadedSource):
         if len(_location_list) == 2:
             self.location = _location_list[1]
         else:
-            self.locator == 'geocode'
+            self.locator = 'geocode'
             self.location = '%s,%s' % (engine.stn_info.latitude_f,
                                        engine.stn_info.longitude_f)
 
@@ -1464,7 +1468,7 @@ class WuSource(ThreadedSource):
                             loginf("wdwusource",
                                    "Failed to download updated Weather Underground forecast")
 
-                except Exception, e:
+                except Exception as e:
                     # Some unknown exception occurred. Set _response to None,
                     # log it and continue.
                     _response = None
@@ -1722,11 +1726,11 @@ class WeatherUndergroundAPIForecast(object):
         for count in range(max_tries):
             # attempt the call
             try:
-                w = urllib2.urlopen(url)
+                w = urllib.request.urlopen(url)
                 _response = w.read()
                 w.close()
                 return _response
-            except (urllib2.URLError, socket.timeout), e:
+            except (urllib.error.URLError, socket.timeout) as e:
                 logerr("wuapi",
                        "Failed to get Weather Underground forecast on attempt %d" % (count+1, ))
                 logerr("wuapi", "   **** %s" % e)
@@ -1969,7 +1973,7 @@ class DarkSkySource(ThreadedSource):
                             loginf("wddarkskysource",
                                    "Failed downloading Dark Sky API response")
 
-                except Exception, e:
+                except Exception as e:
                     # Some unknown exception occurred. Set _response to None,
                     # log it and continue.
                     _response = None
@@ -2240,14 +2244,14 @@ class DarkskyForecastAPI(object):
         for count in range(max_tries):
             # attempt the call
             try:
-                w = urllib2.urlopen(url)
+                w = urllib.request.urlopen(url)
                 response = w.read()
                 w.close()
                 if self.debug > 1:
                     loginf("wddarkskyapi",
                            "Dark Sky API response=%s" % (response, ))
                 return response
-            except (urllib2.URLError, socket.timeout), e:
+            except (urllib.error.URLError, socket.timeout) as e:
                 logerr("wddarkskyapi",
                        "Failed to get API response on attempt %d" % (count + 1,))
                 logerr("wddarkskyapi", "   **** %s" % e)
@@ -2372,7 +2376,7 @@ class FileSource(ThreadedSource):
                         _data = f.readlines()
                 if self.debug > 0:
                     loginf("wdfilesource", "File '%s' read" % self.file)
-            except Exception, e:
+            except Exception as e:
                 # Some unknown exception occurred, likely IOError. Set _data to
                 # None, log it and continue.
                 _data = None
@@ -2518,7 +2522,7 @@ def check_enable(cfg_dict, service, *args):
         for option in args:
             if wdsupp_dict[option] == 'replace_me':
                 raise KeyError(option)
-    except KeyError, e:
+    except KeyError as e:
         logdbg2("weewxwd: check_enable:",
                 "%s: Missing option %s" % (service, e))
         return None
@@ -2731,12 +2735,12 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     if options.version:
-        print "weewxwd version %s" % WEEWXWD_VERSION
+        print("weewxwd version %s" % WEEWXWD_VERSION)
         exit(0)
 
     # get config_dict to use
     config_path, config_dict = weecfg.read_config(options.config_path, args)
-    print "Using configuration file %s" % config_path
+    print("Using configuration file %s" % config_path)
 
     # get a WeeWX-WD config dict
     weewxwd_dict = config_dict.get('Weewx-WD', None)
@@ -2744,8 +2748,8 @@ if __name__ == '__main__':
     # get a WuData object
     if weewxwd_dict is not None:
         # get result and control queues for our source
-        result_queue = Queue.Queue()
-        control_queue = Queue.Queue()
+        result_queue = queue.Queue()
+        control_queue = queue.Queue()
         if options.wu_data or options.wu_config:
             # get a simplified engine to feed to our source object
             _engine = SimpleEngine(config_dict)
@@ -2787,53 +2791,53 @@ if __name__ == '__main__':
         try:
             # use nowait() so we don't block
             _package = result_queue.get(True, 15)
-        except Queue.Empty:
+        except queue.Empty:
             # nothing in the queue so exit with appropriate message
-            print "No data obtained from Weather Underground API"
-            print "Suggest Weather Underground config data be checked"
+            print("No data obtained from Weather Underground API")
+            print("Suggest Weather Underground config data be checked")
         else:
             # we did get something in the queue but was it a data package
             if isinstance(_package, dict):
                 if 'type' in _package and _package['type'] == 'data':
                     # we have forecast text so print it
-                    print
-                    print "The following data was extracted from the Weather Underground API:"
+                    print()
+                    print("The following data was extracted from the Weather Underground API:")
                     pprint.pprint(_package['payload'])
                 else:
                     # received an invalid data package
-                    print "Invalid data obtained from Weather Underground API:"
-                    print pprint.pprint(_package)
+                    print("Invalid data obtained from Weather Underground API:")
+                    print(pprint.pprint(_package))
             else:
                 # received an invalid data package
-                print "Invalid data obtained from Weather Underground API:"
-                print pprint.pprint(_package)
+                print("Invalid data obtained from Weather Underground API:")
+                print(pprint.pprint(_package))
         # sent the shutdown signal to our source thread
         control_queue.put(None)
         sys.exit(0)
 
     if options.wu_config:
-        print
-        print "The following config data will be used to access the Weather Underground API:"
-        print
+        print()
+        print("The following config data will be used to access the Weather Underground API:")
+        print()
         if source.api.api_key is not None:
             _len = len(source.api.api_key)
-            print "%24s: %s%s" % ('API key',
+            print("%24s: %s%s" % ('API key',
                                   (_len - 4) * 'x',
-                                  source.api.api_key[-4:])
+                                  source.api.api_key[-4:]))
         else:
-            print "Cannot find valid Weather Underground API key."
-        print "%24s: %s" % ('Forecast type', source.forecast)
-        print "%24s: %s" % ('Forecast text to display', source.forecast_text)
-        print "%24s: %s" % ('Locator', source.locator)
-        print "%24s: %s" % ('Location', source.location)
-        print "%24s: %s (%s)" % ('Units',
+            print("Cannot find valid Weather Underground API key.")
+        print("%24s: %s" % ('Forecast type', source.forecast))
+        print("%24s: %s" % ('Forecast text to display', source.forecast_text))
+        print("%24s: %s" % ('Locator', source.locator))
+        print("%24s: %s" % ('Location', source.location))
+        print("%24s: %s (%s)" % ('Units',
                                  source.units,
-                                 source.VALID_UNITS[source.units])
-        print "%24s: %s (%s)" % ('Language',
+                                 source.VALID_UNITS[source.units]))
+        print("%24s: %s (%s)" % ('Language',
                                  source.language,
-                                 source.VALID_LANGUAGES[source.language])
+                                 source.VALID_LANGUAGES[source.language]))
         if source.api.api_key is None:
-            print "Weather Underground API will not be accessed."
+            print("Weather Underground API will not be accessed.")
         control_queue.put(None)
         sys.exit(0)
 
@@ -2842,59 +2846,59 @@ if __name__ == '__main__':
         try:
             # use nowait() so we don't block
             _package = result_queue.get(True, 15)
-        except Queue.Empty:
+        except queue.Empty:
             # nothing in the queue so exit with appropriate message
-            print "No data obtained from Dark Sky API"
-            print "Suggest Dark Sky config data be checked"
+            print("No data obtained from Dark Sky API")
+            print("Suggest Dark Sky config data be checked")
         else:
             # we did get something in the queue but was it a data package
             if isinstance(_package, dict):
                 if 'type' in _package and _package['type'] == 'data':
                     # we have something so print it
-                    print
-                    print "The following data was extracted from the Dark Sky API:"
+                    print()
+                    print("The following data was extracted from the Dark Sky API:")
                     pprint.pprint(_package['payload'])
                 else:
                     # received an invalid data package
-                    print "Invalid data obtained from Dark Sky API:"
-                    print pprint.pprint(_package)
+                    print("Invalid data obtained from Dark Sky API:")
+                    print(pprint.pprint(_package))
             else:
                 # received an invalid data package
-                print "Invalid data obtained from Dark Sky API:"
-                print pprint.pprint(_package)
+                print("Invalid data obtained from Dark Sky API:")
+                print(pprint.pprint(_package))
         # sent the shutdown signal to our source thread
         control_queue.put(None)
         sys.exit(0)
 
     if options.ds_config:
-        print
-        print "The following config data will be used to access the Dark Sky API:"
+        print()
+        print("The following config data will be used to access the Dark Sky API:")
         if source.api.key is not None:
             _len = len(source.api.key)
-            print "%18s: %s%s" % ('API key',
+            print("%18s: %s%s" % ('API key',
                                   (_len - 4) * 'x',
-                                  source.api.key[-4:])
+                                  source.api.key[-4:]))
         else:
-            print "Cannot find valid Dark Sky API key."
-        print "%18s: %s" % ('Block', source.block)
+            print("Cannot find valid Dark Sky API key.")
+        print("%18s: %s" % ('Block', source.block))
         if source.do_forecast and source.do_current:
-            print "%18s: %s" % ('Data to be sourced',
-                                'Forecast and current conditions')
+            print("%18s: %s" % ('Data to be sourced',
+                                'Forecast and current conditions'))
         elif source.do_forecast:
-            print "%18s: %s" % ('Data to be sourced', 'Forecast only')
+            print("%18s: %s" % ('Data to be sourced', 'Forecast only'))
         elif source.do_current:
-            print "%18s: %s" % ('Data to be sourced', 'Current conditions only')
+            print("%18s: %s" % ('Data to be sourced', 'Current conditions only'))
         else:
-            print "%18s: %s" % ('Data to be sourced', 'Nothing selected')
-        print "%18s: %s,%s" % ('Location', _engine.stn_info.latitude_f, _engine.stn_info.longitude_f)
-        print "%18s: %s (%s)" % ('Units',
+            print("%18s: %s" % ('Data to be sourced', 'Nothing selected'))
+        print("%18s: %s,%s" % ('Location', _engine.stn_info.latitude_f, _engine.stn_info.longitude_f))
+        print("%18s: %s (%s)" % ('Units',
                                  source.units,
-                                 source.VALID_UNITS[source.units])
-        print "%18s: %s (%s)" % ('Language',
+                                 source.VALID_UNITS[source.units]))
+        print("%18s: %s (%s)" % ('Language',
                                  source.language,
-                                 source.VALID_LANGUAGES[source.language])
+                                 source.VALID_LANGUAGES[source.language]))
         if source.api.key is None:
-            print "Dark Sky API will not be accessed."
+            print("Dark Sky API will not be accessed.")
         control_queue.put(None)
         sys.exit(0)
 
@@ -2903,43 +2907,43 @@ if __name__ == '__main__':
         try:
             # use nowait() so we don't block
             _package = result_queue.get(True, 15)
-        except Queue.Empty:
+        except queue.Empty:
             # nothing in the queue so exit with appropriate message
-            print "No data obtained from file source"
-            print "Suggest file source config data be checked"
+            print("No data obtained from file source")
+            print("Suggest file source config data be checked")
         else:
             # we did get something in the queue but was it a data package
             if isinstance(_package, dict):
                 if 'type' in _package and _package['type'] == 'data':
                     # we have something so print it
-                    print
-                    print "The following data was extracted from the file source:"
+                    print()
+                    print("The following data was extracted from the file source:")
                     pprint.pprint(_package['payload'])
                 else:
                     # received an invalid data package
-                    print "Invalid data obtained from the file source:"
-                    print pprint.pprint(_package)
+                    print("Invalid data obtained from the file source:")
+                    print(pprint.pprint(_package))
             else:
                 # received an invalid data package
-                print "Invalid data obtained from the file source:"
-                print pprint.pprint(_package)
+                print("Invalid data obtained from the file source:")
+                print(pprint.pprint(_package))
         # sent the shutdown signal to our source thread
         control_queue.put(None)
         sys.exit(0)
 
     if options.file_config:
-        print
-        print "The following config data will be used to access a file source:"
-        print "%18s: %s" % ('File', source.file)
+        print()
+        print("The following config data will be used to access a file source:")
+        print("%18s: %s" % ('File', source.file))
         if source.do_forecast and source.do_current:
-            print "%18s: %s" % ('Data to be sourced',
-                                'Forecast and current conditions')
+            print("%18s: %s" % ('Data to be sourced',
+                                'Forecast and current conditions'))
         elif source.do_forecast:
-            print "%18s: %s" % ('Data to be sourced', 'Forecast only')
+            print("%18s: %s" % ('Data to be sourced', 'Forecast only'))
         elif source.do_current:
-            print "%18s: %s" % ('Data to be sourced', 'Current conditions only')
+            print("%18s: %s" % ('Data to be sourced', 'Current conditions only'))
         else:
-            print "%18s: %s" % ('Data to be sourced', 'Nothing selected')
+            print("%18s: %s" % ('Data to be sourced', 'Nothing selected'))
         control_queue.put(None)
         sys.exit(0)
 

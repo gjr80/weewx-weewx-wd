@@ -34,6 +34,7 @@ Previous bitbucket revision history
 
 # python imports
 from array import array
+from builtins import zip
 import bisect
 import datetime
 import math
@@ -343,7 +344,7 @@ class MoonApsis(SearchList):
 
         # split our apsis list into individual components so we can find the
         # next apogee and perigee
-        apsis_type_list, apsis_ts_vh_list, apsis_dist_list = zip(*apsis_list)
+        apsis_type_list, apsis_ts_vh_list, apsis_dist_list = list(zip(*apsis_list))
         # ts list elements are ValueHelpers so we need to break it down further
         apsis_ts_list = [ts_vh.raw for ts_vh in apsis_ts_vh_list]
         try:
@@ -548,7 +549,7 @@ class Eclipse(SearchList):
         # get a timestamp for now
         search_ts = timespan.stop
         # split our eclipse list tuples into individual lists
-        solar_eclipse_ts_list, solar_eclipse_type_list = zip(*self.solar_eclipses)
+        solar_eclipse_ts_list, solar_eclipse_type_list = list(zip(*self.solar_eclipses))
         try:
             # find the index of the next solar eclipse
             next_solar_eclipse_idx = bisect.bisect_left(solar_eclipse_ts_list,
@@ -572,7 +573,7 @@ class Eclipse(SearchList):
         next_solar_eclipse_type = self.solar_eclipse_type_lookup[next_solar_eclipse_type]
 
         # split our eclipse list tuples into individual lists
-        lunar_eclipse_ts_list, lunar_eclipse_data_list = zip(*self.lunar_eclipses)
+        lunar_eclipse_ts_list, lunar_eclipse_data_list = list(zip(*self.lunar_eclipses))
         try:
             # find the index of the next lunar eclipse
             next_lunar_eclipse_idx = bisect.bisect_left(lunar_eclipse_ts_list,

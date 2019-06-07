@@ -245,7 +245,7 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                 # in a try block in case it already exists.
                 try:
                     os.makedirs(os.path.dirname(img_file))
-                except OSError, e:
+                except OSError as e:
                     if e.errno == 17:
                         # file exists error, continue
                         pass
@@ -263,7 +263,7 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                     # ImageGenerator sections
                     label = line_options.get('label')
                     if label:
-                        self.label = unicode(label, 'utf8')
+                        self.label = str(label, 'utf8')
                     else:
                         # no explicit label so set label to nothing
                         self.label = label

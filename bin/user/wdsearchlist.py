@@ -71,6 +71,7 @@ Previous Bitbucket revision history
 """
 
 # python imports
+from builtins import filter
 import calendar
 import datetime
 import itertools
