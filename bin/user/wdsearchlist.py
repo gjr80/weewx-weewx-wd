@@ -71,7 +71,6 @@ Previous Bitbucket revision history
 """
 
 # python imports
-from builtins import filter
 import calendar
 import datetime
 import itertools
@@ -2959,9 +2958,12 @@ class WdRainThisDay(weewx.cheetahgenerator.SearchList):
         # Filter is slower than nested if..else but what's a few milliseconds
         # for the sake of neater code
         if rain_vt.value:
-            filtered = filter(None, [rain_vt.value[0], _row[0]])
+            _sum = rain_vt.value[0] if rain_vt.value[0] is not None else 0.0
+            _sum += _row[0] if _row[0] is not None else 0.0
+            # filtered = filter(None, [rain_vt.value[0], _row[0]])
             no_none = not (rain_vt.value[0] is None or _row[0] is None)
-            month_rain_vt = ValueTuple(sum(filtered), r_type, r_group) if no_none else none_vt
+            month_rain_vt = ValueTuple(_sum, r_type, r_group) if no_none else none_vt
+            # month_rain_vt = ValueTuple(sum(filtered), r_type, r_group) if no_none else none_vt
             month_rain_vh = ValueHelper(month_rain_vt,
                                         formatter=self.generator.formatter,
                                         converter=self.generator.converter)
@@ -3023,9 +3025,12 @@ class WdRainThisDay(weewx.cheetahgenerator.SearchList):
         # Filter is slower than nested if..else but what's a few milliseconds
         # for the sake of neater code
         if rain_vt.value:
-            filtered = filter(None, [rain_vt.value[0], _row[0]])
+            _sum = rain_vt.value[0] if rain_vt.value[0] is not None else 0.0
+            _sum += _row[0] if _row[0] is not None else 0.0
+            # filtered = filter(None, [rain_vt.value[0], _row[0]])
             no_none = not (rain_vt.value[0] is None or _row[0] is None)
-            year_rain_vt = ValueTuple(sum(filtered), r_type, r_group) if no_none else none_vt
+            year_rain_vt = ValueTuple(_sum, r_type, r_group) if no_none else none_vt
+            # year_rain_vt = ValueTuple(sum(filtered), r_type, r_group) if no_none else none_vt
             year_rain_vh = ValueHelper(year_rain_vt,
                                        formatter=self.generator.formatter,
                                        converter=self.generator.converter)

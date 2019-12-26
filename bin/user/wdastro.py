@@ -34,12 +34,14 @@ Previous bitbucket revision history
 
 # python imports
 from array import array
-from builtins import zip
 import bisect
 import datetime
 import math
 import syslog
 import time
+
+# python 2/3 compatibility shims
+from six.moves import zip
 
 # WeeWX imports
 import weewx
