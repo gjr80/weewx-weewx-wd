@@ -12,47 +12,49 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 1.2.0b1                                        Date: 20 May 2019
+Version: 2.0.0a1                                        Date: 27 December 2019
 
 Revision History
-  20 May 2019        v1.2.0
+  27 December 2019      v2.0.0
       - renaming of this file and various classes, methods and variables
       - reformatting to remove numerous long lines
       - reformat of these comments
+      - introduced class UniDraw allow use of fonts that don't support unicode
+      - WeeWX 4.0 python2/3 compatible
 
 Previous Bitbucket revision history
-  31 March 2017       v1.0.3
+  31 March 2017         v1.0.3
       - no change, version number change only
-  14 December 2016    v1.0.2
+  14 December 2016      v1.0.2
       - fixed Image/ImageDraw import issue, now tries to import from PIL first
       - fixed issue where wind speed was always displayed in the windSpeed/
         windGust units used in the WeeWX database
       - speed and direction ValueTuples now use .value property instead of [0]
         to access the ValueTuple value
-  30 November 2016    v1.0.1
+  30 November 2016      v1.0.1
       - fixed issue whereby WeeWX would exit if the requested font is not
         installed, now defaults to a system font used by WeeWX if the requested
         font is not installed
       - minor reformatting of long lines and equations
-  10 January 2015     v1.0.0
+  10 January 2015       v1.0.0
       - rewritten for WeeWX v3.0.0
-  1 May 2014          v0.9.3
+  1 May 2014            v0.9.3
       - fixed issue that arose with WeeWX 2.6.3 now allowing use of UTF-8
         characters in plots
       - fixed logic error in code that calculates size of wind rose 'petals'
       - removed unnecessary import statements
       - tweaked wind rose size calculations to better cater for labels on plot
-  30 July 2013        v0.9.1
+  30 July 2013          v0.9.1
       - revised version number to align with WeeWX-WD version numbering
-  20 July 2013        v0.1
+  20 July 2013          v0.1
       - initial implementation
 """
 
 # python imports
 import datetime
+import logging
 import math
 import os.path
-import syslog
 import time
 try:
     from PIL import Image, ImageDraw
@@ -73,23 +75,9 @@ try:
 except ImportError:
     from weeutil.weeutil import search_up
 
-WEEWXWD_STACKED_WINDROSE_VERSION = '1.2.0b1'
+log = logging.getLogger(__name__)
 
-
-def logmsg(level, msg):
-    syslog.syslog(level, 'StackedWindRose: %s' % msg)
-
-
-def logdbg(msg):
-    logmsg(syslog.LOG_DEBUG, msg)
-
-
-def loginf(msg):
-    logmsg(syslog.LOG_INFO, msg)
-
-
-def logerr(msg):
-    logmsg(syslog.LOG_ERR, msg)
+WEEWXWD_STACKED_WINDROSE_VERSION = '2.0.0a1'
 
 
 # ==============================================================================
@@ -261,12 +249,7 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                     # See if a plot title has been explicitly requested.
                     # 'label' is used for consistency in skin.conf with
                     # ImageGenerator sections
-                    label = line_options.get('label')
-                    if label:
-                        self.label = label.decode('utf8')
-                    else:
-                        # no explicit label so set label to nothing
-                        self.label = label
+                    self.label = line_options.get('label')
                     # has a time_stamp has been explicitly requested.
                     self.time_stamp = line_options.get('time_stamp')
                     # see if time_stamp location has been explicitly set
@@ -403,7 +386,7 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                     self.label_dir = label_dir
                     # get an image object to hold our plot
                     image = windrose_image_setup(self)
-                    draw = ImageDraw.Draw(image)
+                    draw = UniDraw(image)
                     # set fonts to be used
                     self.plot_font = get_font_handle(self.windrose_font_path,
                                                      self.windrose_plot_font_size)
@@ -509,15 +492,35 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                 ngen += 1
         if self.log_success:
             t2 = time.time()
-            loginf("Generated %d images for %s in %.2f seconds" % (ngen,
-                                                                   self.skin_dict['REPORT_NAME'],
-                                                                   t2 - t1))
+            log.info("Generated %d images for %s in %.2f seconds" % (ngen,
+                                                                     self.skin_dict['REPORT_NAME'],
+                                                                     t2 - t1))
 
 
 # ==============================================================================
 #                               Utility Functions
 # ==============================================================================
 
+
+class UniDraw(ImageDraw.ImageDraw):
+    """Supports non-Unicode fonts
+
+    Not all fonts support Unicode characters. These will raise a UnicodeEncodeError exception.
+    This class subclasses the regular ImageDraw.Draw class, adding overridden functions to
+    catch these exceptions. It then tries drawing the string again, this time as a UTF8 string
+    """
+
+    def text(self, position, string, **options):
+        try:
+            return ImageDraw.ImageDraw.text(self, position, string, **options)
+        except UnicodeEncodeError:
+            return ImageDraw.ImageDraw.text(self, position, string.encode('utf-8'), **options)
+
+    def textsize(self, string, **options):
+        try:
+            return ImageDraw.ImageDraw.textsize(self, string, **options)
+        except UnicodeEncodeError:
+            return ImageDraw.ImageDraw.textsize(self, string.encode('utf-8'), **options)
 
 def windrose_image_setup(self):
     """Create image object for us to draw on.
@@ -760,7 +763,7 @@ def skip_this_plot(time_ts, time_length, img_file, plotname):
     # images without a time_length must be skipped every time and a syslog
     # entry added
     if time_length is None:
-        loginf("Plot %s ignored, no time_length specified" % plotname)
+        log.info("Plot %s ignored, no time_length specified" % plotname)
         return True
 
     # the image definitely has to be generated if it doesn't exist
