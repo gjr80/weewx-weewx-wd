@@ -14,7 +14,7 @@ GNU General Public License for more details.
 #                                                                             #
 #                       WeeWX-WD clientraw.txt Template                       #
 #                                                                             #
-# Version: 1.2.0b1                                     Date: 20 May 2019      #
+# Version: 2.0.0a1                                     Date: 27 December 2019 #
 #                                                                             #
 ###############################################################################
 *#
@@ -208,11 +208,23 @@ $rainHourArray[$i].mm.toString($addLabel=False, $localize=False) #slurp
 #*WD|140*#$current.windGust.knot.toString($useThisFormat="%.1f", $localize=False) #slurp
 #*WD|141*#$current.dateTime.format($yearFormat) #slurp
 #*WD|142*#0 #slurp
-#set $trendBool = -1 + 2 * int($trend.outTemp >= 0)
+#if $trend.outTemp.raw is not None
+#set $trendBool = -1 + 2 * int($trend.outTemp.raw >= 0)
+#else
+#set $trendBool = 0
+#end if
 #*WD|143*#$trendBool #slurp
-#set $trendBool = -1 + 2 * int($trend.outHumidity >= 0)
+#if $trend.outHumidity.raw is not None
+#set $trendBool = -1 + 2 * int($trend.outHumidity.raw >= 0)
+#else
+#set $trendBool = 0
+#end if
 #*WD|144*#$trendBool #slurp
-#set $trendBool = -1 + 2 * int($trend($data_binding='wd_binding').humidex >= 0)
+#if $trend($data_binding='wd_binding').humidex.raw is not None
+#set $trendBool = -1 + 2 * int($trend($data_binding='wd_binding').humidex.raw >= 0)
+#else
+#set $trendBool = 0
+#end if
 #*WD|145*#$trendBool #slurp
 #*WD|146*#$current($timestamp=$now-3600, $max_delta=180).windDir.toString($addLabel=False, $localize=False) #slurp
 #*WD|147*#$current($timestamp=$now-3240, $max_delta=180).windDir.toString($addLabel=False, $localize=False) #slurp
