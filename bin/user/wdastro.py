@@ -12,11 +12,12 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 1.2.0b1                                    Date: 20 May 2019
+Version: 2.0.0a1                                    Date: 27 December 2019
 
 Revision History
-    20 May 2019         v1.2.0
+    27 December 2019    v2.0.0
       - minor formatting changes
+      - WeeWX 4.0 python 2/3 compatible
 
 Previous bitbucket revision history
     31 March 2017       v1.0.3
@@ -36,8 +37,8 @@ Previous bitbucket revision history
 from array import array
 import bisect
 import datetime
+import logging
 import math
-import syslog
 import time
 
 # python 2/3 compatibility shims
@@ -48,28 +49,9 @@ import weewx
 from weewx.cheetahgenerator import SearchList
 from weewx.units import ValueHelper
 
-WEEWXWD_ASTRO_VERSION = '1.2.0b1'
+log = logging.getLogger(__name__)
 
-
-def logmsg(level, msg):
-    syslog.syslog(level, 'weewxwd: %s' % msg)
-
-
-def logdbg(msg):
-    logmsg(syslog.LOG_DEBUG, msg)
-
-
-def logdbg2(msg):
-    if weewx.debug >= 2:
-        logmsg(syslog.LOG_DEBUG, msg)
-
-
-def loginf(msg):
-    logmsg(syslog.LOG_INFO, msg)
-
-
-def logerr(msg):
-    logmsg(syslog.LOG_ERR, msg)
+WEEWXWD_ASTRO_VERSION = '2.0.0a1'
 
 
 class MoonApsis(SearchList):
@@ -385,7 +367,8 @@ class MoonApsis(SearchList):
                                  'min_perigee': min_perigee}
 
         t2 = time.time()
-        logdbg2("MoonApsis SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("MoonApsis SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
@@ -605,7 +588,8 @@ class Eclipse(SearchList):
                                  'next_lunar_eclipse_type': next_lunar_eclipse_type}
 
         t2 = time.time()
-        logdbg2("Eclipse SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("Eclipse SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
@@ -683,7 +667,8 @@ class EarthApsis(SearchList):
                                  'next_aphelion': next_aphelion_ts_vh}
 
         t2 = time.time()
-        logdbg2("EarthApsis SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("EarthApsis SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
@@ -742,6 +727,7 @@ class ChineseNewYear(SearchList):
         search_list_extension = {'next_cny': cny}
 
         t2 = time.time()
-        logdbg2("ChineseNewYear SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("ChineseNewYear SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
