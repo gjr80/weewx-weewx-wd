@@ -11,11 +11,11 @@ details.
 
                          Installer for Weewx-WD
 
-Version: 1.2.0b1                                      Date: 20 May 2019
+Version: 2.0.0a1                                      Date: 27 December 2019
 
 Revision History
-    20 May 2019         v1.2.0
-        - WeeWX-WD now requires WeeWX v3.5.0 or later
+    27 December 2019    v2.0.0
+        - WeeWX-WD now requires WeeWX v4.0.0 or later
         - revised Databases and DataBindings config options to support wdSchema
           and wd supp database
         - added new WdSuppArchive service
@@ -56,8 +56,9 @@ import weewx
 
 from setup import ExtensionInstaller
 
-REQUIRED_VERSION = "3.5.0"
-WEEWX_WD_VERSION = "1.2.0b1"
+# TODO. Fix before release
+REQUIRED_VERSION = "4.0.0b5"
+WEEWX_WD_VERSION = "2.0.0a1"
 
 
 def loader():
@@ -77,9 +78,9 @@ class WeewxWdInstaller(ExtensionInstaller):
             description='WeeWX support for Weather Display Live and Carter Lake/Saratoga weather web site templates.',
             author="Gary Roderick",
             author_email="gjroderick<@>gmail.com",
-            process_services=['user.weewxwd.WdWXCalculate'],
-            archive_services=['user.weewxwd.WdArchive',
-                              'user.weewxwd.WdSuppArchive'],
+            process_services=['user.wd.WdWXCalculate'],
+            archive_services=['user.wd.WdArchive',
+                              'user.wd.WdSuppArchive'],
             config={
                 'StdReport': {
                     'wdPWS': {
