@@ -12,14 +12,15 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 1.2.0b1                                    Date: 20 May 2019
+Version: 2.0.0a1                                    Date: 27 December 2019
 
 Revision History
-    20 May 2019         v1.2.0
+    27 December 2019    v2.0.0
         - simplified logic used in WdHourRainTags calculation
         - simplified logic used in WdGdDays calculations
         - fixed typo where wet bulb was returned as feels_like temperature
         - Easter is now calculated on report time not system time
+        - WeeWX 4.0 python 2/3 compatible
 
 Previous Bitbucket revision history
     31 March 2017       v1.0.3
@@ -74,8 +75,8 @@ Previous Bitbucket revision history
 import calendar
 import datetime
 import itertools
+import logging
 import math
-import syslog
 import time
 
 from datetime import date
@@ -94,28 +95,9 @@ from weewx.tags import TimespanBinder
 from weeutil.weeutil import TimeSpan, genMonthSpans
 from weewx.units import ValueHelper, getStandardUnitType, ValueTuple
 
-WEEWXWD_SLE_VERSION = '1.2.0b1'
+log = logging.getLogger(__name__)
 
-
-def logmsg(level, msg):
-    syslog.syslog(level, 'weewxwd: %s' % msg)
-
-
-def logdbg(msg):
-    logmsg(syslog.LOG_DEBUG, msg)
-
-
-def logdbg2(msg):
-    if weewx.debug >= 2:
-        logmsg(syslog.LOG_DEBUG, msg)
-
-
-def loginf(msg):
-    logmsg(syslog.LOG_INFO, msg)
-
-
-def logerr(msg):
-    logmsg(syslog.LOG_ERR, msg)
+WEEWXWD_SLE_VERSION = '2.0.0a1'
 
 
 def get_first_day(dt, d_years=0, d_months=0):
@@ -719,7 +701,8 @@ class WdMonthStats(weewx.cheetahgenerator.SearchList):
                        }
 
         t2 = time.time()
-        logdbg2("WdMonthStats SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdMonthStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -785,7 +768,8 @@ class WdLastRainTags(weewx.cheetahgenerator.SearchList):
         search_list = {'last_rain': last_rain_vh}
 
         t2 = time.time()
-        logdbg2("WdLastRainTags SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdLastRainTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -932,7 +916,8 @@ class WdTimeSpanTags(weewx.cheetahgenerator.SearchList):
                                self.generator.converter)
 
         t2 = time.time()
-        logdbg2("WdTimeSpanTags SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdTimeSpanTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [time_binder]
 
@@ -1000,7 +985,8 @@ class WdAvgWindTags(weewx.cheetahgenerator.SearchList):
         search_list = {'avdir10': avdir10_vh}
 
         t2 = time.time()
-        logdbg2("WdAvgWindTags SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdAvgWindTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -1267,20 +1253,29 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
 
         # Easter. Calculate date for Easter Sunday this year
         def calc_easter(year):
+            """Calculate Easter date.
 
-            g = year % 19
-            e = 0
-            century = year / 100
-            h = ((century - century / 4 -
-                 (8 * century + 13) / 25 + 19 * g + 15) % 30)
-            i = h - (h / 28) * (1 - (h / 28) * (29 / (h + 1)) * ((21 - g) / 11))
-            j = (year + year / 4 + i + 2 - century + century / 4) % 7
-            p = i - j + e
-            _day = 1 + (p + 27 + (p + 6) / 40) % 31
-            _month = 3 + (p + 26) / 30
-            easter_dt = datetime.datetime(year=year, month=_month, day=_day)
-            easter_ts = time.mktime(easter_dt.timetuple())
-            return easter_ts
+            Uses a modified version of Butcher's Algorithm.
+            Refer New Scientist, 30 March 1961 pp 828-829
+            https://books.google.co.uk/books?id=zfzhCoOHurwC&printsec=frontcover&source=gbs_ge_summary_r&cad=0#v=onepage&q&f=false
+            """
+
+            a = year % 19
+            b = year // 100
+            c = year % 100
+            d = b // 4
+            e = b % 4
+            g = (8 * b + 13) // 25
+            h = (19 * a + b - d - g + 15) % 30
+            i = c // 4
+            k = c % 4
+            l = (2 * e + 2 * i - h - k + 32) % 7
+            m = (a + 11 * h + 19 * l) // 433
+            n = (h + l - 7 * m + 90) // 25
+            p = (h + l - 7 * m + 33 * n + 19) % 32
+            _dt = datetime.datetime(year=year, month=n, day=p)
+            _ts = time.mktime(_dt.timetuple())
+            return _ts
 
         _year = date.fromtimestamp(timespan.stop).year
         easter_ts = calc_easter(_year)
@@ -1412,7 +1407,8 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
                        'long_dms':       long_str}
 
         t2 = time.time()
-        logdbg2("WdSundryTags SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdSundryTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -1491,7 +1487,8 @@ class WdTaggedStats(weewx.cheetahgenerator.SearchList):
                                                  converter=self.generator.converter)
 
         t2 = time.time()
-        logdbg2("WdTaggedStats SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdTaggedStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [_stats]
 
@@ -1576,7 +1573,8 @@ class WdTaggedArchiveStats(weewx.cheetahgenerator.SearchList):
                                                         converter=self.generator.converter)
 
         t2 = time.time()
-        logdbg2("WdTaggedArchiveStats SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdTaggedArchiveStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [_stats]
 
@@ -1618,8 +1616,10 @@ class WdYestAlmanac(weewx.cheetahgenerator.SearchList):
                 temperature_c = weewx.units.convert(out_temp_vt, 'degree_C')[0]
             if not isinstance(pressure_vt, weewx.units.UnknownType):
                 pressure_mbar = weewx.units.convert(pressure_vt, 'mbar')[0]
-        if temperature_c is None: temperature_c = 15.0
-        if pressure_mbar is None: pressure_mbar = 1010.0
+        if temperature_c is None:
+            temperature_c = 15.0
+        if pressure_mbar is None:
+            pressure_mbar = 1010.0
 
         _almanac_skin_dict = generator.skin_dict.get('Almanac', {})
         self.moonphases = _almanac_skin_dict.get('moon_phases',
@@ -1636,7 +1636,8 @@ class WdYestAlmanac(weewx.cheetahgenerator.SearchList):
                                                  formatter=generator.formatter)
 
         t2 = time.time()
-        logdbg2("WdYestAlmanac SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdYestAlmanac SLE executed in %0.3f seconds" % (t2-t1))
 
 
 # ================================================================================
@@ -1656,7 +1657,8 @@ class WdSkinDict(weewx.cheetahgenerator.SearchList):
         self.skin_dict = generator.skin_dict
 
         t2 = time.time()
-        logdbg2("WdSkinDict SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdSkinDict SLE executed in %0.3f seconds" % (t2-t1))
 
 
 # ================================================================================
@@ -1715,7 +1717,8 @@ class WdMonthlyReportStats(weewx.cheetahgenerator.SearchList):
                        'curr_year':       stop_tt[0]}
 
         t2 = time.time()
-        logdbg2("WdMonthlyReportStats SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdMonthlyReportStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2366,7 +2369,8 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
                        'alltime_max_windrun_ts': max_windrun_ts_vh}
 
         t2 = time.time()
-        logdbg2("WdWindRunTags SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdWindRunTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2439,7 +2443,7 @@ class WdHourRainTags(weewx.cheetahgenerator.SearchList):
             (_start_vt, _stop_vt, _rain_vt) = db_lookup().getSqlVectors(tspan,
                                                                         'rain')
         except:
-            loginf("WdHourRainTags: getSqlVectors exception")
+            log.info("WdHourRainTags: getSqlVectors exception")
         # set a few variables beforehand
         hour_start_ts = None
         hour_rain = []
@@ -2479,7 +2483,8 @@ class WdHourRainTags(weewx.cheetahgenerator.SearchList):
                        }
 
         t2 = time.time()
-        logdbg2("WdHourRainTags SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdHourRainTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2620,27 +2625,27 @@ class WdGdDays(weewx.cheetahgenerator.SearchList):
                        'stop'  : _mn_stop_ts-1}
         _row = db_lookup().getSql(_sql % interpolate)
         if _row:
-                _t_max_sum = _row[0]
-                _t_min_sum = _row[1]
-                _count = _row[2]
-                _conv = weewx.units.convert(self.gdd_base_vt, t_type).value
-                try:
-                    _year_gdd = (_t_max_sum + _t_min_sum)/2 - _conv * _count
-                    # now deal with the units
-                    if t_type == self.temp_group:
-                        # our input is in the same units as our output, so no
-                        # conversion
-                        _year_gdd = round(_year_gdd, 1)
-                    elif self.temp_group == 'degree_C':
-                        # our output is deg C but we have deg F so convert it
-                        _year_gdd = round(_year_gdd * 1.8, 1)
-                    else:
-                        # our output is deg F but we have deg C so convert it
-                        _year_gdd = round(_year_gdd * 5 / 9, 1)
-                    if _year_gdd < 0.0:
-                        _year_gdd = 0.0
-                except (ValueError, TypeError):
-                    _year_gdd = None
+            _t_max_sum = _row[0]
+            _t_min_sum = _row[1]
+            _count = _row[2]
+            _conv = weewx.units.convert(self.gdd_base_vt, t_type).value
+            try:
+                _year_gdd = (_t_max_sum + _t_min_sum)/2 - _conv * _count
+                # now deal with the units
+                if t_type == self.temp_group:
+                    # our input is in the same units as our output, so no
+                    # conversion
+                    _year_gdd = round(_year_gdd, 1)
+                elif self.temp_group == 'degree_C':
+                    # our output is deg C but we have deg F so convert it
+                    _year_gdd = round(_year_gdd * 1.8, 1)
+                else:
+                    # our output is deg F but we have deg C so convert it
+                    _year_gdd = round(_year_gdd * 5 / 9, 1)
+                if _year_gdd < 0.0:
+                    _year_gdd = 0.0
+            except (ValueError, TypeError):
+                _year_gdd = None
         else:
             _year_gdd = None
 
@@ -2650,7 +2655,8 @@ class WdGdDays(weewx.cheetahgenerator.SearchList):
                        }
 
         t2 = time.time()
-        logdbg2("WdGdDays SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdGdDays SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2804,7 +2810,8 @@ class WdForToday(weewx.cheetahgenerator.SearchList):
                        }
 
         t2 = time.time()
-        logdbg2("WdForToday SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdForToday SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -3045,7 +3052,8 @@ class WdRainThisDay(weewx.cheetahgenerator.SearchList):
                        }
 
         t2 = time.time()
-        logdbg2("WdRainThisDay SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdRainThisDay SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -3382,7 +3390,8 @@ class WdRainDays(weewx.cheetahgenerator.SearchList):
                        'alltime_con_wet_days_time': _alltime_wet_time_vh,
                        'month_rainy_days': _month_rainy_days}
         t2 = time.time()
-        logdbg2("WdRainDays SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdRainDays SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -3550,6 +3559,7 @@ class WdManualAverages(weewx.cheetahgenerator.SearchList):
                 search_list[_key.lower()] = False
 
         t2 = time.time()
-        logdbg2("WdManualAverages SLE executed in %0.3f seconds" % (t2-t1))
+        if weewx.debug >= 2:
+            log.debug("WdManualAverages SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
