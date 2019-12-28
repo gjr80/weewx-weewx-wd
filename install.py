@@ -188,10 +188,10 @@ class WeewxWdInstaller(ExtensionInstaller):
                     }
                 },
                 'Weewx-WD': {
-                    'binding': 'wd_binding',
+                    'data_binding': 'wd_binding',
                     'sunshine_threshold': '120',
                     'Supplementary': {
-                        'binding': 'wdsupp_binding',
+                        'data_binding': 'wdsupp_binding',
                         'WU': {
                             'api_key': 'replace_me',
                             'enable': 'False'
