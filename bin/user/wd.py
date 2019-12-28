@@ -1532,9 +1532,19 @@ class WeatherUndergroundAPIForecast(object):
             # attempt the call
             try:
                 w = urllib.request.urlopen(url)
-                _response = w.read()
+                # Get charset used so we can decode the stream correctly.
+                # Unfortunately the way to get the charset depends on whether
+                # we are running under python2 or python3. Assume python3 but be
+                # prepared to catch the error if python2.
+                try:
+                    char_set = w.headers.get_content_charset()
+                except AttributeError:
+                    # must be python2
+                    char_set = w.headers.getparam('charset')
+                # now get the response decoding it appropriately
+                response = w.read().decode(char_set)
                 w.close()
-                return _response
+                return response
             except (urllib.error.URLError, socket.timeout) as e:
                 log.error("Failed to get Weather Underground forecast on attempt %d" % (count+1, ))
                 log.error("   **** %s" % e)
@@ -2032,7 +2042,17 @@ class DarkskyForecastAPI(object):
             # attempt the call
             try:
                 w = urllib.request.urlopen(url)
-                response = w.read()
+                # Get charset used so we can decode the stream correctly.
+                # Unfortunately the way to get the charset depends on whether
+                # we are running under python2 or python3. Assume python3 but be
+                # prepared to catch the error if python2.
+                try:
+                    char_set = w.headers.get_content_charset()
+                except AttributeError:
+                    # must be python2
+                    char_set = w.headers.getparam('charset')
+                # now get the response decoding it appropriately
+                response = w.read().decode(char_set)
                 w.close()
                 if self.debug > 1:
                     log.debug("Dark Sky API response=%s" % (response, ))
