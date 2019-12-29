@@ -102,8 +102,8 @@ of measure, file locations etc) by referring to the WeeWX-WD wiki.
 
 Manual installation
 
-1.  Download the WeeWX-WD extension from the WeeWX-WD Bitbucket downloads site
-(https://bitbucket.org/ozgreg/weewx-wd/downloads) into a directory accessible
+1.  Download the WeeWX-WD extension from the WeeWX-WD extension releases page
+(https://github.com/gjr80/weewx-weewx-wd/releases) into a directory accessible
 from the WeeWX machine:
 
     $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.0.0/weewxwd-2.0.0.tar.gz
@@ -136,23 +136,79 @@ sub-sections:
     [[wdTesttags]]
         HTML_ROOT = public_html/WD
         skin = Testtags
+        [[[Units]]]
+            [[[[TimeFormats]]]]
+                date_f = %d/%m/%Y
+                date_time_f = %d/%m/%Y %H:%M
+            [[[[Groups]]]]
+                group_altitude = foot
+                group_degree_day = degree_C_day
+                group_rainrate = mm_per_hour
+                group_rain = mm
+                group_speed = km_per_hour
+                group_speed2 = km_per_hour2
+                group_pressure = hPa
+                group_temperature = degree_C
 
     [[wdPWS]]
         HTML_ROOT = public_html/WD
         skin = PWS
+        enabled = False
+        [[[Units]]]
+            [[[[Groups]]]]
+                group_rainrate = mm_per_hour
+                group_rain = mm
+                group_speed = km_per_hour
+                group_speed2 = km_per_hour2
+                group_pressure = hPa
+                group_temperature = degree_C
 
     [[wdClientraw]]
         HTML_ROOT = public_html/WD
         skin = Clientraw
+        enabled = True
+        [[[Units]]]
+            [[[[StringFormats]]]]
+                percent = %.0f
+                degree_compass = %.0f
+                watt_per_meter_squared = %.0f
+                mm = %.1f
+                NONE = --
+                knot = %.1f
+                degree_C = %.1f
+                km = %.1f
+                foot = %.0f
+                uv_index = %.1f
+                hPa = %.1f
 
     [[wdStackedWindRose]]
         HTML_ROOT = public_html/WD
         skin = StackedWindRose
+        enabled = True
+        [[[Units]]]
+            [[[[TimeFormats]]]]
+                date_f = %d/%m/%Y
+                date_time_f = %d/%m/%Y %H:%M
+            [[[[Groups]]]]
+                group_speed2 = km_per_hour2
+                group_speed = km_per_hour
 
 6.  In weewx.conf, add the following section:
 
     [Weewx-WD]
         data_binding = wd_binding
+        sunshine_threshold = 120
+        [[Supplementary]]
+            data_binding = wdsupp_binding
+            [[[WU]]]
+                api_key = replace_me
+                enable = False
+            [[[DS]]]
+                api_key = replace_me
+                enable = False
+            [[[File]]]
+                file = /path/and/filename
+                enable = False
 
 7.  In weewx.conf, add the following sub-section to [Databases]:
 

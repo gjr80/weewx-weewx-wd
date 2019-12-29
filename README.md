@@ -24,7 +24,8 @@ The *WeeWX-WD* extension utilises a separate database to record a number of obse
 
 ## Pre-Requisites ##
 
-The *WeeWX-WD* extension v1.2.0 requires WeeWX v3.5.0 or greater.
+The *WeeWX-WD* extension 2.0.0 requires WeeWX v4.0.0 or greater running under Python 2 or
+Python 3.
 
 ## File Locations ##
 
@@ -45,7 +46,7 @@ Where applicable the nominal location for your system and installation type shou
 
 1.  Download the *WeeWX-WD* extension from the *WeeWX-WD* extension the *WeeWX-WD* extension [releases page](https://github.com/gjr80/weewx-weewx-wd/releases) into a directory accessible from the WeeWX machine.
 
-        $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v1.2.0/weewxwd-1.2.0.tar.gz
+        $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.0.0/weewxwd-2.0.0.tar.gz
 
 	where *$DOWNLOAD_ROOT* is the path to the directory where the *WeeWX-WD* extension is to be downloaded.
 
@@ -63,15 +64,15 @@ Where applicable the nominal location for your system and installation type shou
 
 1.  Install the *WeeWX-WD* extension downloaded at step 1 using the WeeWX *wee_extension* utility:
 
-        $ wee_extension --install=$DOWNLOAD_ROOT/weewxwd-1.2.0.tar.gz
+        $ wee_extension --install=$DOWNLOAD_ROOT/weewxwd-2.0.0.tar.gz
 
     This will result in output similar to the following:
 
-		Request to install '/var/tmp/weewxwd-1.2.0.tar.gz'
-		Extracting from tar archive /var/tmp/weewxwd-1.2.0.tar.gz
-		Saving installer file to /home/weewx/bin/user/installer/Weewx-WD
+		Request to install '/var/tmp/weewxwd-2.0.0.tar.gz'
+		Extracting from tar archive /var/tmp/weewxwd-2.0.0.tar.gz
+		Saving installer file to /home/weewx/bin/user/installer/WeeWX-WD
 		Saved configuration dictionary. Backup copy at /home/weewx/weewx.conf.20190427130000
-		Finished installing extension '/var/tmp/weewxwd-1.2.0.tar.gz'
+		Finished installing extension '/var/tmp/weewxwd-2.0.0.tar.gz'
 
 1. Start WeeWX:
 
@@ -89,15 +90,15 @@ Where applicable the nominal location for your system and installation type shou
 
 ### Manual installation ###
 
-1.  Download the *WeeWX-WD* extension from the *WeeWX-WD* extension the *WeeWX-WD* extension [releases page](https://github.com/gjr80/weewx-weewx-wd/releases) into a directory accessible from the WeeWX machine.
+1.  Download the *WeeWX-WD* extension from the *WeeWX-WD* extension [releases page](https://github.com/gjr80/weewx-weewx-wd/releases) into a directory accessible from the WeeWX machine.
 
-        $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v1.2.0/weewxwd-1.2.0.tar.gz
+        $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.0.0/weewxwd-2.0.0.tar.gz
 
 	where *$DOWNLOAD_ROOT* is the path to the directory where the *WeeWX-WD* extension is to be downloaded.
 
 1.  Unpack the extension as follows:
 
-        $ tar xvfz weewxwd-1.2.0.tar.gz
+        $ tar xvfz weewxwd-2.0.0.tar.gz
 
 1.  Copy files from within the resulting folder as follows:
 
@@ -119,23 +120,80 @@ Where applicable the nominal location for your system and installation type shou
         [[wdTesttags]]
             HTML_ROOT = public_html/WD
             skin = Testtags
+            enabled = True
+            [[[Units]]]
+                [[[[TimeFormats]]]]
+                    date_f = %d/%m/%Y
+                    date_time_f = %d/%m/%Y %H:%M
+                [[[[Groups]]]]
+                    group_altitude = foot
+                    group_degree_day = degree_C_day
+                    group_rainrate = mm_per_hour
+                    group_rain = mm
+                    group_speed = km_per_hour
+                    group_speed2 = km_per_hour2
+                    group_pressure = hPa
+                    group_temperature = degree_C            
     
         [[wdPWS]]
             HTML_ROOT = public_html/WD
             skin = PWS
-    
+            enabled = False
+            [[[Units]]]
+                [[[[Groups]]]]
+                    group_rainrate = mm_per_hour
+                    group_rain = mm
+                    group_speed = km_per_hour
+                    group_speed2 = km_per_hour2
+                    group_pressure = hPa
+                    group_temperature = degree_C
+                    
         [[wdClientraw]]
             HTML_ROOT = public_html/WD
             skin = Clientraw
-    
+            enabled = True
+            [[[Units]]]
+                [[[[StringFormats]]]]
+                    percent = %.0f
+                    degree_compass = %.0f
+                    watt_per_meter_squared = %.0f
+                    mm = %.1f
+                    NONE = --
+                    knot = %.1f
+                    degree_C = %.1f
+                    km = %.1f
+                    foot = %.0f
+                    uv_index = %.1f
+                    hPa = %.1f
+                    
         [[wdStackedWindRose]]
             HTML_ROOT = public_html/WD
             skin = StackedWindRose
+            enabled = True
+            [[[Units]]]
+                [[[[TimeFormats]]]]
+                    date_f = %d/%m/%Y
+                    date_time_f = %d/%m/%Y %H:%M
+                [[[[Groups]]]]
+                    group_speed2 = km_per_hour2
+                    group_speed = km_per_hour            
 
 1.  In weewx.conf, add the following section:
 
         [Weewx-WD]
             data_binding = wd_binding
+            sunshine_threshold = 120
+            [[Supplementary]]
+                data_binding = wdsupp_binding
+                [[[WU]]]
+                    api_key = replace_me
+                    enable = False
+                [[[DS]]]
+                    api_key = replace_me
+                    enable = False
+                [[[File]]]
+                    file = /path/and/filename
+                    enable = False
 
 1.  In weewx.conf, add the following sub-section to *[Databases]*:
 
@@ -144,31 +202,48 @@ Where applicable the nominal location for your system and installation type shou
             database_name = archive/weewxwd.sdb
             root = /home/weewx/
 
+        [[wd_supp_sqlite]]
+            database_name = wdsupp.sdb
+            database_type = SQLite
+
     if using MySQL instead add something like (with settings for your MySQL setup):
 
         [[weewxwd_mysql]]
-            host = localhost
-            user = weewx
-            password = weewx
             database_name = weewxwd
-            driver = weedb.mysql
+            database_type = MySQL
+    
+        [[wd_supp_mysql]]
+            database_name = wdsupp
+            database_type = MySQL
 
 1.  In weewx.conf, add the following sub-section to the *[DataBindings]* section:
 
         [[wd_binding]]
-            manager = weewx.manager.DaySummaryManager
-            schema = user.weewxwd3.schema
-            table_name = archive
             database = weewxwd_sqlite
+            table_name = archive
+            manager = weewx.manager.DaySummaryManager
+            schema = user.wdschema.weewxwd_schema
+    
+        [[wdsupp_binding]]
+            database = wd_supp_sqlite
+            table_name = supp
+            manager = weewx.manager.Manager
+            schema = user.wdschema.wdsupp_schema
 
     if using MySQL instead, add something like (with settings for your MySQL
     setup):
 
         [[wd_binding]]
-            manager = weewx.manager.DaySummaryManager
-            schema = user.weewxwd3.schema
-            table_name = archive
             database = weewxwd_mysql
+            table_name = archive
+            manager = weewx.manager.DaySummaryManager
+            schema = user.wdschema.weewxwd_schema
+    
+        [[wdsupp_binding]]
+            database = wd_supp_mysql
+            table_name = supp
+            manager = weewx.manager.Manager
+            schema = user.wdschema.wdsupp_schema
 
 1.  In weewx.conf, modify the services lists in *[Engine]* as indicated:
 
@@ -176,9 +251,9 @@ Where applicable the nominal location for your system and installation type shou
 
             process_services = weewx.engine.StdConvert, weewx.engine.StdCalibrate, weewx.engine.StdQC, weewx.wxservices.StdWXCalculate, user.wd.WdWXCalculate
 
-	*   archive_services. Add user.weewxwd3.WdArchive eg:
+	*   archive_services. Add user.weewxwd3.WdArchive AND user.wd.WdSuppArchive eg:
 
-            archive_services = weewx.engine.StdArchive, user.wd.WdArchive
+            archive_services = weewx.engine.StdArchive, user.wd.WdArchive, user.wd.WdSuppArchive
 
 1. Start WeeWX:
 
