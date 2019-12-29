@@ -1,5 +1,5 @@
 v2.0.0
-*   now requires WeeWX v4.0.0 or later and python 2/3
+*   now requires WeeWX v4.0.0 or later under python 2 or 3
 *   added support for WD supplementary database for storing short term data
 *   skins now include the enabled config option
 *   wdPWS skin disabled by default
