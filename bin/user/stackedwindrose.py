@@ -75,6 +75,7 @@ try:
 except ImportError:
     from weeutil.weeutil import search_up
 
+# get a logger object
 log = logging.getLogger(__name__)
 
 WEEWXWD_STACKED_WINDROSE_VERSION = '2.0.0a1'

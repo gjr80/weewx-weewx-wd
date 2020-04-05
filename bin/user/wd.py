@@ -109,6 +109,7 @@ import weewx.wxformulas
 from weewx.units import obs_group_dict
 from weeutil.weeutil import accumulateLeaves, to_int, to_bool
 
+# get a logger object
 log = logging.getLogger(__name__)
 
 WEEWXWD_VERSION = '2.0.0a1'

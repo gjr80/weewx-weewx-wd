@@ -95,6 +95,7 @@ from weewx.tags import TimespanBinder
 from weeutil.weeutil import TimeSpan, genMonthSpans
 from weewx.units import ValueHelper, getStandardUnitType, ValueTuple
 
+# get a logger object
 log = logging.getLogger(__name__)
 
 WEEWXWD_SLE_VERSION = '2.0.0a1'
