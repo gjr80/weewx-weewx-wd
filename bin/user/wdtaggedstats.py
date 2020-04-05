@@ -849,7 +849,7 @@ class WdArchiveObservationBinder(object):
                         # vector element we need to extrapolate and advance
                         try:
                             res=result_vt.value[vec_counter + 1] * prop
-                        except (IndexError, ValueError):
+                        except (IndexError, TypeError, ValueError):
                             res=0
                         # add our extrapolated result as a ValueHelper
                         final.append(weewx.units.ValueHelper((res, result_vt.unit, result_vt.group),
