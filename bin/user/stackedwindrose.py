@@ -12,15 +12,18 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 2.0.0a1                                        Date: 27 December 2019
+Version: 3.0.0                                          Date: 5 June 2020
 
 Revision History
-  27 December 2019      v2.0.0
-      - renaming of this file and various classes, methods and variables
+  5 June 2020           v3.0.0
+      - renamed this file and various classes, methods and variables
       - reformatting to remove numerous long lines
       - reformat of these comments
       - introduced class UniDraw allow use of fonts that don't support unicode
       - WeeWX 4.0 python2/3 compatible
+      - now respects log_success and log_failure config options
+      - reworked color validation code
+      - changed period config setting to time_length to align with WeeWX norms
 
 Previous Bitbucket revision history
   31 March 2017         v1.0.3
@@ -52,15 +55,20 @@ Previous Bitbucket revision history
 
 # python imports
 import datetime
-import logging
 import math
 import os.path
 import time
+# attempt to import image manipulation libraries from PIL, if not available
+# revert to the native python imaging module
 try:
-    from PIL import Image, ImageDraw
+    from PIL import Image, ImageColor, ImageDraw
 except ImportError:
     import Image
+    import ImageColor
     import ImageDraw
+
+# python 2/3 compatibility shims
+import six
 
 # WeeWX imports
 import weeutil.weeutil
@@ -68,18 +76,36 @@ import weewx.reportengine
 import weewx.units
 
 from weeplot.utilities import get_font_handle
-# search_up moved from weeutil.weeutil to weeutil.config in v3.9.0 s we need to
-# try each until we find it
+# search_up was moved from weeutil.weeutil to weeutil.config in v3.9.0 so we
+# need to try each until we find it
 try:
     from weeutil.config import search_up
 except ImportError:
     from weeutil.weeutil import search_up
 
-# get a logger object
-log = logging.getLogger(__name__)
+# import/setup logging, WeeWX v3 is syslog based but WeeWX v4 is logging based,
+# try v4 logging and if it fails use v3 logging
+try:
+    # WeeWX4 logging
+    import logging
+    log = logging.getLogger(__name__)
 
-WEEWXWD_STACKED_WINDROSE_VERSION = '2.0.0a1'
+    def loginf(msg):
+        log.info(msg)
 
+except ImportError:
+    # WeeWX legacy (v3) logging via syslog
+    import syslog
+
+    def logmsg(level, msg):
+        syslog.syslog(level, 'aprx: %s' % msg)
+
+    def loginf(msg):
+        logmsg(syslog.LOG_INFO, msg)
+
+STACKED_WINDROSE_VERSION = '3.0.0'
+DEFAULT_PETAL_COLORS = ['lightblue', 'blue', 'midnightblue', 'forestgreen',
+                        'limegreen', 'green', 'greenyellow']
 
 # ==============================================================================
 #                      Class StackedWindRoseImageGenerator
@@ -97,9 +123,13 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                                                             first_run,
                                                             stn_info,
                                                             record)
-        # determine how much logging is desired
+        # do we log on success
         self.log_success = weeutil.weeutil.to_bool(search_up(self.skin_dict,
                                                              'log_success',
+                                                             True))
+        # do we log on failure
+        self.log_failure = weeutil.weeutil.to_bool(search_up(self.skin_dict,
+                                                             'log_failure',
                                                              True))
 
         # get the data binding to use
@@ -131,27 +161,36 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
         self.windrose_legend_font_color = int(self.image_dict['windrose_legend_font_color'], 0)
         self.windrose_label_font_size = int(self.image_dict['windrose_label_font_size'])
         self.windrose_label_font_color = int(self.image_dict['windrose_label_font_color'], 0)
-        # set the petal colours, if not defined then use some sensible defaults
-        try:
-            self.petal_colors = self.image_dict['windrose_plot_petal_colors']
-        except KeyError:
-            self.petal_colors = ['lightblue', 'blue', 'midnightblue',
-                                 'forestgreen', 'limegreen', 'green',
-                                 'greenyellow']
-        # Loop through petal colours looking for 0xBGR values amongst colour
-        # names, set any 0xBGR to their numeric value and leave colour names
-        # alone
-        i = 0
-        while i < len(self.petal_colors):
-            try:
-                # can it be converted to a number, a ValueError exception will
-                # be thrown if it cannot
-                self.petal_colors[i] = int(self.petal_colors[i], 0)
-            except ValueError:
-                # cannot convert to a number, assume it is a colour word so
-                # leave it
-                pass
-            i += 1
+        # set the petal colours
+        # first get any petal colours specified in the config, if not defined
+        # then use some sensible defaults
+        _colors = weeutil.weeutil.option_as_list(self.image_dict.get('windrose_plot_petal_colors',
+                                                                     DEFAULT_PETAL_COLORS))
+        # verify our colors are valid
+        _petal_colors = []
+        # iterate over the colors we have and if they are valid keep them
+        # otherwise discard them
+        for _color in _colors:
+            # parse the color, we will get bck a tuple representing the RGB
+            # values or None if the color is invalid
+            _col = parse_color(_color)
+            # if we have a non None response it is valid
+            if _col is not None:
+                # valid color, append it to the petal color list
+                _petal_colors.append(_col)
+        # we have a list of valid colors but do we have enough, we need 7
+        if len(_petal_colors) < 7:
+            # if we don't have 7 augment the colors list with unused colors
+            # from the defaults until we have 7
+            _required = 7 - len(_petal_colors)
+            for _color in DEFAULT_PETAL_COLORS:
+                if _required > 0:
+                    _parsed = parse_color(_color)
+                    if _parsed not in _petal_colors:
+                        _petal_colors.append(_parsed)
+                        _required -= 1
+        # save the final ist of petal colors
+        self.petal_colors = list(_petal_colors)
         # get petal width, if not defined then set default to 16 (degrees)
         try:
             self.windrose_plot_petal_width = int(self.image_dict['windrose_plot_petal_width'])
@@ -228,7 +267,7 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                                                                image_format))
                 # check whether this plot needs to be done at all
                 ai = plot_options.as_int('time_length') if 'time_length' in plot_options else None
-                if skip_this_plot(self.plotgen_ts, ai, img_file, plotname):
+                if self.skip_this_plot(self.plotgen_ts, ai, img_file, plotname):
                     continue
                 # Create the subdirectory where the image is to be saved. Wrap
                 # in a try block in case it already exists.
@@ -243,7 +282,6 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                         raise
                 # iterate over each 'line' to be added to the plot.
                 for line_name in self.image_dict[timespan][plotname].sections:
-
                     # accumulate options from parent nodes.
                     line_options = weeutil.weeutil.accumulateLeaves(self.image_dict[timespan][plotname][line_name])
 
@@ -386,8 +424,8 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                     # now set the label direction we are going to use
                     self.label_dir = label_dir
                     # get an image object to hold our plot
-                    image = windrose_image_setup(self)
-                    draw = UniDraw(image)
+                    image = self.windrose_image_setup()
+                    self.draw = UniDraw(image)
                     # set fonts to be used
                     self.plot_font = get_font_handle(self.windrose_font_path,
                                                      self.windrose_plot_font_size)
@@ -396,12 +434,12 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                     self.label_font = get_font_handle(self.windrose_font_path,
                                                       self.windrose_label_font_size)
                     # estimate space required for the legend
-                    text_w, text_h = draw.textsize("0 (100%)",
-                                                   font=self.legend_font)
+                    text_w, text_h = self.draw.textsize("0 (100%)",
+                                                        font=self.legend_font)
                     legend_w = int(text_w + 2 * self.windrose_legend_bar_width + 1.5 * self.windrose_plot_border)
                     # estimate space required for label (if required)
-                    text_w, text_h = draw.textsize("Wind Rose",
-                                                   font=self.label_font)
+                    text_w, text_h = self.draw.textsize("Wind Rose",
+                                                        font=self.label_font)
                     if self.label:
                         label_h = int(text_w + self.windrose_plot_border)
                     else:
@@ -415,8 +453,8 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                                             int((self.image_width - (2 * self.windrose_plot_border + legend_w)) / 22.0) * 22)
                     if self.image_width > self.image_height:
                         # plot is wider than it is high
-                        text_w, text_h = draw.textsize("W",
-                                                       font=self.plot_font)
+                        text_w, text_h = self.draw.textsize("W",
+                                                            font=self.plot_font)
                         # x coord of windrose circle origin(0,0) is top left
                         # corner
                         self.origin_x = self.windrose_plot_border + text_w + 2 + self.rose_max_dia / 2
@@ -433,7 +471,7 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                         self.origin_y = 2 * self.windrose_plot_border + self.rose_max_dia / 2
                     # Setup windrose plot. Plot circles, range rings, range
                     # labels, N-S and E-W centre lines and compass point labels
-                    wind_rose_plot_setup(self, draw)
+                    self.wind_rose_plot_setup()
                     # Plot the wind rose petals. Each petal is constructed from
                     # overlapping pie slices starting from outside (biggest)
                     # and working in (smallest).
@@ -457,9 +495,9 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                                 # draw pie slice
                                 start = int(-90 + a * 22.5 - self.windrose_plot_petal_width / 2)
                                 end = int(-90 + a * 22.5 + self.windrose_plot_petal_width / 2)
-                                draw.pieslice(xy, start, end,
-                                              fill=speed_list[1][s],
-                                              outline='black')
+                                self.draw.pieslice(xy, start, end,
+                                                   fill=speed_list[1][s],
+                                                   outline='black')
                                 cum_rad -= wind_bin[a][s]
                                 # move 'in' for next pie slice
                                 s -= 1
@@ -469,46 +507,305 @@ class StackedWindRoseImageGenerator(weewx.reportengine.ReportGenerator):
                     # first produce the label
                     label0 = "%d%%" % int(round(100.0 * speed_bin[0]/sum(speed_bin), 0))
                     # work out its size, particularly its width
-                    text_w, text_h = draw.textsize(label0, font=self.plot_font)
+                    text_w, text_h = self.draw.textsize(label0, font=self.plot_font)
                     # size the bound box
                     xy = (int(self.origin_x-self.rose_max_dia/22),
                           int(self.origin_y-self.rose_max_dia/22),
                           int(self.origin_x+self.rose_max_dia/22),
                           int(self.origin_y+self.rose_max_dia/22))
                     # draw the circle
-                    draw.ellipse(xy, outline='black', fill=speed_list[1][0])
+                    self.draw.ellipse(xy, outline='black', fill=speed_list[1][0])
                     # size the text
                     xy = (int(self.origin_x - text_w / 2),
                           int(self.origin_y - text_h / 2))
                     # draw the text
-                    draw.text(xy, label0,
-                              fill=self.windrose_plot_font_color,
-                              font=self.plot_font)
+                    self.draw.text(xy, label0,
+                                   fill=self.windrose_plot_font_color,
+                                   font=self.plot_font)
                     # Setup the legend. Draw label/title (if set), stacked bar,
                     # bar labels and units
-                    legend_setup(self, draw, speed_list, speed_bin)
+                    self.legend_setup(speed_list, speed_bin)
                 # save the file.
                 image.save(img_file)
                 # increment number of images generated
                 ngen += 1
         if self.log_success:
             t2 = time.time()
-            log.info("Generated %d images for %s in %.2f seconds" % (ngen,
-                                                                     self.skin_dict['REPORT_NAME'],
-                                                                     t2 - t1))
+            loginf("Generated %d images for %s in %.2f seconds" % (ngen,
+                                                                   self.skin_dict['REPORT_NAME'],
+                                                                   t2 - t1))
+
+    def windrose_image_setup(self):
+        """Create image object for us to draw on.
+
+        image: Image object to be returned for us to draw on.
+        """
+
+        try:
+            image = Image.open(self.image_background_image)
+        except IOError:
+            image = Image.new("RGB",
+                              (self.image_width, self.image_height),
+                              self.image_background_box_color)
+        return image
+
+    def wind_rose_plot_setup(self):
+        """Draw circular plot background, rings, axes and labels."""
+
+        # draw speed circles
+        # First calculate the distance between the wind rose range rings. Note that
+        # 'calm' bulls eye is at centre of plot with diameter equal to _min_radius.
+        _min_radius = self.rose_max_dia/11
+        # iterate over the range rings starting from the inside and working out
+        i = 5
+        while i > 0:
+            xy = (self.origin_x - _min_radius * (i + 0.5),
+                  self.origin_y - _min_radius * (i + 0.5),
+                  self.origin_x + _min_radius * (i + 0.5),
+                  self.origin_y + _min_radius * (i + 0.5))
+            # draw the ring
+            self.draw.ellipse(xy,
+                              outline=self.image_background_range_ring_color,
+                              fill=self.image_background_circle_color)
+            i -= 1
+
+        # draw vertical centre line
+        xy = [(self.origin_x, self.origin_y - self.rose_max_dia / 2 - 2),
+              (self.origin_x, self.origin_y + self.rose_max_dia / 2 + 2)]
+        self.draw.line(xy, fill=self.image_background_range_ring_color)
+        # draw horizontal centre line
+        xy = [(self.origin_x - self.rose_max_dia / 2 - 2, self.origin_y),
+              (self.origin_x + self.rose_max_dia / 2 + 2, self.origin_y)]
+        self.draw.line(xy, fill=self.image_background_range_ring_color)
+        # draw N,S,E,W markers
+        text_w, text_h = self.draw.textsize('N', font=self.plot_font)
+        xy = (self.origin_x - text_w / 2,
+              self.origin_y - self.rose_max_dia / 2 - 1 - text_h)
+        self.draw.text(xy, 'N', fill=self.windrose_plot_font_color, font=self.plot_font)
+        text_w, text_h = self.draw.textsize('S', font=self.plot_font)
+        xy = (self.origin_x - text_w / 2,
+              self.origin_y + self.rose_max_dia / 2 + 3)
+        self.draw.text(xy, 'S', fill=self.windrose_plot_font_color, font=self.plot_font)
+        text_w, text_h = self.draw.textsize('W', font=self.plot_font)
+        xy = (self.origin_x - self.rose_max_dia / 2 - 1 - text_w,
+              self.origin_y - text_h / 2)
+        self.draw.text(xy, 'W', fill=self.windrose_plot_font_color, font=self.plot_font)
+        text_w, text_h = self.draw.textsize('E', font=self.plot_font)
+        xy = (self.origin_x + self.rose_max_dia / 2 + 1,
+              self.origin_y - text_h / 2)
+        self.draw.text(xy, 'E', fill=self.windrose_plot_font_color, font=self.plot_font)
+        # draw % labels on rings
+        # calculate the value increment between rings
+        _label_inc = self.max_ring_value/5
+        # initialise a list to hold ring labels
+        speed_labels = list((0, 0, 0, 0, 0))
+        i = 1
+        while i < 6:
+            speed_labels[i - 1] = "%d%%" % int(round(_label_inc * i * 100, 0))
+            i += 1
+        # calculate location of ring labels
+        _angle = 7 * math.pi / 4 + int(self.label_dir / 4.0) * math.pi / 2
+        label_offset_x = int(round(self.rose_max_dia / 22 * math.cos(_angle), 0))
+        label_offset_y = int(round(self.rose_max_dia / 22 * math.sin(_angle), 0))
+        # Draw ring labels. Note leave inner ring blank due to lack of space. For
+        # clarity each label (except for outside ring) is drawn on a rectangle with
+        # background colour set to that of the circular plot.
+        i = 2
+        while i < 5:
+            text_w, text_h = self.draw.textsize(speed_labels[i - 1],
+                                                font=self.plot_font)
+            x0 = self.origin_x + (2 * i + 1) * label_offset_x - text_w / 2
+            y0 = self.origin_y + (2 * i + 1) * label_offset_y - text_h / 2
+            x1 = self.origin_x + (2 * i + 1) * label_offset_x + text_w / 2
+            y1 = self.origin_y + (2 * i + 1) * label_offset_y + text_h / 2
+            self.draw.rectangle([x0, y0, x1, y1],
+                                fill=self.image_background_circle_color)
+            xy = (self.origin_x + (2 * i + 1) * label_offset_x - text_w / 2,
+                  self.origin_y + (2 * i + 1) * label_offset_y - text_h / 2)
+            self.draw.text(xy,
+                           speed_labels[i-1],
+                           fill=self.windrose_plot_font_color, font=self.plot_font)
+            i += 1
+        # draw outside ring label
+        text_w, text_h = self.draw.textsize(speed_labels[i-1], font=self.plot_font)
+        xy = (self.origin_x + (2 * i + 1) * label_offset_x - text_w / 2,
+              self.origin_y + (2 * i + 1) * label_offset_y - text_h / 2)
+        self.draw.text(xy,
+                       speed_labels[i-1],
+                       fill=self.windrose_plot_font_color, font=self.plot_font)
+
+    def legend_setup(self, speed_list, speed_bin):
+        """Draw plot title (if requested), legend and time stamp (if requested).
+
+            speed_list: 2D list with speed range boundaries in speed_list[0] and
+                        petal colours in speed_list[1]
+
+            speed_bin: 1D list to hold overall obs count for each speed range
+        """
+
+        # set static values
+        text_w, text_h = self.draw.textsize('E', font=self.plot_font)
+        # label_x and label_y = x,y coords of bottom left of stacked bar.
+        # Everything else is relative to this point
+        label_x = self.origin_x+self.rose_max_dia/2 + text_w + 10
+        label_y = self.origin_y+self.rose_max_dia/2 - self.rose_max_dia/22
+        bulb_d = int(round(1.2 * self.windrose_legend_bar_width, 0))
+        # draw stacked bar and label with values/percentages
+        i = 6
+        while i > 0:
+            x0 = label_x
+            y0 = label_y - (0.85 * self.rose_max_dia * self.speed_factor[i])
+            x1 = label_x + self.windrose_legend_bar_width
+            y1 = label_y
+            self.draw.rectangle([x0, y0, x1, y1],
+                                fill=speed_list[1][i], outline='black')
+            text_w, text_h = self.draw.textsize(str(speed_list[0][i]),
+                                                font=self.legend_font)
+            xy = (label_x + 1.5 * self.windrose_legend_bar_width,
+                  label_y - text_h / 2 - (0.85 * self.rose_max_dia * self.speed_factor[i]))
+            _text = '%d (%d%%)' % (int(round(speed_list[0][i], 0)),
+                                   int(round(100 * speed_bin[i]/sum(speed_bin), 0)))
+            self.draw.text(xy, _text,
+                           fill=self.windrose_legend_font_color, font=self.legend_font)
+            i -= 1
+        text_w, text_h = self.draw.textsize(str(speed_list[0][0]),
+                                            font=self.legend_font)
+        # draw 'calm' or 0 speed label and %
+        xy = (label_x + 1.5 * self.windrose_legend_bar_width,
+              label_y - text_h / 2 - (0.85 * self.rose_max_dia * self.speed_factor[0]))
+        _text = '%d (%d%%)' % (speed_list[0][0],
+                               int(round(100.0 * speed_bin[0]/sum(speed_bin), 0)))
+        self.draw.text(xy, _text,
+                       fill=self.windrose_legend_font_color, font=self.legend_font)
+        text_w, text_h = self.draw.textsize('Calm', font=self.legend_font)
+        xy = (label_x - text_w - 2,
+              label_y - text_h / 2 - (0.85 * self.rose_max_dia * self.speed_factor[0]))
+        self.draw.text(xy, 'Calm',
+                       fill=self.windrose_legend_font_color, font=self.legend_font)
+        # draw 'calm' bulb on bottom of stacked bar
+        xy = (label_x - bulb_d / 2 + self.windrose_legend_bar_width / 2,
+              label_y - self.windrose_legend_bar_width / 6,
+              label_x + bulb_d / 2 + self.windrose_legend_bar_width / 2,
+              label_y - self.windrose_legend_bar_width / 6 + bulb_d)
+        self.draw.ellipse(xy, outline='black', fill=speed_list[1][0])
+        # draw legend title
+        if self.obs == 'windGust':
+            title_text = 'Gust Speed'
+        else:
+            title_text = 'Wind Speed'
+        text_w, text_h = self.draw.textsize(title_text, font=self.legend_font)
+        xy = (label_x + self.windrose_legend_bar_width / 2 - text_w / 2,
+              label_y - 5 * text_h / 2 - (0.85 * self.rose_max_dia))
+        self.draw.text(xy, title_text,
+                       fill=self.windrose_legend_font_color, font=self.legend_font)
+        # draw legend units label
+        text_w, text_h = self.draw.textsize('(%s)' % self.unit_label.strip(),
+                                            font=self.legend_font)
+        xy = (label_x + self.windrose_legend_bar_width / 2 - text_w / 2,
+              label_y - 3 * text_h / 2 - (0.85 * self.rose_max_dia))
+        self.draw.text(xy, '(%s)' % self.unit_label.strip(),
+                       fill=self.windrose_legend_font_color, font=self.legend_font)
+        # draw plot title (label) if any, make sure we convert any unicode that
+        # might sneak in
+        if self.label:
+            text_w, text_h = self.draw.textsize(self.label, font=self.label_font)
+            try:
+                self.draw.text((self.origin_x - text_w/2, text_h/2),
+                               self.label,
+                               fill=self.windrose_label_font_color,
+                               font=self.label_font)
+            except UnicodeEncodeError:
+                self.draw.text((self.origin_x - text_w/2, text_h/2),
+                               self.label.encode("utf-8"),
+                               fill=self.windrose_label_font_color,
+                               font=self.label_font)
+        # draw plot timestamp if any
+        if self.time_stamp:
+            ts_text = datetime.datetime.fromtimestamp(self.plotgen_ts).strftime(self.time_stamp).strip()
+            text_w, text_h = self.draw.textsize(ts_text, font=self.label_font)
+            if self.time_stamp_location is not None:
+                if 'TOP' in self.time_stamp_location:
+                    ts_y = self.windrose_plot_border + text_h
+                else:
+                    ts_y = self.image_height - self.windrose_plot_border - text_h
+                if 'LEFT' in self.time_stamp_location:
+                    ts_x = self.windrose_plot_border
+                elif ('CENTER' in self.time_stamp_location) or ('CENTRE' in self.time_stamp_location):
+                    ts_x = self.origin_x-text_w / 2
+                else:
+                    ts_x = self.image_width - self.windrose_plot_border - text_w
+            else:
+                ts_y = self.image_height - self.windrose_plot_border - text_h
+                ts_x = self.image_width - self.windrose_plot_border - text_w
+            self.draw.text((ts_x, ts_y),
+                           ts_text,
+                           fill=self.windrose_legend_font_color, font=self.legend_font)
+
+    def skip_this_plot(self, time_ts, time_length, img_file, plotname):
+        """    Plots must be generated if:
+        (1) it does not exist
+        (2) it is 24 hours old (or older)
+
+        Every plot, irrespective of time_length, will likely be different to the
+        last one but to reduce load for long time_length plots a plot can be
+        skipped if:
+        (1) no time_length was specified (need to put entry in syslog)
+        (2) plot length is greater than 30 days and the plot file is less than
+            24 hours old
+        (3) plot length is greater than 7 but less than 30 day and the plot file
+            is less than 1 hour old
+        (4) can't think of another reason! Let's see how (1) and (2) go
+
+        time_ts: Timestamp holding time of plot
+
+        time_length: Length of time over which plot is produced
+
+        img_file: Full path and filename of plot file
+
+        plotname: Name of plot
+        """
+
+        # images without a time_length must be skipped every time and a log
+        # entry added
+        if time_length is None:
+            if self.log_failure:
+                loginf("Plot '%s' ignored, no 'time_length' specified" % plotname)
+            return True
+
+        # the image definitely has to be generated if it doesn't exist
+        if not os.path.exists(img_file):
+            return False
+
+        # if the image is older than 24 hours then regenerate
+        if time_ts - os.stat(img_file).st_mtime >= 86400:
+            return False
+
+        # if time_length > 30 days and the image is less than 24 hours old then
+        # skip
+        if time_length > 18144000 and time_ts - os.stat(img_file).st_mtime < 86400:
+            return True
+
+        # if time_length > 7 days and the image is less than 1 hour old then skip
+        if time_length >= 604800 and time_ts - os.stat(img_file).st_mtime < 3600:
+            return True
+
+        # otherwise we must regenerate
+        return False
 
 
 # ==============================================================================
-#                               Utility Functions
+#                               class UniDraw
 # ==============================================================================
 
 
 class UniDraw(ImageDraw.ImageDraw):
     """Supports non-Unicode fonts
 
-    Not all fonts support Unicode characters. These will raise a UnicodeEncodeError exception.
-    This class subclasses the regular ImageDraw.Draw class, adding overridden functions to
-    catch these exceptions. It then tries drawing the string again, this time as a UTF8 string
+    Not all fonts support Unicode characters. These will raise a
+    UnicodeEncodeError exception. This class subclasses the regular
+    ImageDraw.Draw class, adding overridden functions to catch these
+    exceptions. It then tries drawing the string again, this time as a UTF8
+    string.
     """
 
     def text(self, position, string, **options):
@@ -523,266 +820,62 @@ class UniDraw(ImageDraw.ImageDraw):
         except UnicodeEncodeError:
             return ImageDraw.ImageDraw.textsize(self, string.encode('utf-8'), **options)
 
-def windrose_image_setup(self):
-    """Create image object for us to draw on.
 
-    image: Image object to be returned for us to draw on.
+def parse_color(color, default=None):
+    """Parse a color value.
+
+    Parse a string representing a color and return the RGB tuple represented by
+    the value. The string may be:
+    -   a supported color word eg 'red'
+    -   in the format #RRGGBB where RR, GG and BB are hexadecimal values from
+        00-FF inclusive representing the the red, green and blue values
+        respectively, eg #FF8800
+    -   in the format rgb(R,G,B) where R,G,B are numbers from 0 to 255 or
+        percentages from 0% to 100% representing the red green and blue values
+        respectively, eg rgb(255, 127, 0) or rgb(100%, 50%, 0%)
+    -   in the format 0xBBGGRR where RR, GG and BB are hexadecimal values from
+        00-FF inclusive representing the red, green and blue values
+        respectively, eg 0x0088FF
+
+    If the string cannot be parsed the default parameter is returned if it is
+    a valid color otherwise None is returned.
+
+    Inputs:
+        color:   the value to be parsed
+        default: the value returned if color cannot be parsed
+
+    Returns:
+        a valid rgb tuple or None
     """
-
+    # first up check if we have a string to parse, if we don't return None
+    if color is None:
+        return None
+    # now try parsing parameter color using getrgb()
     try:
-        image = Image.open(self.image_background_image)
-    except IOError:
-        image = Image.new("RGB",
-                          (self.image_width, self.image_height),
-                          self.image_background_box_color)
-    return image
-
-
-def wind_rose_plot_setup(self, draw):
-    """Draw circular plot background, rings, axes and labels.
-
-    draw: The Draw object on which we are drawing.
-    """
-
-    # draw speed circles
-    # First calculate the distance between the wind rose range rings. Note that
-    # 'calm' bulls eye is at centre of plot with diameter equal to _min_radius.
-    _min_radius = self.rose_max_dia/11
-    # iterate over the range rings starting from the inside and working out
-    i = 5
-    while i > 0:
-        xy = (self.origin_x - _min_radius * (i + 0.5),
-              self.origin_y - _min_radius * (i + 0.5),
-              self.origin_x + _min_radius * (i + 0.5),
-              self.origin_y + _min_radius * (i + 0.5))
-        # draw the ring
-        draw.ellipse(xy,
-                     outline=self.image_background_range_ring_color,
-                     fill=self.image_background_circle_color)
-        i -= 1
-
-    # draw vertical centre line
-    xy = [(self.origin_x, self.origin_y - self.rose_max_dia / 2 - 2),
-          (self.origin_x, self.origin_y + self.rose_max_dia / 2 + 2)]
-    draw.line(xy, fill=self.image_background_range_ring_color)
-    # draw horizontal centre line
-    xy = [(self.origin_x - self.rose_max_dia / 2 - 2, self.origin_y),
-          (self.origin_x + self.rose_max_dia / 2 + 2, self.origin_y)]
-    draw.line(xy, fill=self.image_background_range_ring_color)
-    # draw N,S,E,W markers
-    text_w, text_h = draw.textsize('N', font=self.plot_font)
-    xy = (self.origin_x - text_w / 2,
-          self.origin_y - self.rose_max_dia / 2 - 1 - text_h)
-    draw.text(xy, 'N', fill=self.windrose_plot_font_color, font=self.plot_font)
-    text_w, text_h = draw.textsize('S', font=self.plot_font)
-    xy = (self.origin_x - text_w / 2,
-          self.origin_y + self.rose_max_dia / 2 + 3)
-    draw.text(xy, 'S', fill=self.windrose_plot_font_color, font=self.plot_font)
-    text_w, text_h = draw.textsize('W', font=self.plot_font)
-    xy = (self.origin_x - self.rose_max_dia / 2 - 1 - text_w,
-          self.origin_y - text_h / 2)
-    draw.text(xy, 'W', fill=self.windrose_plot_font_color, font=self.plot_font)
-    text_w, text_h = draw.textsize('E', font=self.plot_font)
-    xy = (self.origin_x + self.rose_max_dia / 2 + 1,
-          self.origin_y - text_h / 2)
-    draw.text(xy, 'E', fill=self.windrose_plot_font_color, font=self.plot_font)
-    # draw % labels on rings
-    # calculate the value increment between rings
-    _label_inc = self.max_ring_value/5
-    # initialise a list to hold ring labels
-    speed_labels = list((0, 0, 0, 0, 0))
-    i = 1
-    while i < 6:
-        speed_labels[i - 1] = "%d%%" % int(round(_label_inc * i * 100, 0))
-        i += 1
-    # calculate location of ring labels
-    _angle = 7 * math.pi / 4 + int(self.label_dir / 4.0) * math.pi / 2
-    label_offset_x = int(round(self.rose_max_dia / 22 * math.cos(_angle), 0))
-    label_offset_y = int(round(self.rose_max_dia / 22 * math.sin(_angle), 0))
-    # Draw ring labels. Note leave inner ring blank due to lack of space. For
-    # clarity each label (except for outside ring) is drawn on a rectangle with
-    # background colour set to that of the circular plot.
-    i = 2
-    while i < 5:
-        text_w, text_h = draw.textsize(speed_labels[i - 1],
-                                       font=self.plot_font)
-        x0 = self.origin_x + (2 * i + 1) * label_offset_x - text_w / 2
-        y0 = self.origin_y + (2 * i + 1) * label_offset_y - text_h / 2
-        x1 = self.origin_x + (2 * i + 1) * label_offset_x + text_w / 2
-        y1 = self.origin_y + (2 * i + 1) * label_offset_y + text_h / 2
-        draw.rectangle([x0, y0, x1, y1],
-                       fill=self.image_background_circle_color)
-        xy = (self.origin_x + (2 * i + 1) * label_offset_x - text_w / 2,
-              self.origin_y + (2 * i + 1) * label_offset_y - text_h / 2)
-        draw.text(xy,
-                  speed_labels[i-1],
-                  fill=self.windrose_plot_font_color, font=self.plot_font)
-        i += 1
-    # draw outside ring label
-    text_w, text_h = draw.textsize(speed_labels[i-1], font=self.plot_font)
-    xy = (self.origin_x + (2 * i + 1) * label_offset_x - text_w / 2,
-          self.origin_y + (2 * i + 1) * label_offset_y - text_h / 2)
-    draw.text(xy,
-              speed_labels[i-1],
-              fill=self.windrose_plot_font_color, font=self.plot_font)
-
-
-def legend_setup(self, draw, speed_list, speed_bin):
-    """Draw plot title (if requested), legend and time stamp (if requested).
-
-        draw: The Draw object on which we are drawing.
-
-        speed_list: 2D list with speed range boundaries in speed_list[0] and
-                    petal colours in speed_list[1]
-
-        speed_bin: 1D list to hold overall obs count for each speed range
-    """
-
-    # set static values
-    text_w, text_h = draw.textsize('E', font=self.plot_font)
-    # label_x and label_y = x,y coords of bottom left of stacked bar.
-    # Everything else is relative to this point
-    label_x = self.origin_x+self.rose_max_dia/2 + text_w + 10
-    label_y = self.origin_y+self.rose_max_dia/2 - self.rose_max_dia/22
-    bulb_d = int(round(1.2 * self.windrose_legend_bar_width, 0))
-    # draw stacked bar and label with values/percentages
-    i = 6
-    while i > 0:
-        x0 = label_x
-        y0 = label_y - (0.85 * self.rose_max_dia * self.speed_factor[i])
-        x1 = label_x + self.windrose_legend_bar_width
-        y1 = label_y
-        draw.rectangle([x0, y0, x1, y1],
-                       fill=speed_list[1][i], outline='black')
-        text_w, text_h = draw.textsize(str(speed_list[0][i]),
-                                       font=self.legend_font)
-        xy = (label_x + 1.5 * self.windrose_legend_bar_width,
-              label_y - text_h / 2 - (0.85 * self.rose_max_dia * self.speed_factor[i]))
-        _text = '%d (%d%%)' % (int(round(speed_list[0][i], 0)),
-                               int(round(100 * speed_bin[i]/sum(speed_bin), 0)))
-        draw.text(xy, _text,
-                  fill=self.windrose_legend_font_color, font=self.legend_font)
-        i -= 1
-    text_w, text_h = draw.textsize(str(speed_list[0][0]),
-                                   font=self.legend_font)
-    # draw 'calm' or 0 speed label and %
-    xy = (label_x + 1.5 * self.windrose_legend_bar_width,
-          label_y - text_h / 2 - (0.85 * self.rose_max_dia * self.speed_factor[0]))
-    _text = '%d (%d%%)' % (speed_list[0][0],
-                           int(round(100.0 * speed_bin[0]/sum(speed_bin), 0)))
-    draw.text(xy, _text,
-              fill=self.windrose_legend_font_color, font=self.legend_font)
-    text_w, text_h = draw.textsize('Calm', font=self.legend_font)
-    xy = (label_x - text_w - 2,
-          label_y - text_h / 2 - (0.85 * self.rose_max_dia * self.speed_factor[0]))
-    draw.text(xy, 'Calm',
-              fill=self.windrose_legend_font_color, font=self.legend_font)
-    # draw 'calm' bulb on bottom of stacked bar
-    xy = (label_x - bulb_d / 2 + self.windrose_legend_bar_width / 2,
-          label_y - self.windrose_legend_bar_width / 6,
-          label_x + bulb_d / 2 + self.windrose_legend_bar_width / 2,
-          label_y - self.windrose_legend_bar_width / 6 + bulb_d)
-    draw.ellipse(xy, outline='black', fill=speed_list[1][0])
-    # draw legend title
-    if self.obs == 'windGust':
-        title_text = 'Gust Speed'
-    else:
-        title_text = 'Wind Speed'
-    text_w, text_h = draw.textsize(title_text, font=self.legend_font)
-    xy = (label_x + self.windrose_legend_bar_width / 2 - text_w / 2,
-          label_y - 5 * text_h / 2 - (0.85 * self.rose_max_dia))
-    draw.text(xy, title_text,
-              fill=self.windrose_legend_font_color, font=self.legend_font)
-    # draw legend units label
-    text_w, text_h = draw.textsize('(%s)' % self.unit_label.strip(),
-                                   font=self.legend_font)
-    xy = (label_x + self.windrose_legend_bar_width / 2 - text_w / 2,
-          label_y - 3 * text_h / 2 - (0.85 * self.rose_max_dia))
-    draw.text(xy, '(%s)' % self.unit_label.strip(),
-              fill=self.windrose_legend_font_color, font=self.legend_font)
-    # draw plot title (label) if any, make sure we convert any unicode that
-    # might sneak in
-    if self.label:
-        text_w, text_h = draw.textsize(self.label, font=self.label_font)
-        try:
-            draw.text((self.origin_x - text_w/2, text_h/2),
-                      self.label,
-                      fill=self.windrose_label_font_color,
-                      font=self.label_font)
-        except UnicodeEncodeError:
-            draw.text((self.origin_x - text_w/2, text_h/2),
-                      self.label.encode("utf-8"),
-                      fill=self.windrose_label_font_color,
-                      font=self.label_font)
-    # draw plot timestamp if any
-    if self.time_stamp:
-        ts_text = datetime.datetime.fromtimestamp(self.plotgen_ts).strftime(self.time_stamp).strip()
-        text_w, text_h = draw.textsize(ts_text, font=self.label_font)
-        if self.time_stamp_location is not None:
-            if 'TOP' in self.time_stamp_location:
-                ts_y = self.windrose_plot_border + text_h
+        return ImageColor.getrgb(color)
+    except ValueError:
+        # getrgb() could not parse the string, perhaps it is because color is
+        # in the format 0xBBGGRR
+        if isinstance(color, six.string_types) and color.startswith('0x'):
+            # we have a string that starts with '0x', try to convert it to an
+            # int
+            try:
+                rgbint = int(color, 0)
+            except ValueError:
+                # could not convert to an int, so our string cannot be
+                # converted to a color. Let it pass knowing the final return
+                # will attempt to return the default.
+                pass
             else:
-                ts_y = self.image_height - self.windrose_plot_border - text_h
-            if 'LEFT' in self.time_stamp_location:
-                ts_x = self.windrose_plot_border
-            elif ('CENTER' in self.time_stamp_location) or ('CENTRE' in self.time_stamp_location):
-                ts_x = self.origin_x-text_w / 2
-            else:
-                ts_x = self.image_width - self.windrose_plot_border - text_w
-        else:
-            ts_y = self.image_height - self.windrose_plot_border - text_h
-            ts_x = self.image_width - self.windrose_plot_border - text_w
-        draw.text((ts_x, ts_y),
-                  ts_text,
-                  fill=self.windrose_legend_font_color, font=self.legend_font)
-
-
-def skip_this_plot(time_ts, time_length, img_file, plotname):
-    """    Plots must be generated if:
-    (1) it does not exist
-    (2) it is 24 hours old (or older)
-
-    Every plot, irrespective of time_length, will likely be different to the
-    last one but to reduce load for long time_length plots a plot can be
-    skipped if:
-    (1) no time_length was specified (need to put entry in syslog)
-    (2) plot length is greater than 30 days and the plot file is less than
-        24 hours old
-    (3) plot length is greater than 7 but less than 30 day and the plot file
-        is less than 1 hour old
-    (4) can't think of another reason! Let's see how (1) and (2) go
-
-    time_ts: Timestamp holding time of plot
-
-    time_length: Length of time over which plot is produced
-
-    img_file: Full path and filename of plot file
-
-    plotname: Name of plot
-    """
-
-    # images without a time_length must be skipped every time and a syslog
-    # entry added
-    if time_length is None:
-        log.info("Plot %s ignored, no time_length specified" % plotname)
-        return True
-
-    # the image definitely has to be generated if it doesn't exist
-    if not os.path.exists(img_file):
-        return False
-
-    # if the image is older than 24 hours then regenerate
-    if time_ts - os.stat(img_file).st_mtime >= 86400:
-        return False
-
-    # if time_length > 30 days and the image is less than 24 hours old then
-    # skip
-    if time_length > 18144000 and time_ts - os.stat(img_file).st_mtime < 86400:
-        return True
-
-    # if time_length > 7 days and the image is less than 1 hour old then skip
-    if time_length >= 604800 and time_ts - os.stat(img_file).st_mtime < 3600:
-        return True
-
-    # otherwise we must regenerate
-    return False
+                # we could convert to an int so break out the RGB components
+                r = rgbint & 255
+                g = (rgbint >> 8) & 255
+                b = (rgbint >> 16) & 255
+                # parse the RGB components and return the result
+                return parse_color('rgb(%s,%s,%s)' % (r,g,b), default)
+    except AttributeError:
+        # getrgb() could not parse the string, most likely because the string
+        # was not a string. Let it pass knowing the final return will attempt
+        # to return the default.
+        pass
+    return parse_color(default)
