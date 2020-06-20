@@ -472,26 +472,20 @@ class WdMonthStats(weewx.cheetahgenerator.SearchList):
                         m_temp_av_n[_m_bin] = m_temp_tuple[0]
                 # update max rain for the month
                 if m_rain_tuple[0] is not None:
-                    if m_rain_tuple[0] > m_rain_max[_m_bin]:
+                    if m_rain_max[_m_bin] is None or m_rain_tuple[0] > m_rain_max[_m_bin]:
                         m_rain_max[_m_bin] = m_rain_tuple[0]
                         m_rain_max_ts = m_tspan.start
                 if m_temp_max_tuple[0] is not None:
-                    # if our record list holds None then the current value must
+                    # if our record list holds None or the current value is
+                    # greater than our record list then the current value must
                     # be the new max
-                    if m_temp_max[_m_bin] is None:
-                        m_temp_max[_m_bin] = m_temp_max_tuple[0]
-                    # if the current value is greater than our record list then
-                    # update the list
-                    elif m_temp_max_tuple[0] > m_temp_max[_m_bin]:
+                    if m_temp_max[_m_bin] is None or m_temp_max_tuple[0] > m_temp_max[_m_bin]:
                         m_temp_max[_m_bin] = m_temp_max_tuple[0]
                 if m_temp_min_tuple[0] is not None:
-                    # if our record list holds None then the current value must
-                    # be the new min
-                    if m_temp_min[_m_bin] is None:
-                        m_temp_min[_m_bin] = m_temp_min_tuple[0]
-                    # if the current value is greater than our record list then
-                    # update the list
-                    elif m_temp_min_tuple[0] < m_temp_min[_m_bin]:
+                    # if our record list holds None or the current value is
+                    # less than our record list then the current value must be
+                    # the new min
+                    if m_temp_min[_m_bin] is None or m_temp_min_tuple[0] < m_temp_min[_m_bin]:
                         m_temp_min[_m_bin] = m_temp_min_tuple[0]
 
             # iterate over each month:
@@ -552,7 +546,7 @@ class WdMonthStats(weewx.cheetahgenerator.SearchList):
             y_max_rain_m = None
             y_max_rain_y = datetime.date.fromtimestamp(timespan.stop).year
             for _month in range(c_month):
-                if m_rain_max_n[_month] > y_max_rain:
+                if y_max_rain is None or m_rain_max_n[_month] > y_max_rain:
                     y_max_rain = m_rain_max_n[_month]
                     y_max_rain_m = _month + 1
 
