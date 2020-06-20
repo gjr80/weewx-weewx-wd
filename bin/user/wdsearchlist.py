@@ -546,7 +546,7 @@ class WdMonthStats(weewx.cheetahgenerator.SearchList):
             y_max_rain_m = None
             y_max_rain_y = datetime.date.fromtimestamp(timespan.stop).year
             for _month in range(c_month):
-                if y_max_rain is None or m_rain_max_n[_month] > y_max_rain:
+                if m_rain_max_n[_month] is not None and (y_max_rain is None or m_rain_max_n[_month] > y_max_rain):
                     y_max_rain = m_rain_max_n[_month]
                     y_max_rain_m = _month + 1
 
