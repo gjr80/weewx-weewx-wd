@@ -26,8 +26,10 @@ the Pocket PWS Android weather app.
 
 Pre-Requisites
 
-WeeWX-WD v2.0.0 requires WeeWX v4.0.0 or greater running under Python 2 or
-Python 3.
+WeeWX-WD v2.0.0 requires WeeWX v3.4 or later. Both Python 2 and Python 3 are
+supported when using WeeWX v4.0.0 or later.
+
+Pyephem is required to support advanced ephemeris tags.
 
 File Locations
 

@@ -24,8 +24,10 @@ The *WeeWX-WD* extension utilises a separate database to record a number of obse
 
 ## Pre-Requisites ##
 
-The *WeeWX-WD* extension 2.0.0 requires WeeWX v4.0.0 or greater running under Python 2 or
-Python 3.
+The *WeeWX-WD* extension requires WeeWX v3.4 or later. Both Python 2 and Python 3 are 
+supported when using WeeWX v4.0.0 or later.
+
+Pyephem is required to support advanced ephemeris tags. 
 
 ## File Locations ##
 
