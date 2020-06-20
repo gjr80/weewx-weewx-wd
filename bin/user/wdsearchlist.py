@@ -12,15 +12,15 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 2.0.0a1                                    Date: 27 December 2019
+Version: 2.0.0                                      Date: 20 June 2020
 
 Revision History
-    27 December 2019    v2.0.0
+    20 June 2020        v2.0.0
+        - WeeWX 3.2+/4.x python2/3 compatible
         - simplified logic used in WdHourRainTags calculation
         - simplified logic used in WdGdDays calculations
         - fixed typo where wet bulb was returned as feels_like temperature
         - Easter is now calculated on report time not system time
-        - WeeWX 4.0 python 2/3 compatible
 
 Previous Bitbucket revision history
     31 March 2017       v1.0.3
@@ -98,7 +98,7 @@ from weewx.units import ValueHelper, getStandardUnitType, ValueTuple
 # get a logger object
 log = logging.getLogger(__name__)
 
-WEEWXWD_SLE_VERSION = '2.0.0a1'
+WEEWXWD_SLE_VERSION = '2.0.0'
 
 
 def get_first_day(dt, d_years=0, d_months=0):

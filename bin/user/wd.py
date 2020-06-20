@@ -13,11 +13,11 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
-Version: 2.0.0a1                                    Date: 27 December 2019
+Version: 2.0.0                                      Date: 20 June 2020
 
 Revision History
-    27 December 2019    v2.0.0
-        - WeeWX 4.0 python 2/3 compatible
+    20 June 2020        v2.0.0
+        - WeeWX 3.2+/4.x python2/3 compatible
         - moved __main__ code to weewxwd_config utility
         - now uses appTemp and humidex as provided by StdWXCalculate
         - simplified WdWXCalculate.new_loop_packet,
@@ -112,7 +112,7 @@ from weeutil.weeutil import accumulateLeaves, to_int, to_bool
 # get a logger object
 log = logging.getLogger(__name__)
 
-WEEWXWD_VERSION = '2.0.0a1'
+WEEWXWD_VERSION = '2.0.0'
 
 
 # Define a dictionary to look up Davis forecast rule
