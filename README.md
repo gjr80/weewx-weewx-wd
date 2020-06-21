@@ -42,9 +42,11 @@ Where applicable the nominal location for your system and installation type shou
 
 ## Installation Instructions ##
 
-### Installation using the wee_extension utility ###
+**Note:** If upgrading a previous *WeeWX-WD* installation please refer to the [Upgrade Guide](https://github.com/gjr80/weewx-weewx-wd/wiki/Upgrade%20Guide) in the *WeeWX-WD* [wiki](https://github.com/gjr80/weewx-weewx-wd/wiki).
 
 **Note:** In the following code snippets the symbolic name *$DOWNLOAD_ROOT* is the path to the directory containing the downloaded *WeeWX-WD* extension.
+
+### Installation using the wee_extension utility ###
 
 1.  Download the *WeeWX-WD* extension from the *WeeWX-WD* extension the *WeeWX-WD* extension [releases page](https://github.com/gjr80/weewx-weewx-wd/releases) into a directory accessible from the WeeWX machine.
 
