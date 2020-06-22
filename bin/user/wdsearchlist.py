@@ -2758,24 +2758,13 @@ class WdForToday(weewx.cheetahgenerator.SearchList):
             _row = db_lookup().getSql(_sql % interpolate)
             if _row is not None:
                 # update our max temp and timestamp if necessary
-                if _max is None:
-                    if _row[1] is not None:
-                        _max = _row[1]
-                        _max_ts = _row[0]
-                else:
-                    if _row[1] > _max:
-                        _max = _row[1]
-                        _max_ts = _row[0]
+                if _row[1] is not None and (_max is None or (_max is not None and _row[1] > _max)):
+                    _max = _row[1]
+                    _max_ts = _row[0]
                 # update our min temp and timestamp if necessary
-                if _min is None:
-                    if _row[2] is not None:
-                        _min = _row[2]
-                        _min_ts = _row[0]
-                else:
-                    if _row[2] < _min:
-                        _min = _row[2]
-                        _min_ts = _row[0]
-
+                if _row[2] is not None and (_min is None or (_min is not None and _row[2] < _min)):
+                    _min = _row[2]
+                    _min_ts = _row[0]
         # get our max/min as ValueTuples
         _max_temp_today_vt = ValueTuple(_max, t_type, t_group)
         _min_temp_today_vt = ValueTuple(_min, t_type, t_group)
