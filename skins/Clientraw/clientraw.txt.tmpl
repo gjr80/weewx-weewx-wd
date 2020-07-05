@@ -96,7 +96,7 @@ GNU General Public License for more details.
 #set $stationLocation = $station.location.replace(" ","")
 #*WD|032*#$stationLocation-$current.dateTime.format($timeLongFormat) #slurp
 #*WD|033*#0 #slurp
-#if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.exists and $current.radiation.exists
+#if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.exists and $current.radiation.exists and $current.radiation.raw is not None
 #if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw > 0
 #set $percent = "%d" % (100.0 * $current.radiation.raw / $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw)
 #else
