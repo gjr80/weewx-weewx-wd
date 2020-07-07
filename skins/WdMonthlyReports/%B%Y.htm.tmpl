@@ -1,0 +1,174 @@
+##errorCatcher Echo
+#*
+This program is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation; either version 2 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+###############################################################################
+#                                                                             #
+#                     WeeWX-WD WD Monthly Reports Template                    #
+#                                                                             #
+# Version: 2.0.0                                     Date: 20 June 2020       #
+#                                                                             #
+###############################################################################
+*#
+##if $unit.unit_type_dict.group_rain == "mm"
+##set $Rain="%6.1f"
+##else
+##set $Rain="%6.2f"
+##end if
+#raw
+<HTML><HEAD><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<TITLE>Daily Report</TITLE></HEAD><BODY>
+<BODY BACKGROUND="">
+<CENTER><FONT COLOR="no" SIZE=+2><B>Daily Report For #end raw $month_long_name $year_name#raw</FONT></B></CENTER>
+<PRE>
+#end raw
+#set $currDayNumber = int($curr_day)
+#set $currMonthNumber = int($curr_month)
+#set $currYear = int($curr_year)
+#set $prevDayNumber = $currDayNumber-1
+#set $monthNumber = int($month.dateTime.format("%m"))
+#set $daysInMonth = 0
+#for $day in $month.days
+  #set $daysInMonth += 1
+#end for
+##
+##Month Wind run calculations
+##
+#set $monthWindRun = '----'
+#if $month.wind.avg.raw is not None
+  #if ($monthNumber == $currMonthNumber) and ($year_name == $currYear)
+    #set $monthWindRun = round(float($month.wind.avg.raw) * ((float($currDayNumber)-1)*24 + float($curr_hour) + float($curr_minute)/60), 1)
+  #else
+    #set $monthWindRun = round(float($month.wind.avg.raw) * $daysInMonth * 24, 1)
+  #end if
+#end if
+##
+##End Month Wind run calculations
+##
+#for $day in $month.days
+#set $dayNumber = int($day.dateTime.format("%d"))
+##
+##Day Wind run calculations
+##
+#try
+#set $dayWindRun = round(float($day.wind.avg.raw) * (float($curr_hour) + float($curr_minute)/60), 1)
+#except
+#set $dayWindRun = 0
+#end try
+##
+##End Day Wind run calculations
+##
+#if ($dayNumber < $currDayNumber) or ($monthNumber != $currMonthNumber)
+#raw<FONT COLOR="#3333FF" SIZE=+2 style="font-family: Arial"><B>Averages\Extremes for day #end raw:$day.dateTime.format("%d")#raw</B></font>
+------------------------------------------------------------
+<FONT COLOR="#000000" style="font-family: Fixedsys">#end raw
+#raw  Average temperature     = #end raw $day.outTemp.avg
+#raw  Average humidity        = #end raw $day.outHumidity.avg
+#raw  Average dewpoint        = #end raw $day.dewpoint.avg
+#raw  Average barometer       = #end raw $day.barometer.avg
+#raw  Average windspeed       = #end raw $day.windSpeed.avg
+#raw  Average gustspeed       = #end raw $day.wind.avg
+#raw  Average direction       = #end raw $day.wind.vecdir ($day.wind.vecdir.ordinal_compass)
+#raw  Rainfall for month      = #end raw $month.rain.sum
+#raw  Rainfall for year       = #end raw $year.rain.sum
+#raw  Rainfall for day        = #end raw $day.rain.sum
+#raw  Maximum rain per minute = #end raw $day.rainRate.max
+#raw <FONT COLOR="#FF0000"> Maximum temperature     = #end raw $day.outTemp.max at time $day.outTemp.maxtime.format("%H:%M")</FONT>
+#raw <FONT COLOR="#3333FF"> Minimum temperature     = #end raw $day.outTemp.min at time $day.outTemp.mintime.format("%H:%M")</FONT>
+#raw <FONT COLOR="#000000"> Maximum humidity        = #end raw $day.outHumidity.max at time $day.outHumidity.maxtime.format("%H:%M")
+#raw  Minimum humidity        = #end raw $day.outHumidity.min at time $day.outHumidity.mintime.format("%H:%M")
+#raw  Maximum dewpoint        = #end raw $day.dewpoint.max at time $day.dewpoint.maxtime.format("%H:%M")
+#raw  Minimum dewpoint        = #end raw $day.dewpoint.min at time $day.dewpoint.mintime.format("%H:%M")
+#raw  Maximum pressure        = #end raw $day.barometer.max at time $day.barometer.maxtime.format("%H:%M")
+#raw  Minimum pressure        = #end raw $day.barometer.min at time $day.barometer.mintime.format("%H:%M")
+#raw  Maximum windspeed       = #end raw $day.windSpeed.max at time $day.windSpeed.maxtime.format("%H:%M")
+#raw  Maximum gust speed      = #end raw $day.wind.max from $day.wind.gustdir ($day.wind.gustdir.ordinal_compass) at time $day.wind.maxtime.format("%H:%M")
+#raw  Daily wind run          = #end raw $dayWindRun
+#raw  Maximum heat index      = #end raw $day.heatindex.max at time $day.heatindex.maxtime.format("%H:%M")
+#end if
+#end for
+#raw</FONT>#end raw
+#raw<FONT COLOR="#000000" style="font-family: Fixedsys">#end raw
+#raw ---------------------------------------------------------------------------------------------#end raw
+#if ($monthNumber == $currMonthNumber) and ($year_name == $currYear)
+#raw   Averages\Extremes for the month of #end raw $month.dateTime.format("%B %Y") up to day #echo "%02d" % $prevDayNumber #
+#else
+#raw   Averages\Extremes for the month of #end raw $month.dateTime.format("%B %Y") up to day #echo "%02d" % $daysInMonth #
+#end if
+#raw ---------------------------------------------------------------------------------------------#end raw
+#raw  Average temperature     = #end raw $month.outTemp.avg
+#raw  Average humidity        = #end raw $month.outHumidity.avg
+#raw  Average dewpoint        = #end raw $month.dewpoint.avg
+#raw  Average barometer       = #end raw $month.barometer.avg
+#raw  Average windspeed       = #end raw $month.windSpeed.avg
+#raw  Average gustspeed       = #end raw $month.wind.avg
+#raw  Average direction       = #end raw $month.wind.vecdir ($day.wind.vecdir.ordinal_compass)
+#raw  Rainfall for month      = #end raw $month.rain.sum
+#raw  Rainfall for year       = #end raw $year.rain.sum
+#raw  Maximum rain per minute = #end raw $month.rainRate.max
+#raw  Maximum temperature     = #end raw $month.outTemp.max on day $month.outTemp.maxtime.format("%d") at time $month.outTemp.maxtime.format("%H:%M")
+#raw  Minimum temperature     = #end raw $month.outTemp.min on day $month.outTemp.mintime.format("%d") at time $month.outTemp.mintime.format("%H:%M")
+#raw  Maximum humidity        = #end raw $month.outHumidity.max on day $month.outHumidity.maxtime.format("%d") at time $month.outHumidity.maxtime.format("%H:%M")
+#raw  Minimum humidity        = #end raw $month.outHumidity.min on day $month.outHumidity.mintime.format("%d") at time $month.outHumidity.mintime.format("%H:%M")
+#raw  Maximum dewpoint        = #end raw $month.dewpoint.max on day $month.dewpoint.maxtime.format("%d") at time $month.dewpoint.maxtime.format("%H:%M")
+#raw  Minimum dewpoint        = #end raw $month.dewpoint.min on day $month.dewpoint.mintime.format("%d") at time $month.dewpoint.mintime.format("%H:%M")
+#raw  Maximum pressure        = #end raw $month.barometer.max on day $month.barometer.maxtime.format("%d") at time $month.barometer.maxtime.format("%H:%M")
+#raw  Minimum pressure        = #end raw $month.barometer.min on day $month.barometer.mintime.format("%d") at time $month.barometer.mintime.format("%H:%M")
+#raw  Maximum windspeed       = #end raw $month.windSpeed.max on day $month.windSpeed.maxtime.format("%d") at time $month.windSpeed.maxtime.format("%H:%M")
+#raw  Maximum gust speed      = #end raw $month.wind.max from $month.wind.gustdir ($month.wind.gustdir.ordinal_compass) on day $month.wind.maxtime.format("%d") at time $month.wind.maxtime.format("%H:%M")
+#raw  Maximum heat index      = #end raw $month.heatindex.max on day $month.heatindex.maxtime.format("%d") at time $month.heatindex.maxtime.format("%H:%M")
+#raw  Avg daily max temp :#end raw $month.outTemp.meanmax
+#raw  Avg daily min temp :#end raw $month.outTemp.meanmin
+#raw  Total windrun = #end raw $monthWindRun
+#if $month.radiation.has_data and $month.UV.has_data
+#raw  ------------------------------------------#end raw
+#raw  Day, Sunshine hours, ET, max solar, max UV#end raw
+#raw  ------------------------------------------#end raw
+#for $day in $month.days
+#set $dayNumber = int($day.dateTime.format("%d"))
+#set $monthNumber = int($month.dateTime.format("%m"))
+#if ($dayNumber < $currDayNumber) or ($monthNumber != $currMonthNumber)
+$day.dateTime.format("%d") 00.00hrs ,ET :$day.ET.sum ,$day.radiation.max ,$day.UV.max
+#end if
+#end for
+#elif $month.radiation.has_data
+#raw  ------------------------------------------#end raw
+#raw  Day, Sunshine hours, ET, max solar#end raw
+#raw  ------------------------------------------#end raw
+#for $day in $month.days
+#set $dayNumber = int($day.dateTime.format("%d"))
+#set $monthNumber = int($month.dateTime.format("%m"))
+#if ($dayNumber < $currDayNumber) or ($monthNumber != $currMonthNumber)
+$day.dateTime.format("%d") 00.00hrs ,ET :$day.ET.sum ,$day.radiation.max
+#end if
+#end for
+#elif $month.UV.has_data
+#raw  ------------------------------------------#end raw
+#raw  Day, max UV#end raw
+#raw  ------------------------------------------#end raw
+#for $day in $month.days
+#set $dayNumber = int($day.dateTime.format("%d"))
+#set $monthNumber = int($month.dateTime.format("%m"))
+#if ($dayNumber < $currDayNumber) or ($monthNumber != $currMonthNumber)
+$day.dateTime.format("%d") ,$day.UV.max
+#end if
+#end for
+#end if
+#if $month.rain.sum.raw is not None and $month.rain.sum.raw > 0
+#raw -----------------------------------#end raw
+#raw Daily rain totals#end raw
+#raw -----------------------------------#end raw
+#for $day in $month.days
+#if $day.rain.sum.raw is not None and $day.rain.sum.raw > 0
+ $day.rain.sum #raw on day #end raw $day.dateTime.format("%d")
+#end if
+#end for
+#end if
+#raw</FONT></PRE></FONT></BODY></HTML>#end raw
