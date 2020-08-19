@@ -58,8 +58,8 @@ from the weewx machine.
 
     $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.0.0/weewxwd-2.0.0.tar.gz
 
-	where $DOWNLOAD_ROOT is the path to the directory where the WeeWX-WD
-    extension is to be downloaded.
+	replacing the symbolic name $DOWNLOAD_ROOT with the path to the directory
+	where the WeeWX-WD extension is to be downloaded (eg, /var/tmp).
 
 2.  Stop WeeWX:
 
