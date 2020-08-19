@@ -78,6 +78,12 @@ wee_extension utility:
 
     wee_extension --install=$DOWNLOAD_ROOT/weewxwd-2.0.0.tar.gz
 
+    Note: Depending on your system/installation the above command may need to
+          be prefixed with 'sudo'.
+
+    Note: Depending on your WeeWX installation the path to wee_extension may
+          need to be provided, eg: $ /home/weewx/bin/wee_extension --install...
+
     This will result in output similar to the following:
 
 		Request to install '/var/tmp/weewxwd-2.0.0.tar.gz'

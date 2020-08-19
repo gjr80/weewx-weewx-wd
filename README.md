@@ -52,7 +52,7 @@ Where applicable the nominal location for your system and installation type shou
 
         $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.0.0/weewxwd-2.0.0.tar.gz
 
-	where *$DOWNLOAD_ROOT* is the path to the directory where the *WeeWX-WD* extension is to be downloaded.
+	replacing the symbolic name *$DOWNLOAD_ROOT* with the path to the directory where the *WeeWX-WD* extension is to be downloaded (eg, */var/tmp*).
 
 1.  Stop WeeWX:
 
@@ -70,6 +70,10 @@ Where applicable the nominal location for your system and installation type shou
 
         $ wee_extension --install=$DOWNLOAD_ROOT/weewxwd-2.0.0.tar.gz
 
+    **Note:** Depending on your system/installation the above command may need to be prefixed with *sudo*.
+
+    **Note:** Depending on your WeeWX installation the path to *wee_extension* may need to be provided, eg: `$ /home/weewx/bin/wee_extension --install...`.
+    
     This will result in output similar to the following:
 
 		Request to install '/var/tmp/weewxwd-2.0.0.tar.gz'
