@@ -2,14 +2,14 @@ v2.0.0
 *   now requires WeeWX v3.2 or later under python 2 or WeeWX v4.0.0 or later
     under python 3
 *   added support for WD supplementary database for storing short term data
-*   skins now include the enabled config option
+*   skins now support the enabled config option
 *   wdPWS skin disabled by default
 *   added sunshine_threshold config option and Supplementary stanza to WeeWX-WD
     config stanza to support WeeWX-WD supplementary data
 *   added new file wdschema.py that stores the WeeWX-WD database schemas
 *   renamed *.py files to simpler, self evident names
-*   removed no longer used file wd_database
-*   removed SteelGauges skin
+*   removed no longer used file wd_database utility
+*   removed the SteelGauges skin
 *   added support for new WU API, Dark Sky and formatted text file as sources
     for forecast and current conditions (not WU) data
 *   incorporated optimisations for various tags
