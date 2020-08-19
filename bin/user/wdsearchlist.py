@@ -12,10 +12,10 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 2.0.0                                      Date: 20 June 2020
+Version: 2.0.0                                      Date: 20 August 2020
 
 Revision History
-    20 June 2020        v2.0.0
+    20 August 2020      v2.0.0
         - WeeWX 3.2+/4.x python2/3 compatible
         - simplified logic used in WdHourRainTags calculation
         - simplified logic used in WdGdDays calculations
