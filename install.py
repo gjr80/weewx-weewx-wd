@@ -84,7 +84,7 @@ class WeewxWdInstaller(ExtensionInstaller):
             config={
                 'StdReport': {
                     'wdPWS': {
-                        'enabled': 'False',
+                        'enable': 'False',
                         'skin': 'PWS',
                         'HTML_ROOT': 'WD',
                         'Units': {
@@ -100,7 +100,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                     },
                     'wdStackedWindRose': {
                         'skin': 'StackedWindRose',
-                        'enabled': 'True',
+                        'enable': 'True',
                         'HTML_ROOT': 'WD',
                         'Units': {
                             'Groups': {
@@ -115,7 +115,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                     },
                     'wdTesttags': {
                         'skin': 'Testtags',
-                        'enabled': 'True',
+                        'enable': 'True',
                         'HTML_ROOT': 'WD',
                         'Units': {
                             'Groups': {
@@ -136,7 +136,7 @@ class WeewxWdInstaller(ExtensionInstaller):
                     },
                     'wdClientraw': {
                         'skin': 'Clientraw',
-                        'enabled': 'True',
+                        'enable': 'True',
                         'HTML_ROOT': 'WD',
                         'Units': {
                             'StringFormats': {
