@@ -54,7 +54,7 @@ import weewx
 import weewx.units
 import weeutil.weeutil
 
-WEEWXWD_TAGGED_STATS_VERSION = '2.0.0'
+WEEWXWD_TAGGED_STATS_VERSION = '2.0.1'
 
 
 # ==============================================================================

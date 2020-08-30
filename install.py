@@ -58,9 +58,8 @@ import weewx
 
 from setup import ExtensionInstaller
 
-# TODO. Fix before release
-REQUIRED_VERSION = "4.0.0b5"
-WEEWX_WD_VERSION = "2.0.0"
+REQUIRED_VERSION = "4.0.0"
+WEEWX_WD_VERSION = "2.0.1"
 
 
 def loader():

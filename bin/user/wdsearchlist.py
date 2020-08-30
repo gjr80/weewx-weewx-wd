@@ -100,7 +100,7 @@ from weewx.units import ValueHelper, getStandardUnitType, ValueTuple
 # get a logger object
 log = logging.getLogger(__name__)
 
-WEEWXWD_SLE_VERSION = '2.0.0'
+WEEWXWD_SLE_VERSION = '2.0.1'
 
 
 def get_first_day(dt, d_years=0, d_months=0):

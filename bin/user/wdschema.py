@@ -35,7 +35,7 @@ in saving as much space as you may think - most of the space is taken up by the
 primary key indexes (type "dateTime").
 """
 
-WDSCHEMA_VERSION = '2.0.0'
+WDSCHEMA_VERSION = '2.0.1'
 
 # define schema for archive table
 weewxwd_schema = [

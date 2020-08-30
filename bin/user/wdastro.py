@@ -53,7 +53,7 @@ from weewx.units import ValueHelper
 
 log = logging.getLogger(__name__)
 
-WEEWXWD_ASTRO_VERSION = '2.0.0'
+WEEWXWD_ASTRO_VERSION = '2.0.1'
 
 
 class MoonApsis(SearchList):

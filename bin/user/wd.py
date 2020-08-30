@@ -114,7 +114,7 @@ from weeutil.weeutil import accumulateLeaves, to_int, to_bool
 # get a logger object
 log = logging.getLogger(__name__)
 
-WEEWXWD_VERSION = '2.0.0'
+WEEWXWD_VERSION = '2.0.1'
 
 
 # Define a dictionary to look up Davis forecast rule
