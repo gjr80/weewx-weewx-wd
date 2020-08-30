@@ -12,9 +12,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 2.0.0                                          Date: 20 August 2020
+Version: 2.0.1                                          Date: 30 August 2020
 
 Revision History
+    30 August 2020      v2.0.1
+        - no change, version number change only
     20 August 2020      v2.0.0
       - minor formatting/comment changes
       - WeeWX4.0 python 2/3 compatible

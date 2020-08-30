@@ -11,9 +11,11 @@ details.
 
                          Installer for Weewx-WD
 
-Version: 2.0.0                                        Date: 20 August 2020
+Version: 2.0.1                                        Date: 30 August 2020
 
 Revision History
+    30 August 2020      v2.0.1
+        - changed 'enabled' config option to 'enabled'
     20 August 2020      v2.0.0
         - WeeWX 3.2+/4.x python2/3 compatible
         - revised Databases and DataBindings config options to support wdSchema

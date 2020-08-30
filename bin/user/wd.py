@@ -13,10 +13,12 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
-Version: 2.0.0                                      Date: 20 August 2020
+Version: 2.0.1                                      Date: 30 August 2020
 
 Revision History
-    20 August 2020       v2.0.0
+    30 August 2020      v2.0.1
+        - no change, version number change only
+    20 August 2020      v2.0.0
         - WeeWX 3.2+/4.x python2/3 compatible
         - moved __main__ code to weewxwd_config utility
         - now uses appTemp and humidex as provided by StdWXCalculate
