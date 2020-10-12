@@ -836,8 +836,10 @@ class WdSuppArchive(weewx.engine.StdService):
         try:
             dbm.getSql('vacuum')
         except Exception as e:
-            log.error("Vacuuming database %s failed: %s" % (dbm.database_name, e))
-
+            # it could be that we have a MySQL/MariaDB type database that does
+            # not support vacuuming, if we do then we can ignore this exception
+            if dbm.connection.dbtype != 'mysql':
+                log.error("Vacuuming database %s failed: %s" % (dbm.database_name, e))
         t2 = time.time()
         log.debug("vacuum_database executed in %0.9f seconds" % (t2-t1))
 
