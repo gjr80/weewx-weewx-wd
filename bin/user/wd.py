@@ -116,6 +116,8 @@ log = logging.getLogger(__name__)
 
 WEEWXWD_VERSION = '2.0.1'
 
+# Default radiation threshold value used for calculating sunshine
+DEFAULT_SUNSHINE_THRESHOLD = 120
 
 # Define a dictionary to look up Davis forecast rule
 # and return forecast text
@@ -369,6 +371,15 @@ class WdWXCalculate(weewx.engine.StdService):
         # initialise our superclass
         super(WdWXCalculate, self).__init__(engine, config_dict)
 
+        # determine the radiation threshold value for calculating sunshine, if
+        # it is missing use a suitable default
+        if 'WeewxWD' in config_dict:
+            self.sunshine_threshold = config_dict['WeewxWD'].get('sunshine_threshold',
+                                                                 DEFAULT_SUNSHINE_THRESHOLD)
+        else:
+            self.sunshine_threshold  = DEFAULT_SUNSHINE_THRESHOLD
+        log.info("WdWXCalculate sunshine threshold: %s" % self.sunshine_threshold)
+
         # bind our self to new loop packet and new archive record events
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
@@ -378,15 +389,19 @@ class WdWXCalculate(weewx.engine.StdService):
         """Add outTempDay and outTempNight to the loop packet."""
 
         _x = dict()
-        _x['outTempDay'], _x['outTempNight'] = calc_day_night(event.packet)
+        if 'outTemp' in event.packet:
+            _x['outTempDay'], _x['outTempNight'] = calc_day_night(event.packet)
         event.packet.update(_x)
 
     @staticmethod
     def new_archive_record(event):
-        """Add outTempDay and outTempNight to the archive record."""
+        """Add any WeeWX-WD derived fields to the archive record."""
 
         _x = dict()
-        _x['outTempDay'], _x['outTempNight'] = calc_day_night(event.record)
+        if 'outTemp' in event.record:
+            _x['outTempDay'], _x['outTempNight'] = calc_day_night(event.record)
+        if 'radiation' in event.record:
+            _x['sunshine'] = calc_sunshine(event.record)
         event.record.update(_x)
 
 
@@ -427,6 +442,7 @@ class WdArchive(weewx.engine.StdService):
         obs_group_dict["appTemp"] = "group_temperature"
         obs_group_dict["outTempDay"] = "group_temperature"
         obs_group_dict["outTempNight"] = "group_temperature"
+        obs_group_dict["sunshine"] = "group_deltatime"
 
         # bind ourselves to NEW_ARCHIVE_RECORD event
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
@@ -471,58 +487,6 @@ class WdArchive(weewx.engine.StdService):
                                                                                             tdiff))
         else:
             log.info("Daily summaries up to date.")
-
-
-# ==============================================================================
-#                            Class WdGenerateDerived
-# ==============================================================================
-
-
-class WdGenerateDerived(object):
-    """ Adds WeeWX-WD derived obs to the output of the wrapped generator."""
-
-    def __init__(self, input_generator):
-        """ Initialize an instance of WdGenerateDerived
-
-            input_generator: An iterator which will return dictionary records.
-        """
-        self.input_generator = input_generator
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-
-        # get our next record
-        _rec = next(self.input_generator)
-        _mwx = weewx.units.to_METRICWX(_rec)
-
-        # get our historical humidex, if not available then calculate it
-        if _mwx['extraTemp1'] is not None:
-            _mwx['humidex'] = _mwx['extraTemp1']
-        else:
-            if 'outTemp' in _mwx and 'outHumidity' in _mwx:
-                _mwx['humidex'] = weewx.wxformulas.humidexC(_mwx['outTemp'],
-                                                            _mwx['outHumidity'])
-            else:
-                _mwx['humidex'] = None
-
-        # get our historical appTemp, if not available then calculate it
-        if _mwx['extraTemp2'] is not None:
-            _mwx['appTemp'] = _mwx['extraTemp2']
-        else:
-            if 'outTemp' in _mwx and 'outHumidity' in _mwx and 'windSpeed' in _mwx:
-                _mwx['appTemp'] = weewx.wxformulas.apptempC(_mwx['outTemp'],
-                                                            _mwx['outHumidity'],
-                                                            _mwx['windSpeed'])
-            else:
-                _mwx['appTemp'] = None
-
-        # 'calculate' outTempDay and outTempNight
-        _mwx['outTempDay'], _mwx['outTempNight'] = calc_day_night(_mwx)
-
-        # return our modified record
-        return weewx.units.to_std_system(_mwx, _rec['usUnits'])
 
 
 # ==============================================================================
@@ -2308,6 +2272,29 @@ def calc_day_night(data_dict):
             return data_dict['outTemp'], None
     else:
         return None, None
+
+
+def calc_sunshine(data_dict, threshold=120):
+    """ 'Calculate' value for sunshine.
+
+        'sunshine' is a measure of duration the sun shining during the day and
+        is normally measured using a sunshine recorder. It can be approximated
+        by calculating the time the solar irradiance is greater than a given
+        threshold value.
+    """
+
+    # we know we have a radiation field but is it non-None and do we have
+    # field interval
+    if data_dict['radiation'] is not None and 'interval' in data_dict:
+        # We have the pre-requisites. sunshine is simply the interval (in
+        # seconds) if radiation >= the threshold value or 0 if radiation is
+        # below the threshold value.
+        if data_dict['radiation'] >= threshold:
+            return data_dict['interval'] * 60
+        else:
+            return 0
+    # we can' calculate sunshine so return None
+    return None
 
 
 def check_enable(cfg_dict, service, *args):

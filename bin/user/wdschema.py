@@ -35,7 +35,7 @@ in saving as much space as you may think - most of the space is taken up by the
 primary key indexes (type "dateTime").
 """
 
-WDSCHEMA_VERSION = '2.0.1'
+WDSCHEMA_VERSION = '2.0.2'
 
 # define schema for archive table
 weewxwd_schema = [
@@ -45,7 +45,8 @@ weewxwd_schema = [
     ('humidex',      'REAL'),
     ('appTemp',      'REAL'),
     ('outTempDay',   'REAL'),
-    ('outTempNight', 'REAL')
+    ('outTempNight', 'REAL'),
+    ('sunshine',     'REAL')
     ]
 
 # define schema for supp table
