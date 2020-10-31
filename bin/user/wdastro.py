@@ -12,9 +12,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 2.0.1                                      Date: 30 August 2020
+Version: 2.1.0                                      Date: 1 November 2020
 
 Revision History
+    1 November 2020     v2.1.0
+        - no change, version number change only
     30 August 2020      v2.0.1
         - no change, version number change only
     20 August 2020      v2.0.0
@@ -53,7 +55,7 @@ from weewx.units import ValueHelper
 
 log = logging.getLogger(__name__)
 
-WEEWXWD_ASTRO_VERSION = '2.0.1'
+WEEWXWD_ASTRO_VERSION = '2.1.0'
 
 
 class MoonApsis(SearchList):

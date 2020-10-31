@@ -11,9 +11,11 @@ details.
 
                          Installer for Weewx-WD
 
-Version: 2.0.1                                        Date: 30 August 2020
+Version: 2.1.0                                        Date: 1 November 2020
 
 Revision History
+    1 November 2020     v2.1.0
+        - revert required WeeWX version from 4.0.0 to 3.4.0
     30 August 2020      v2.0.1
         - changed 'enabled' config option to 'enabled'
     20 August 2020      v2.0.0
@@ -58,8 +60,8 @@ import weewx
 
 from setup import ExtensionInstaller
 
-REQUIRED_VERSION = "4.0.0"
-WEEWX_WD_VERSION = "2.0.1"
+REQUIRED_VERSION = "3.4.0"
+WEEWX_WD_VERSION = "2.1.0"
 
 
 def loader():

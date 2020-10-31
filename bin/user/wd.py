@@ -13,9 +13,18 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
-Version: 2.0.1                                      Date: 30 August 2020
+Version: 2.1.0                                      Date: 1 November 2020
 
 Revision History
+    1 November 2020     v2.1.0
+        - service WdWXCalculate now adds derived field sunshine to archive
+          records, this allows calculation of various 'sunshine hours'
+          aggregates
+        - added field sunshine to the weewxwd schema
+        - fields outTempDay and outTempNight are only added to loop packets and
+          archive records if pre-requisite field outTemp exists in the same
+          loop packet/archive record
+        - removed unused class wdGenerateDerived() from wd.py
     30 August 2020      v2.0.1
         - no change, version number change only
     20 August 2020      v2.0.0
@@ -114,7 +123,7 @@ from weeutil.weeutil import accumulateLeaves, to_int, to_bool
 # get a logger object
 log = logging.getLogger(__name__)
 
-WEEWXWD_VERSION = '2.0.1'
+WEEWXWD_VERSION = '2.1.0'
 
 # Default radiation threshold value used for calculating sunshine
 DEFAULT_SUNSHINE_THRESHOLD = 120

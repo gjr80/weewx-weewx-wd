@@ -1,3 +1,11 @@
+v2.1.0
+*   service WdWXCalculate now adds derived field sunshine to archive records,
+    this allows calculation of various 'sunshine hours' aggregates
+*   added field sunshine to the weewxwd schema
+*   fields outTempDay and outTempNight are only added to loop packets and
+    archive records if pre-requisite field outTemp exists in the same loop
+    packet/archive record
+*   removed unused class wdGenerateDerived() from wd.py
 v2.0.1
 *   now tolerates absence of PyEphem
 *   fixed installer bug that incorrectly added 'enabled' config option
