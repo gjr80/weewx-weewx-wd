@@ -41,7 +41,6 @@ Previous bitbucket revision history
 from array import array
 import bisect
 import datetime
-import logging
 import math
 import time
 
@@ -53,7 +52,27 @@ import weewx
 from weewx.cheetahgenerator import SearchList
 from weewx.units import ValueHelper
 
-log = logging.getLogger(__name__)
+# import/setup logging, WeeWX v3 is syslog based but WeeWX v4 is logging based,
+# try v4 logging and if it fails use v3 logging
+try:
+    # WeeWX4 logging
+    import logging
+
+    log = logging.getLogger(__name__)
+
+    def logdbg(msg):
+        log.debug(msg)
+
+except ImportError:
+    # WeeWX legacy (v3) logging via syslog
+    import syslog
+
+    def logmsg(level, msg):
+        syslog.syslog(level, 'wdastro: %s' % msg)
+
+
+    def logdbg(msg):
+        logmsg(syslog.LOG_DEBUG, msg)
 
 WEEWXWD_ASTRO_VERSION = '2.1.0'
 
@@ -372,7 +391,7 @@ class MoonApsis(SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("MoonApsis SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("MoonApsis SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
@@ -593,7 +612,7 @@ class Eclipse(SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("Eclipse SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("Eclipse SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
@@ -672,7 +691,7 @@ class EarthApsis(SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("EarthApsis SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("EarthApsis SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]
 
@@ -732,6 +751,6 @@ class ChineseNewYear(SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("ChineseNewYear SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("ChineseNewYear SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list_extension]

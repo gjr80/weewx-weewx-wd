@@ -93,7 +93,6 @@ Previous Bitbucket revision history
 """
 
 # python imports
-import logging
 import socket
 import syslog
 import threading
@@ -108,7 +107,6 @@ from six.moves import queue
 from six.moves import urllib
 
 # WeeWX imports
-import weeutil.logger
 import weeutil.weeutil
 import weewx
 import weewx.almanac
@@ -120,8 +118,66 @@ import weewx.wxformulas
 from weewx.units import obs_group_dict
 from weeutil.weeutil import accumulateLeaves, to_int, to_bool
 
-# get a logger object
-log = logging.getLogger(__name__)
+# import/setup logging, WeeWX v3 is syslog based but WeeWX v4 is logging based,
+# try v4 logging and if it fails use v3 logging
+try:
+    # WeeWX4 logging
+    import logging
+    from weeutil.logger import log_traceback
+
+    log = logging.getLogger(__name__)
+
+    def logdbg(msg):
+        log.debug(msg)
+
+    def loginf(msg):
+        log.info(msg)
+
+    def logerr(msg):
+        log.error(msg)
+
+    def logcri(msg):
+        log.critical(msg)
+
+    # log_traceback() generates the same output but the signature and code is
+    # different between v3 and v4. We only need log_traceback at the log.error
+    # level so define a suitable wrapper function.
+
+    def log_traceback_critical(prefix=''):
+        log_traceback(log.critical, prefix=prefix)
+
+    def log_traceback_info(prefix=''):
+        log_traceback(log.info, prefix=prefix)
+
+except ImportError:
+    # WeeWX legacy (v3) logging via syslog
+    import syslog
+    from weeutil.weeutil import log_traceback
+
+    def logmsg(level, msg):
+        syslog.syslog(level, 'wd: %s' % msg)
+
+    def logdbg(msg):
+        logmsg(syslog.LOG_DEBUG, msg)
+
+    def loginf(msg):
+        logmsg(syslog.LOG_INFO, msg)
+
+    def logerr(msg):
+        logmsg(syslog.LOG_ERR, msg)
+
+    def logcri(msg):
+        logmsg(syslog.LOG_CRITICAL, msg)
+
+    # log_traceback() generates the same output but the signature and code is
+    # different between v3 and v4. We only need log_traceback at the log.error
+    # level so define a suitable wrapper function.
+
+    def log_traceback_critical(prefix=''):
+        log_traceback(prefix=prefix, loglevel=syslog.LOG_CRIT)
+
+    def log_traceback_info(prefix=''):
+        log_traceback(prefix=prefix, loglevel=syslog.LOG_INFO)
 
 WEEWXWD_VERSION = '2.1.0'
 
@@ -387,7 +443,7 @@ class WdWXCalculate(weewx.engine.StdService):
                                                                  DEFAULT_SUNSHINE_THRESHOLD)
         else:
             self.sunshine_threshold  = DEFAULT_SUNSHINE_THRESHOLD
-        log.info("WdWXCalculate sunshine threshold: %s" % self.sunshine_threshold)
+        loginf("WdWXCalculate sunshine threshold: %s" % self.sunshine_threshold)
 
         # bind our self to new loop packet and new archive record events
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
@@ -433,7 +489,7 @@ class WdArchive(weewx.engine.StdService):
                                                            'wd_binding')
         else:
             self.data_binding = 'wd_binding'
-        log.info("WdArchive will use data binding %s" % self.data_binding)
+        loginf("WdArchive will use data binding %s" % self.data_binding)
 
         # extract the WeeWX binding for use when we check the need for backfill
         # from the WeeWX archive
@@ -475,8 +531,8 @@ class WdArchive(weewx.engine.StdService):
         # opened database
         dbmanager = self.engine.db_binder.get_manager(self.data_binding,
                                                       initialize=True)
-        log.info("Using binding '%s' to database '%s'" % (self.data_binding,
-                                                          dbmanager.database_name))
+        loginf("Using binding '%s' to database '%s'" % (self.data_binding,
+                                                        dbmanager.database_name))
 
         # FIXME. Is this still required
         # Check if we have any historical data to bring in from the WeeWX
@@ -486,16 +542,16 @@ class WdArchive(weewx.engine.StdService):
                                                          initialize=False)
 
         # then backfill the WeeWX-WD daily summaries
-        log.info("Starting backfill of daily summaries")
+        loginf("Starting backfill of daily summaries")
         t1 = time.time()
         nrecs, ndays = dbmanager_wx.backfill_day_summary()
         tdiff = time.time() - t1
         if nrecs:
-            log.info("Processed %d records to backfill %d day summaries in %.2f seconds" % (nrecs,
-                                                                                            ndays,
-                                                                                            tdiff))
+            loginf("Processed %d records to backfill %d day summaries in %.2f seconds" % (nrecs,
+                                                                                          ndays,
+                                                                                          tdiff))
         else:
-            log.info("Daily summaries up to date.")
+            loginf("Daily summaries up to date.")
 
 
 # ==============================================================================
@@ -533,7 +589,7 @@ class WdSuppArchive(weewx.engine.StdService):
                 # first, get our binding, if it's missing use a default
                 self.binding = _supp_dict.get('data_binding',
                                               'wdsupp_binding')
-                log.info("WdSuppArchive will use data binding '%s'" % self.binding)
+                loginf("WdSuppArchive will use data binding '%s'" % self.binding)
                 # how long to keep records in our db (default 8 days)
                 self.max_age = _supp_dict.get('max_age', 691200)
                 self.max_age = toint(self.max_age, 691200)
@@ -580,7 +636,7 @@ class WdSuppArchive(weewx.engine.StdService):
 
                 # we have everything we need to put a short message re supp 
                 # database
-                log.info("max_age=%s vacuum=%s" % (self.max_age, self.vacuum))
+                loginf("max_age=%s vacuum=%s" % (self.max_age, self.vacuum))
 
                 # setup up any sources
                 self.sources = dict()
@@ -609,10 +665,10 @@ class WdSuppArchive(weewx.engine.StdService):
                         elif not _enable:
                             # the source was explicitly disabled so tell the
                             # user
-                            log.info("Source '%s' not enabled." % source)
+                            loginf("Source '%s' not enabled." % source)
                         else:
                             # no usable source config dict so log it
-                            log.info("Source '%s' will be ignored, incomplete or missing config settings")
+                            loginf("Source '%s' will be ignored, incomplete or missing config settings")
 
                 # define some properties for later use
                 self.last_ts = None
@@ -675,7 +731,7 @@ class WdSuppArchive(weewx.engine.StdService):
                     if 'type' in _package and _package['type'] == 'data':
                         # we have forecast text so log and add it to the archive record
                         if weewx.debug >= 2:
-                            log.debug("received forecast text: %s" % _package['payload'])
+                            logdbg("received forecast text: %s" % _package['payload'])
                         self.source_record.update(_package['payload'])
 
         _record = dict(self.source_record)
@@ -746,7 +802,7 @@ class WdSuppArchive(weewx.engine.StdService):
                 _data['vantageForecastRule'] = davis_fr_dict[self.loop_packet['forecastRule']]
             except KeyError:
                 if weewx.debug >= 2:
-                    log.debug("Could not decode Vantage forecast code")
+                    logdbg("Could not decode Vantage forecast code")
         # vantage stormRain
         if self.loop_packet.get('stormRain') is not None:
             _data['stormRain'] = self.loop_packet['stormRain']
@@ -768,9 +824,9 @@ class WdSuppArchive(weewx.engine.StdService):
                 dbm.addRecord(_data_record)
                 break
             except Exception as e:
-                log.error("save failed (attempt %d of %d): %s" % ((count + 1),
-                                                                  max_tries, e))
-                log.error("waiting %d seconds before retry" % (retry_wait, ))
+                logerr("save failed (attempt %d of %d): %s" % ((count + 1),
+                                                               max_tries, e))
+                logerr("waiting %d seconds before retry" % (retry_wait, ))
                 time.sleep(retry_wait)
         else:
             raise Exception("save failed after %d attempts" % max_tries)
@@ -785,9 +841,9 @@ class WdSuppArchive(weewx.engine.StdService):
                 dbm.getSql(sql)
                 break
             except Exception as e:
-                log.error("prune failed (attempt %d of %d): %s" % ((count+1),
-                                                                   max_tries, e))
-                log.error("waiting %d seconds before retry" % (retry_wait, ))
+                logerr("prune failed (attempt %d of %d): %s" % ((count+1),
+                                                                max_tries, e))
+                logerr("waiting %d seconds before retry" % (retry_wait, ))
                 time.sleep(retry_wait)
         else:
             raise Exception("prune failed after %d attempts" % max_tries)
@@ -812,9 +868,9 @@ class WdSuppArchive(weewx.engine.StdService):
             # it could be that we have a MySQL/MariaDB type database that does
             # not support vacuuming, if we do then we can ignore this exception
             if dbm.connection.dbtype != 'mysql':
-                log.error("Vacuuming database %s failed: %s" % (dbm.database_name, e))
+                logerr("Vacuuming database %s failed: %s" % (dbm.database_name, e))
         t2 = time.time()
-        log.debug("vacuum_database executed in %0.9f seconds" % (t2-t1))
+        logdbg("vacuum_database executed in %0.9f seconds" % (t2-t1))
 
     def setup_database(self):
         """Setup the database table we will be using."""
@@ -823,8 +879,8 @@ class WdSuppArchive(weewx.engine.StdService):
         # then return an opened instance of the database manager.
         dbmanager = self.engine.db_binder.get_database(self.binding,
                                                        initialize=True)
-        log.info("Using binding '%s' to database '%s'" % (self.binding,
-                                                          dbmanager.database_name))
+        loginf("Using binding '%s' to database '%s'" % (self.binding,
+                                                        dbmanager.database_name))
 
     def shutDown(self):
         """Shut down any threads.
@@ -904,7 +960,7 @@ class ThreadedSource(threading.Thread):
                     # parse the raw data response and extract the required data
                     _data = self.parse_raw_data(_raw_data)
                     if self.debug > 0:
-                        log.info("Parsed data=%s" % _data)
+                        loginf("Parsed data=%s" % _data)
                     # if we have some data then place it in the result queue
                     if _data is not None:
                         # construct our data dict for the queue
@@ -929,9 +985,9 @@ class ThreadedSource(threading.Thread):
         except Exception as e:
             # Some unknown exception occurred. This is probably a serious
             # problem. Exit with some notification.
-            log.critical("Unexpected exception of type %s" % (type(e),))
-            weeutil.logger.log_traceback(log.critical, 'wdthreadedsource: **** ')
-            log.critical("Thread exiting. Reason: %s" % (e,))
+            logcri("Unexpected exception of type %s" % (type(e),))
+            log_traceback_critical(prefix='wdthreadedsource: **** ')
+            logcri("Thread exiting. Reason: %s" % (e,))
 
     def setup(self):
         """Perform any post post-__init__() setup.
@@ -1206,17 +1262,17 @@ class WuSource(ThreadedSource):
         self.map_icons = source_config_dict.get("map_to_clientraw_icons", True)
 
         # log what we will do
-        log.info("Weather Underground API will be used for forecast data")
+        loginf("Weather Underground API will be used for forecast data")
         if self.debug > 0:
-            log.info("interval=%s lockout period=%s max tries=%s" % (self.interval,
-                                                                     self.lockout_period,
-                                                                     self.max_tries))
-            log.info("forecast=%s units=%s language=%s" % (self.forecast,
-                                                           self.units,
-                                                           self.language))
-            log.info("locator=%s location=%s" % (self.locator,
-                                                 self.location))
-            log.info("Weather Underground debug=%s" % self.debug)
+            loginf("interval=%s lockout period=%s max tries=%s" % (self.interval,
+                                                                   self.lockout_period,
+                                                                   self.max_tries))
+            loginf("forecast=%s units=%s language=%s" % (self.forecast,
+                                                         self.units,
+                                                         self.language))
+            loginf("locator=%s location=%s" % (self.locator,
+                                               self.location))
+            loginf("Weather Underground debug=%s" % self.debug)
 
     def get_raw_data(self):
         """If required query the WU API and return the response.
@@ -1236,7 +1292,7 @@ class WuSource(ThreadedSource):
         # get the current time
         now = time.time()
         if self.debug > 0:
-            log.info("Last Weather Underground API call at %s" % weeutil.weeutil.timestamp_to_string(self.last_call_ts))
+            loginf("Last Weather Underground API call at %s" % weeutil.weeutil.timestamp_to_string(self.last_call_ts))
 
         # has the lockout period passed since the last call
         if self.last_call_ts is None or ((now + 1 - self.lockout_period) >= self.last_call_ts):
@@ -1254,26 +1310,26 @@ class WuSource(ThreadedSource):
                                                           max_tries=self.max_tries)
                     if self.debug > 0:
                         if _response is not None:
-                            log.info("Downloaded updated Weather Underground forecast")
+                            loginf("Downloaded updated Weather Underground forecast")
                         else:
-                            log.info("Failed to download updated Weather Underground forecast")
+                            loginf("Failed to download updated Weather Underground forecast")
 
                 except Exception as e:
                     # Some unknown exception occurred. Set _response to None,
                     # log it and continue.
                     _response = None
-                    log.info("Unexpected exception of type %s" % (type(e),))
-                    weeutil.logger.log_traceback(log.info, 'WUThread: **** ')
-                    log.info("Unexpected exception of type %s" % (type(e),))
-                    log.info("Weather Underground API forecast query failed")
+                    loginf("Unexpected exception of type %s" % (type(e),))
+                    log_traceback_info(prefix='WUThread: **** ')
+                    loginf("Unexpected exception of type %s" % (type(e),))
+                    loginf("Weather Underground API forecast query failed")
                 # if we got something back then reset our last call timestamp
                 if _response is not None:
                     self.last_call_ts = now
                 return _response
         else:
             # API call limiter kicked in so say so
-            log.info("Tried to make a WU API call within %d sec of the previous call." % (self.lockout_period,))
-            log.info("WU API call limit reached. API call skipped.")
+            loginf("Tried to make a WU API call within %d sec of the previous call." % (self.lockout_period,))
+            loginf("WU API call limit reached. API call skipped.")
         return None
 
     def parse_raw_data(self, response):
@@ -1309,7 +1365,7 @@ class WuSource(ThreadedSource):
             _response_json = json.loads(response)
         except ValueError:
             # can't deserialize the response so log it and return None
-            log.info("Unable to deserialise Weather Underground forecast response")
+            loginf("Unable to deserialise Weather Underground forecast response")
 
         # forecast data has been deserialized so check which forecast narrative
         # we are after and locate the appropriate field.
@@ -1321,8 +1377,8 @@ class WuSource(ThreadedSource):
             except KeyError:
                 # could not find the narrative so log and return None
                 if self.debug > 0:
-                    log.info("Unable to locate 'narrative' field for "
-                             "'%s' forecast narrative" % self.forecast_text)
+                    loginf("Unable to locate 'narrative' field for "
+                           "'%s' forecast narrative" % self.forecast_text)
         else:
             # we want the day time or night time narrative, but which, WU
             # starts dropping the day narrative late in the afternoon and it
@@ -1350,17 +1406,17 @@ class WuSource(ThreadedSource):
                     # couldn't find a key for one of the fields, log it and
                     # force use of night index
                     if self.debug > 0:
-                        log.info("Unable to locate 'dayOrNight' field for %s "
-                                 "'%s' forecast narrative" % (_period_str,
-                                                              self.forecast_text))
+                        loginf("Unable to locate 'dayOrNight' field for %s "
+                               "'%s' forecast narrative" % (_period_str,
+                                                            self.forecast_text))
                     day_index = None
                 except ValueError:
                     # could not get an index for 'D', log it and force use of
                     # night index
                     if self.debug > 0:
-                        log.info("Unable to locate 'D' index for %s "
-                                 "'%s' forecast narrative" % (_period_str,
-                                                              self.forecast_text))
+                        loginf("Unable to locate 'D' index for %s "
+                               "'%s' forecast narrative" % (_period_str,
+                                                            self.forecast_text))
                     day_index = None
             # we have a day_index but is it for today or some later day
             if day_index is not None and day_index <= 1:
@@ -1374,15 +1430,15 @@ class WuSource(ThreadedSource):
                     # couldn't find a key for one of the fields, log it and
                     # return None
                     if self.debug > 0:
-                        log.info("Unable to locate 'dayOrNight' field for %s "
-                                 "'%s' forecast narrative" % (_period_str,
-                                                              self.forecast_text))
+                        loginf("Unable to locate 'dayOrNight' field for %s "
+                               "'%s' forecast narrative" % (_period_str,
+                                                            self.forecast_text))
                 except ValueError:
                     # could not get an index for 'N', log it and return None
                     if self.debug > 0:
-                        log.info("Unable to locate 'N' index for %s "
-                                 "'%s' forecast narrative" % (_period_str,
-                                                              self.forecast_text))
+                        loginf("Unable to locate 'N' index for %s "
+                               "'%s' forecast narrative" % (_period_str,
+                                                            self.forecast_text))
             # if we made it here we have an index to use so get the required
             # narrative
             try:
@@ -1391,20 +1447,20 @@ class WuSource(ThreadedSource):
             except KeyError:
                 # if we can'f find a field log the error and return None
                 if self.debug > 0:
-                    log.info("Unable to locate 'narrative' field for "
-                             "'%s' forecast narrative" % self.forecast_text)
+                    loginf("Unable to locate 'narrative' field for "
+                           "'%s' forecast narrative" % self.forecast_text)
             except ValueError:
                 # if we can'f find an index log the error and return None
                 if self.debug > 0:
-                    log.info("Unable to locate 'narrative' index for "
-                             "'%s' forecast narrative" % self.forecast_text)
+                    loginf("Unable to locate 'narrative' index for "
+                           "'%s' forecast narrative" % self.forecast_text)
 
             if _icon is not None and self.map_icons:
                 _raw_icon = _icon
                 _icon = self.ICON_MAP.get(_icon)
                 if self.debug or weewx.debug > 0:
-                    log.info("Forecast icon mapped from '%d' to '%d'" % (_raw_icon,
-                                                                         _icon))
+                    loginf("Forecast icon mapped from '%d' to '%d'" % (_raw_icon,
+                                                                       _icon))
             if _text is not None or _icon is not None:
                 return {'forecastIcon': _icon,
                         'forecastText': _text}
@@ -1504,7 +1560,7 @@ class WeatherUndergroundAPIForecast(object):
                                         language_setting, format_setting,
                                         _obf_api_key])
             _obf_url = '?'.join([f_url, _obf_parameters])
-            log.info("Submitting Weather Underground API call using URL: %s" % (_obf_url, ))
+            loginf("Submitting Weather Underground API call using URL: %s" % (_obf_url, ))
         # we will attempt the call max_tries times
         for count in range(max_tries):
             # attempt the call
@@ -1524,10 +1580,10 @@ class WeatherUndergroundAPIForecast(object):
                 w.close()
                 return response
             except (urllib.error.URLError, socket.timeout) as e:
-                log.error("Failed to get Weather Underground forecast on attempt %d" % (count+1, ))
-                log.error("   **** %s" % e)
+                logerr("Failed to get Weather Underground forecast on attempt %d" % (count+1, ))
+                logerr("   **** %s" % e)
         else:
-            log.error("Failed to get Weather Underground forecast")
+            logerr("Failed to get Weather Underground forecast")
         return None
 
 
@@ -1707,19 +1763,19 @@ class DarkSkySource(ThreadedSource):
 
         # log what we will do
         if self.do_forecast and self.do_current:
-            log.info("Dark Sky API will be used for forecast and current conditions data")
+            loginf("Dark Sky API will be used for forecast and current conditions data")
         elif self.do_forecast:
-            log.info("Dark Sky API will be used for forecast data only")
+            loginf("Dark Sky API will be used for forecast data only")
         elif self.do_current:
-            log.info("Dark Sky API will be used for current conditions data only")
+            loginf("Dark Sky API will be used for current conditions data only")
         if self.debug > 0:
-            log.info("interval=%s lockout period=%s max tries=%s" % (self.interval,
-                                                                     self.lockout_period,
-                                                                     self.max_tries))
-            log.info("units=%s language=%s block=%s" % (self.units,
-                                                        self.language,
-                                                        self.block))
-            log.info("Dark Sky debug=%s" % self.debug)
+            loginf("interval=%s lockout period=%s max tries=%s" % (self.interval,
+                                                                   self.lockout_period,
+                                                                   self.max_tries))
+            loginf("units=%s language=%s block=%s" % (self.units,
+                                                      self.language,
+                                                      self.block))
+            loginf("Dark Sky debug=%s" % self.debug)
 
     def get_raw_data(self):
         """If required query the Darksky API and return the JSON response.
@@ -1740,7 +1796,7 @@ class DarkSkySource(ThreadedSource):
         # get the current time
         now = time.time()
         if self.debug > 0:
-            log.info("Last Dark Sky API call at %s" % weeutil.weeutil.timestamp_to_string(self.last_call_ts))
+            loginf("Last Dark Sky API call at %s" % weeutil.weeutil.timestamp_to_string(self.last_call_ts))
         # has the lockout period passed since the last call
         if self.last_call_ts is None or ((now + 1 - self.lockout_period) >= self.last_call_ts):
             # If we haven't made an API call previously or if its been too long
@@ -1754,26 +1810,26 @@ class DarkSkySource(ThreadedSource):
                                                   max_tries=self.max_tries)
                     if self.debug > 0:
                         if _response is not None:
-                            log.info("Downloaded Dark Sky API response")
+                            loginf("Downloaded Dark Sky API response")
                         else:
-                            log.info("Failed downloading Dark Sky API response")
+                            loginf("Failed downloading Dark Sky API response")
 
                 except Exception as e:
                     # Some unknown exception occurred. Set _response to None,
                     # log it and continue.
                     _response = None
-                    log.info("Unexpected exception of type %s" % (type(e),))
-                    weeutil.logger.log_traceback(log.info, 'wddarkskysource: **** ')
-                    log.info("Unexpected exception of type %s" % (type(e),))
-                    log.info("Dark Sky API call failed")
+                    loginf("Unexpected exception of type %s" % (type(e),))
+                    log_traceback_info(prefix='wddarkskysource: **** ')
+                    loginf("Unexpected exception of type %s" % (type(e),))
+                    loginf("Dark Sky API call failed")
                 # if we got something back then reset our last call timestamp
                 if _response is not None:
                     self.last_call_ts = now
                 return _response
         else:
             # API call limiter kicked in so say so
-            log.info("Tried to make an Dark Sky API call within %d sec of the previous call." % (self.lockout_period,))
-            log.info("Dark Sky API call limit reached. API call skipped.")
+            loginf("Tried to make an Dark Sky API call within %d sec of the previous call." % (self.lockout_period,))
+            loginf("Dark Sky API call limit reached. API call skipped.")
         return None
 
     def parse_raw_data(self, raw_data):
@@ -1797,9 +1853,9 @@ class DarkSkySource(ThreadedSource):
         # looking at the 'flags' object
         if 'flags' in raw_data:
             if 'darksky-unavailable' in raw_data['flags']:
-                log.info("Dark Sky data for this location temporarily unavailable")
+                loginf("Dark Sky data for this location temporarily unavailable")
         else:
-            log.info("No flag object in Dark Sky API raw data.")
+            loginf("No flag object in Dark Sky API raw data.")
 
         # get the summary data to be used
         # is our block available, can't assume it is
@@ -1836,10 +1892,10 @@ class DarkSkySource(ThreadedSource):
                 else:
                     # we have no summary field, so log it and return None
                     if self.debug > 0:
-                        log.info("Summary data not available for '%s' forecast" % (self.block,))
+                        loginf("Summary data not available for '%s' forecast" % (self.block,))
         else:
             if self.debug > 0:
-                log.info("Dark Sky %s block not available" % self.block)
+                loginf("Dark Sky %s block not available" % self.block)
         # get the current data and icon
         # is the 'currently' block available, can't assume it is
         if 'currently' in raw_data:
@@ -1875,10 +1931,10 @@ class DarkSkySource(ThreadedSource):
                 else:
                     # we have no summary field, so log it and return None
                     if self.debug > 0:
-                        log.info("Summary data not available for 'currently' block")
+                        loginf("Summary data not available for 'currently' block")
         else:
             if self.debug > 0:
-                log.info("Dark Sky 'currently' block not available")
+                loginf("Dark Sky 'currently' block not available")
 
         # if we have at least one non-None value then return a dict, else
         # return None
@@ -1984,7 +2040,7 @@ class DarkskyForecastAPI(object):
                                         self.obfuscated_key,
                                         '%s,%s' % (self.latitude, self.longitude)])
             _obfuscated_url = '?'.join([_obfuscated_url, optional_string])
-            log.info("Submitting API call using URL: %s" % (_obfuscated_url,))
+            loginf("Submitting API call using URL: %s" % (_obfuscated_url,))
         # make the API call
         _response = self._hit_api(url, max_tries)
         # if we have a response we need to deserialise it
@@ -2033,13 +2089,13 @@ class DarkskyForecastAPI(object):
                 response = w.read().decode(char_set)
                 w.close()
                 if self.debug > 1:
-                    log.debug("Dark Sky API response=%s" % (response, ))
+                    logdbg("Dark Sky API response=%s" % (response, ))
                 return response
             except (urllib.error.URLError, socket.timeout) as e:
-                log.error("Failed to get API response on attempt %d" % (count + 1,))
-                log.error("   **** %s" % e)
+                logerr("Failed to get API response on attempt %d" % (count + 1,))
+                logerr("   **** %s" % e)
         else:
-            log.error("Failed to get API response")
+            logerr("Failed to get API response")
         return None
 
     @property
@@ -2118,14 +2174,14 @@ class FileSource(ThreadedSource):
 
         # log what we will do
         if self.do_forecast and self.do_current:
-            log.info("Formatted text file will be used for forecast and current conditions data")
+            loginf("Formatted text file will be used for forecast and current conditions data")
         elif self.do_forecast:
-            log.info("Formatted text file will be used for forecast data only")
+            loginf("Formatted text file will be used for forecast data only")
         elif self.do_current:
-            log.info("Formatted text file will be used for current conditions data only")
+            loginf("Formatted text file will be used for current conditions data only")
         if self.debug > 0:
-            log.info("file=%s interval=%s" % (self.file, self.interval))
-            log.info("File debug=%s" % self.debug)
+            loginf("file=%s interval=%s" % (self.file, self.interval))
+            loginf("File debug=%s" % self.debug)
 
     def get_raw_data(self):
         """Get forecast and current conditions data from a formatted text file.
@@ -2144,7 +2200,7 @@ class FileSource(ThreadedSource):
         now = time.time()
         if self.debug > 0:
             if self.last_read_ts is not None:
-                log.info("Last file read attempted at %s" % weeutil.weeutil.timestamp_to_string(self.last_read_ts))
+                loginf("Last file read attempted at %s" % weeutil.weeutil.timestamp_to_string(self.last_read_ts))
         if self.last_read_ts is None or (now + 1 - self.interval) >= self.last_read_ts:
             # read the file, wrap in a try..except just in case
             _data = None
@@ -2153,15 +2209,15 @@ class FileSource(ThreadedSource):
                     with open(self.file) as f:
                         _data = f.readlines()
                 if self.debug > 0:
-                    log.info("File '%s' read" % self.file)
+                    loginf("File '%s' read" % self.file)
             except Exception as e:
                 # Some unknown exception occurred, likely IOError. Set _data to
                 # None, log it and continue.
                 _data = None
-                log.info("Unexpected exception of type %s" % (type(e),))
-                weeutil.logger.log_traceback(log.info, 'wdfilesource: **** ')
-                log.info("Unexpected exception of type %s" % (type(e),))
-                log.info("Read of file '%s' failed" % self.file)
+                loginf("Unexpected exception of type %s" % (type(e),))
+                log_traceback_info(prefix='wdfilesource: **** ')
+                loginf("Unexpected exception of type %s" % (type(e),))
+                loginf("Read of file '%s' failed" % self.file)
             # we got something so reset our last read timestamp
             if _data is not None:
                 self.last_read_ts = now
@@ -2312,7 +2368,7 @@ def check_enable(cfg_dict, service, *args):
         wdsupp_dict = accumulateLeaves(cfg_dict[service], max_level=1)
     except KeyError:
         if weewx.debug >= 2:
-            log.debug("%s: No config info. Skipped." % service)
+            logdbg("%s: No config info. Skipped." % service)
         return None
 
     # check to see whether all the needed options exist, and none of them have
@@ -2323,7 +2379,7 @@ def check_enable(cfg_dict, service, *args):
                 raise KeyError(option)
     except KeyError as e:
         if weewx.debug >= 2:
-            log.debug("%s: Missing option %s" % (service, e))
+            logdbg("%s: Missing option %s" % (service, e))
         return None
 
     return wdsupp_dict

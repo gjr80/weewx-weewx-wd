@@ -79,7 +79,6 @@ Previous Bitbucket revision history
 import calendar
 import datetime
 import itertools
-import logging
 import math
 import time
 
@@ -99,8 +98,33 @@ from weewx.tags import TimespanBinder
 from weeutil.weeutil import TimeSpan, genMonthSpans
 from weewx.units import ValueHelper, getStandardUnitType, ValueTuple
 
-# get a logger object
-log = logging.getLogger(__name__)
+# import/setup logging, WeeWX v3 is syslog based but WeeWX v4 is logging based,
+# try v4 logging and if it fails use v3 logging
+try:
+    # WeeWX4 logging
+    import logging
+
+    log = logging.getLogger(__name__)
+
+    def loginf(msg):
+        log.info(msg)
+
+
+    def logdbg(msg):
+        log.debug(msg)
+
+except ImportError:
+    # WeeWX legacy (v3) logging via syslog
+    import syslog
+
+    def logmsg(level, msg):
+        syslog.syslog(level, 'wdsearchlist: %s' % msg)
+
+    def loginf(msg):
+        logmsg(syslog.LOG_INFO, msg)
+
+    def logdbg(msg):
+        logmsg(syslog.LOG_DEBUG, msg)
 
 WEEWXWD_SLE_VERSION = '2.1.0'
 
@@ -701,7 +725,7 @@ class WdMonthStats(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdMonthStats SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdMonthStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -768,7 +792,7 @@ class WdLastRainTags(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdLastRainTags SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdLastRainTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -916,7 +940,7 @@ class WdTimeSpanTags(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdTimeSpanTags SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdTimeSpanTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [time_binder]
 
@@ -985,7 +1009,7 @@ class WdAvgWindTags(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdAvgWindTags SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdAvgWindTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -1407,7 +1431,7 @@ class WdSundryTags(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdSundryTags SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdSundryTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -1487,7 +1511,7 @@ class WdTaggedStats(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdTaggedStats SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdTaggedStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [_stats]
 
@@ -1573,7 +1597,7 @@ class WdTaggedArchiveStats(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdTaggedArchiveStats SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdTaggedArchiveStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [_stats]
 
@@ -1636,7 +1660,7 @@ class WdYestAlmanac(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdYestAlmanac SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdYestAlmanac SLE executed in %0.3f seconds" % (t2-t1))
 
 
 # ================================================================================
@@ -1657,7 +1681,7 @@ class WdSkinDict(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdSkinDict SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdSkinDict SLE executed in %0.3f seconds" % (t2-t1))
 
 
 # ================================================================================
@@ -1717,7 +1741,7 @@ class WdMonthlyReportStats(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdMonthlyReportStats SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdMonthlyReportStats SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2369,7 +2393,7 @@ class WdWindRunTags(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdWindRunTags SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdWindRunTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2442,7 +2466,7 @@ class WdHourRainTags(weewx.cheetahgenerator.SearchList):
             (_start_vt, _stop_vt, _rain_vt) = db_lookup().getSqlVectors(tspan,
                                                                         'rain')
         except:
-            log.info("WdHourRainTags: getSqlVectors exception")
+            loginf("WdHourRainTags: getSqlVectors exception")
         # set a few variables beforehand
         hour_start_ts = None
         hour_rain = []
@@ -2483,7 +2507,7 @@ class WdHourRainTags(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdHourRainTags SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdHourRainTags SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2655,7 +2679,7 @@ class WdGdDays(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdGdDays SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdGdDays SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -2799,7 +2823,7 @@ class WdForToday(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdForToday SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdForToday SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -3041,7 +3065,7 @@ class WdRainThisDay(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdRainThisDay SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdRainThisDay SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -3379,7 +3403,7 @@ class WdRainDays(weewx.cheetahgenerator.SearchList):
                        'month_rainy_days': _month_rainy_days}
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdRainDays SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdRainDays SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
 
@@ -3548,6 +3572,6 @@ class WdManualAverages(weewx.cheetahgenerator.SearchList):
 
         t2 = time.time()
         if weewx.debug >= 2:
-            log.debug("WdManualAverages SLE executed in %0.3f seconds" % (t2-t1))
+            logdbg("WdManualAverages SLE executed in %0.3f seconds" % (t2-t1))
 
         return [search_list]
