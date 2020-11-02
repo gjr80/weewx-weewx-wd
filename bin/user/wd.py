@@ -25,6 +25,7 @@ Revision History
           archive records if pre-requisite field outTemp exists in the same
           loop packet/archive record
         - removed unused class wdGenerateDerived() from wd.py
+        - logging is now WeeWX 3 and 4 compatible
     30 August 2020      v2.0.1
         - no change, version number change only
     20 August 2020      v2.0.0
