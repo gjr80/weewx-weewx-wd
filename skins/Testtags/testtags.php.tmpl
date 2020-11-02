@@ -437,6 +437,36 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 ##
 ##End Rain last hour calculation
 ##
+##
+##sunshine hours calculation
+##
+#try
+    #set $today_hours = $day($data_binding='wd_binding').sunshine.sum.hour.raw
+    #set $today_sunshine_hours = '%02d:%02d' % (int($today_hours), round(60.0 * ($today_hours - int($today_hours))))
+#except (TypeError, NotFound)
+    #set $today_sunshine_hours = '00:00'
+#end try
+#try
+    #set $yesterday_hours = $yesterday($data_binding='wd_binding').sunshine.sum.hour.raw
+    #set $yesterday_sunshine_hours = '%02d:%02d' % (int($yesterday_hours), round(60.0 * ($yesterday_hours - int($yesterday_hours))))
+#except (TypeError, NotFound)
+    #set $yesterday_sunshine_hours = '00:00'
+#end try
+#try
+    #set $month_hours = $month($data_binding='wd_binding').sunshine.sum.hour.raw
+    #set $month_sunshine_hours = '%02d:%02d' % (int($month_hours), round(60.0 * ($month_hours - int($month_hours))))
+#except (TypeError, NotFound)
+    #set $month_sunshine_hours = '00:00'
+#end try
+#try
+    #set $year_hours = $year($data_binding='wd_binding').sunshine.sum.hour.raw
+    #set $year_sunshine_hours = '%02d:%02d' % (int($year_hours), round(60.0 * ($year_hours - int($year_hours))))
+#except (TypeError, NotFound)
+    #set $year_sunshine_hours = '00:00'
+#end try
+##
+##End sunshine hours calculation
+##
 //
 // Units
 // -----
@@ -1616,10 +1646,8 @@ $lighteningcountlast30minutesnextstorm = '0';
 #raw $changeinday = #end raw '$naString';  // change in day length since yesterday
 #end if
 #raw $etcurrentweek = #end raw '$seven_day.ET.sum.formatted'; // ET total for the last 7 days
-### FIXME
-#raw $sunshinehourstodateday = #end raw '0';
-### FIXME
-#raw $sunshinehourstodatemonth = #end raw '0';
+#raw $sunshinehourstodateday = #end raw '$today_sunshine_hours';
+#raw $sunshinehourstodatemonth = #end raw '$month_sunshine_hours';
 #if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.exists
 #raw $maxsolarfortime = #end raw '$current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.formatted';
 #else
@@ -1669,10 +1697,8 @@ $lighteningcountlast30minutesnextstorm = '0';
 #raw $lowbarot = #end raw '$day.barometer.mintime.format($timeFormat)';
 #raw $monthtodatemaxbaro = #end raw '$month.barometer.max.formatted'; // MTD high barometer
 #raw $monthtodateminbaro = #end raw '$month.barometer.min.formatted'; //MTD low barometer
-### FIXME
-#raw $sunshinehourstodateyear = #end raw '0';
-### FIXME
-#raw $sunshineyesterday = #end raw '0';
+#raw $sunshinehourstodateyear = #end raw '$year_sunshine_hours';
+#raw $sunshineyesterday = #end raw '$yesterday_sunshine_hours';
 #raw $avtempsincemidnight = #end raw '$day.outTemp.avg.formatted';
 #raw $yesterdayavtemp = #end raw '$yesterday.outTemp.avg.formatted';
 #raw $avgspeedsincereset = #end raw '$day.outTemp.avg.formatted';
