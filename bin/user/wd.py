@@ -507,7 +507,7 @@ class WdArchive(weewx.engine.StdService):
         obs_group_dict["appTemp"] = "group_temperature"
         obs_group_dict["outTempDay"] = "group_temperature"
         obs_group_dict["outTempNight"] = "group_temperature"
-        obs_group_dict["sunshine"] = "group_deltatime"
+        obs_group_dict["sunshine"] = "group_elapsed"
 
         # bind ourselves to NEW_ARCHIVE_RECORD event
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
