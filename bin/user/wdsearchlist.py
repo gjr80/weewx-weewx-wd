@@ -12,9 +12,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 2.1.0                                      Date: 1 November 2020
+Version: 2.1.1                                      Date: 11 November 2020
 
 Revision History
+    11 November 2020    v2.1.1
+        - no change, version number change only
     1 November 2020     v2.1.0
         - logging is now WeeWX 3 and 4 compatible
     30 August 2020      v2.0.1

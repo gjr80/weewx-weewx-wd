@@ -1,3 +1,5 @@
+v2.1.1
+*   populated clientrawextra.txt field 696, today decimal sunshine hours
 v2.1.0
 *   service WdWXCalculate now adds derived field sunshine to archive records,
     this allows calculation of various 'sunshine hours' aggregates

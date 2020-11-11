@@ -50,7 +50,7 @@ Where applicable the nominal location for your system and installation type shou
 
 1.  Download the *WeeWX-WD* extension from the *WeeWX-WD* extension the *WeeWX-WD* extension [releases page](https://github.com/gjr80/weewx-weewx-wd/releases) into a directory accessible from the WeeWX machine.
 
-        $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.1.0/weewxwd-2.1.0.tar.gz
+        $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.1.1/weewxwd-2.1.1.tar.gz
 
 	replacing the symbolic name *$DOWNLOAD_ROOT* with the path to the directory where the *WeeWX-WD* extension is to be downloaded (eg, */var/tmp*).
 
@@ -68,7 +68,7 @@ Where applicable the nominal location for your system and installation type shou
 
 1.  Install the *WeeWX-WD* extension downloaded at step 1 using the WeeWX *wee_extension* utility:
 
-        $ wee_extension --install=$DOWNLOAD_ROOT/weewxwd-2.1.0.tar.gz
+        $ wee_extension --install=$DOWNLOAD_ROOT/weewxwd-2.1.1.tar.gz
 
     **Note:** Depending on your system/installation the above command may need to be prefixed with *sudo*.
 
@@ -76,11 +76,11 @@ Where applicable the nominal location for your system and installation type shou
     
     This will result in output similar to the following:
 
-		Request to install '/var/tmp/weewxwd-2.1.0.tar.gz'
-		Extracting from tar archive /var/tmp/weewxwd-2.1.0.tar.gz
+		Request to install '/var/tmp/weewxwd-2.1.1.tar.gz'
+		Extracting from tar archive /var/tmp/weewxwd-2.1.1.tar.gz
 		Saving installer file to /home/weewx/bin/user/installer/WeeWX-WD
 		Saved configuration dictionary. Backup copy at /home/weewx/weewx.conf.20190427130000
-		Finished installing extension '/var/tmp/weewxwd-2.1.0.tar.gz'
+		Finished installing extension '/var/tmp/weewxwd-2.1.1.tar.gz'
 
 1. Start WeeWX:
 
@@ -100,13 +100,13 @@ Where applicable the nominal location for your system and installation type shou
 
 1.  Download the *WeeWX-WD* extension from the *WeeWX-WD* extension [releases page](https://github.com/gjr80/weewx-weewx-wd/releases) into a directory accessible from the WeeWX machine.
 
-        $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.1.0/weewxwd-2.1.0.tar.gz
+        $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.1.1/weewxwd-2.1.1.tar.gz
 
 	where *$DOWNLOAD_ROOT* is the path to the directory where the *WeeWX-WD* extension is to be downloaded.
 
 1.  Unpack the extension as follows:
 
-        $ tar xvfz weewxwd-2.1.0.tar.gz
+        $ tar xvfz weewxwd-2.1.1.tar.gz
 
 1.  Copy files from within the resulting folder as follows:
 

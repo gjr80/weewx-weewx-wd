@@ -11,9 +11,11 @@ details.
 
                          Installer for Weewx-WD
 
-Version: 2.1.0                                        Date: 1 November 2020
+Version: 2.1.1                                       Date: 11 November 2020
 
 Revision History
+    11 November 2020    v2.1.1
+        - no change, version number change only
     1 November 2020     v2.1.0
         - revert required WeeWX version from 4.0.0 to 3.4.0
     30 August 2020      v2.0.1
