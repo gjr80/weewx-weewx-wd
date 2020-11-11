@@ -116,6 +116,16 @@ GNU General Public License for more details.
 ##
 #set $running_total_rain = 0
 ##
+##sunshine hours calculation
+##
+#try
+    #set $today_sunshine_hours = '%0.1f' % $day($data_binding='wd_binding').sunshine.sum.hour.raw
+#except (TypeError, NotFound)
+    #set $today_sunshine_hours = 'x.0'
+#end try
+##
+##end sunshine hours calculation
+##
 #*WD|000*#12345 #slurp
 #*WD|001*##*Windspeed Hour 01 to 20. Hour 01=24 hours ago*##slurp
 #for $i in range (20):
@@ -851,7 +861,7 @@ $inTempHourArray[$i].degree_C.toString($addLabel=False, $localize=False) #slurp
 #*WD|693*#$alltime.UV.maxtime.format($dayFormat) #slurp
 #*WD|694*#$alltime.UV.maxtime.format($monthFormat) #slurp
 #*WD|695*#$alltime.UV.maxtime.format($yearFormat) #slurp
-#*WD|696*#$time.strftime($timeFormatLong, $dayLength) #slurp
+#*WD|696*#$today_sunshine_hours #slurp
 #*WD|697*#0 #slurp
 #*WD|698*#$current.dateTime.format($hourFormat) #slurp
 #*WD|699*#$current.dateTime.format($minuteFormat) #slurp
