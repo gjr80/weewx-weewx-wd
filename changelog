@@ -1,3 +1,5 @@
+v2.1.2
+*   fixed incorrect template version number in testatgs.php.tmpl
 v2.1.1
 *   populated clientrawextra.txt field 696, today decimal sunshine hours
 v2.1.0

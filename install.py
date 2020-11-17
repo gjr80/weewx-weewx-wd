@@ -9,11 +9,13 @@ ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 
-                         Installer for Weewx-WD
+                         Installer for WeeWX-WD
 
-Version: 2.1.1                                       Date: 11 November 2020
+Version: 2.1.2                                       Date: 17 November 2020
 
 Revision History
+    17 November 2020    v2.1.2
+        - no change, version number change only
     11 November 2020    v2.1.1
         - no change, version number change only
     1 November 2020     v2.1.0

@@ -12,9 +12,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 2.1.1                                          Date: 11 November 2020
+Version: 2.1.2                                          Date: 17 November 2020
 
 Revision History
+    17 November 2020    v2.1.2
+        - no change, version number change only
     11 November 2020    v2.1.1
         - no change, version number change only
     1 November 2020     v2.1.0
@@ -58,7 +60,7 @@ import weewx
 import weewx.units
 import weeutil.weeutil
 
-WEEWXWD_TAGGED_STATS_VERSION = '2.1.0'
+WEEWXWD_TAGGED_STATS_VERSION = '2.1.2'
 
 
 # ==============================================================================
