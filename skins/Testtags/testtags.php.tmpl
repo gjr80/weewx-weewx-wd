@@ -716,7 +716,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $VPsolar = #end raw '$current.radiation.formatted';//  Solar energy number (W/M2)
 #raw $highsolar = #end raw '$day.radiation.max.formatted';// Daily high solar (for Davis VP and Grow stations)
 #if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.exists and $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw is not None
-#if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw > 0
+#if $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw > 0 and $current.radiation.raw is not None
 #set $percent = int(round(100.0 * $current.radiation.raw / $current($data_binding='wdsupp_binding', $max_delta=600).maxSolarRad.raw))
 #else
 #set $percent = 0
