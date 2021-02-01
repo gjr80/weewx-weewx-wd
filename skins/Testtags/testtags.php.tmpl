@@ -1617,7 +1617,7 @@ $lighteningcountlast30minutesnextstorm = '0';
 // ----------------------------------------------------------------------------
 #end raw
 #if $varExists('$current.txBatteryStatus') and ($station.hardware[0:7] == 'Vantage')
-#if $current.txBatteryStatus != None
+#if $current.txBatteryStatus.raw is not None
 #set $txBatteryStatusText = 'Ok' if int($current.txBatteryStatus.raw) & 1 == False else 'Low'
 #raw $vpissstatus = #end raw '$txBatteryStatusText'; // VP ISS Status
 #end if
