@@ -12,9 +12,11 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Version: 2.1.2                                      Date: 17 November 2020
+Version: 2.1.3                                          Date: 15 February 2021
 
 Revision History
+    15 February 2021    v2.1.3
+        - no change, version number change only
     17 November 2020    v2.1.2
         - no change, version number change only
     11 November 2020    v2.1.1
@@ -41,7 +43,7 @@ in saving as much space as you may think - most of the space is taken up by the
 primary key indexes (type "dateTime").
 """
 
-WDSCHEMA_VERSION = '2.1.2'
+WDSCHEMA_VERSION = '2.1.3'
 
 # define schema for archive table
 weewxwd_schema = [

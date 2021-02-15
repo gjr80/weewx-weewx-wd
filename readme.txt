@@ -26,7 +26,7 @@ the Pocket PWS Android weather app.
 
 Pre-Requisites
 
-WeeWX-WD v2.1.2 requires WeeWX v3.4 or later. Both Python 2 and Python 3 are
+WeeWX-WD v2.1.3 requires WeeWX v3.4.0 or later. Both Python 2 and Python 3 are
 supported when using WeeWX v4.0.0 or later.
 
 Pyephem is required to support advanced ephemeris tags.
@@ -56,7 +56,7 @@ Note:   In the following code snippets the symbolic name *$DOWNLOAD_ROOT* is
 (https://bitbucket.org/ozgreg/weewx-wd/downloads) into a directory accessible
 from the weewx machine.
 
-    $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.1.2/weewxwd-2.1.2.tar.gz
+    $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.1.3/weewxwd-2.1.3.tar.gz
 
 	replacing the symbolic name $DOWNLOAD_ROOT with the path to the directory
 	where the WeeWX-WD extension is to be downloaded (eg, /var/tmp).
@@ -76,7 +76,7 @@ from the weewx machine.
 3.  Install the WeeWX-WD extension downloaded at step 1 using the WeeWX
 wee_extension utility:
 
-    wee_extension --install=$DOWNLOAD_ROOT/weewxwd-2.1.2.tar.gz
+    wee_extension --install=$DOWNLOAD_ROOT/weewxwd-2.1.3.tar.gz
 
     Note: Depending on your system/installation the above command may need to
           be prefixed with 'sudo'.
@@ -86,11 +86,11 @@ wee_extension utility:
 
     This will result in output similar to the following:
 
-		Request to install '/var/tmp/weewxwd-2.1.2.tar.gz'
-		Extracting from tar archive /var/tmp/weewxwd-2.1.2.tar.gz
+		Request to install '/var/tmp/weewxwd-2.1.3.tar.gz'
+		Extracting from tar archive /var/tmp/weewxwd-2.1.3.tar.gz
 		Saving installer file to /home/weewx/bin/user/installer/WeeWX-WD
 		Saved configuration dictionary. Backup copy at /home/weewx/weewx.conf.20190427130000
-		Finished installing extension '/var/tmp/weewxwd-2.1.2.tar.gz'
+		Finished installing extension '/var/tmp/weewxwd-2.1.3.tar.gz'
 
 4. Start WeeWX:
 
@@ -114,14 +114,14 @@ Manual installation
 (https://github.com/gjr80/weewx-weewx-wd/releases) into a directory accessible
 from the WeeWX machine:
 
-    $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.1.2/weewxwd-2.1.2.tar.gz
+    $ wget -P $DOWNLOAD_ROOT https://github.com/gjr80/weewx-weewx-wd/releases/download/v2.1.3/weewxwd-2.1.3.tar.gz
 
 	where $DOWNLOAD_ROOT is the path to the directory where the WeeWX-WD
     extension is to be downloaded.
 
 2.  Unpack the extension as follows:
 
-    $ tar xvfz weewxwd-2.1.2.tar.gz
+    $ tar xvfz weewxwd-2.1.3.tar.gz
 
 3.  Copy files from within the resulting folder as follows:
 
