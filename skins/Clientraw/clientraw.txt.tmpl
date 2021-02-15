@@ -120,12 +120,12 @@ GNU General Public License for more details.
 #*WD|046*#$day.outTemp.max.degree_C.toString($addLabel=False, $localize=False) #slurp
 #*WD|047*#$day.outTemp.min.degree_C.toString($addLabel=False, $localize=False) #slurp
 #try
-#*WD|048*#$current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.nolabel("%d", "--- ") #slurp
+#*WD|048*#$current($data_binding='wdsupp_binding', $max_delta=600).currentIcon.nolabel("%d", "---") #slurp
 #except
 #*WD|048*#0 #slurp
 #end try
 #try
-#*WD|049*#$current($data_binding='wdsupp_binding', $max_delta=600).currentText.nolabel("%s", "--- ").replace(' ', '_') #slurp
+#*WD|049*#$current($data_binding='wdsupp_binding', $max_delta=600).currentText.nolabel("%s", "---").replace(' ', '_') #slurp
 #except
 #*WD|049*#--- #slurp
 #end try
