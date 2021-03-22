@@ -639,7 +639,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $temp24hoursago = #end raw '$current($timestamp=$now-86400, $max_delta=300).outTemp.formatted'; // The temperature 24 hours ago
 #raw $humchangelasthour = #end raw '$trend($time_delta=3600).outHumidity.formatted';  // Humidity change last hour
 #raw $dewchangelasthour = #end raw '$trend($time_delta=3600).dewpoint.formatted'; // Dew point change last hour
-#raw $barochangelasthour = #end raw '$trend($time_delta=3600).barometer.formatted';   // Baro change last hour
+#raw $barochangelasthour = #end raw '$trend($time_delta=3600).barometer.format(add_label=False, None_string='0.0')';   // Baro change last hour
 //
 // Wind
 // ----
@@ -664,11 +664,11 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 // -----------
 // Current:
 // --------
-#raw $baro = #end raw '$current.barometer.formatted';
-#raw $baroinusa2dp = #end raw '$current.barometer.inHg.format("%.2f")';  // Current barometer reading in inches, 2 decimal places only.
-#raw $trend = #end raw '$trend($time_delta=3600).barometer.formatted';  // amount of change in the last hour
+#raw $baro = #end raw '$current.barometer.format(add_label=False, None_string='0.0')';
+#raw $baroinusa2dp = #end raw '$current.barometer.inHg.format(format_string="%.2f", None_string='0.0')';  // Current barometer reading in inches, 2 decimal places only.
+#raw $trend = #end raw '$trend($time_delta=3600).barometer.format(add_label=False, None_string='0.0')';  // amount of change in the last hour
 
-#raw $trend3hour = #end raw '$trend($time_delta=10800).barometer';  // amount of change in the last 3 hours
+#raw $trend3hour = #end raw '$trend($time_delta=10800).barometer.format(add_label=False, None_string='0.0')';  // amount of change in the last 3 hours
 #raw $pressuretrendname = #end raw '$trend_60_baro'; // pressure trend (i.e. 'falling'), last hour
 #raw $pressuretrendname3hour = #end raw '$trend_180_baro';   // pressure trend (i.e. 'falling'), last 3 hours
 
@@ -769,7 +769,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir0minuteago = #end raw '$current.windDir.ordinal_compass';
 #raw $hum0minuteago = #end raw '$current.outHumidity.formatted';
 #raw $dew0minuteago = #end raw '$current.dewpoint.formatted';
-#raw $baro0minuteago = #end raw '$current.barometer.formatted';
+#raw $baro0minuteago = #end raw '$current.barometer.format(add_label=False, None_string='0.0')';
 #raw $rain0minuteago = #end raw '$day.rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar0minuteago = #end raw '$current.radiation.formatted';
@@ -788,7 +788,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir5minuteago = #end raw '$current($timestamp=$now-300, $max_delta=60).windDir.ordinal_compass';
 #raw $hum5minuteago = #end raw '$current($timestamp=$now-300, $max_delta=60).outHumidity.formatted';
 #raw $dew5minuteago = #end raw '$current($timestamp=$now-300, $max_delta=60).dewpoint.formatted';
-#raw $baro5minuteago = #end raw '$current($timestamp=$now-300, $max_delta=60).barometer.formatted';
+#raw $baro5minuteago = #end raw '$current($timestamp=$now-300, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain5minuteago = #end raw '$dayagg($ago=300).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar5minuteago = #end raw '$current($timestamp=$now-300, $max_delta=60).radiation.formatted';
@@ -807,7 +807,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir10minuteago = #end raw '$current($timestamp=$now-600, $max_delta=60).windDir.ordinal_compass';
 #raw $hum10minuteago = #end raw '$current($timestamp=$now-600, $max_delta=60).outHumidity.formatted';
 #raw $dew10minuteago = #end raw '$current($timestamp=$now-600, $max_delta=60).dewpoint.formatted';
-#raw $baro10minuteago = #end raw '$current($timestamp=$now-600, $max_delta=60).barometer.formatted';
+#raw $baro10minuteago = #end raw '$current($timestamp=$now-600, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain10minuteago = #end raw '$dayagg($ago=600).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar10minuteago = #end raw '$current($timestamp=$now-600, $max_delta=60).radiation.formatted';
@@ -826,7 +826,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir15minuteago = #end raw '$current($timestamp=$now-900, $max_delta=60).windDir.ordinal_compass';
 #raw $hum15minuteago = #end raw '$current($timestamp=$now-900, $max_delta=60).outHumidity.formatted';
 #raw $dew15minuteago = #end raw '$current($timestamp=$now-900, $max_delta=60).dewpoint.formatted';
-#raw $baro15minuteago = #end raw '$current($timestamp=$now-900, $max_delta=60).barometer.formatted';
+#raw $baro15minuteago = #end raw '$current($timestamp=$now-900, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain15minuteago = #end raw '$dayagg($ago=900).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar15minuteago = #end raw '$current($timestamp=$now-900, $max_delta=60).radiation.formatted';
@@ -845,7 +845,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir20minuteago = #end raw '$current($timestamp=$now-1200, $max_delta=60).windDir.ordinal_compass';
 #raw $hum20minuteago = #end raw '$current($timestamp=$now-1200, $max_delta=60).outHumidity.formatted';
 #raw $dew20minuteago = #end raw '$current($timestamp=$now-1200, $max_delta=60).dewpoint.formatted';
-#raw $baro20minuteago = #end raw '$current($timestamp=$now-1200, $max_delta=60).barometer.formatted';
+#raw $baro20minuteago = #end raw '$current($timestamp=$now-1200, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain20minuteago = #end raw '$dayagg($ago=1200).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar20minuteago = #end raw '$current($timestamp=$now-1200, $max_delta=60).radiation.formatted';
@@ -864,7 +864,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir30minuteago = #end raw '$current($timestamp=$now-1800, $max_delta=60).windDir.ordinal_compass';
 #raw $hum30minuteago = #end raw '$current($timestamp=$now-1800, $max_delta=60).outHumidity.formatted';
 #raw $dew30minuteago = #end raw '$current($timestamp=$now-1800, $max_delta=60).dewpoint.formatted';
-#raw $baro30minuteago = #end raw '$current($timestamp=$now-1800, $max_delta=60).barometer.formatted';
+#raw $baro30minuteago = #end raw '$current($timestamp=$now-1800, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain30minuteago = #end raw '$dayagg($ago=1800).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar30minuteago = #end raw '$current($timestamp=$now-1800, $max_delta=60).radiation.formatted';
@@ -883,7 +883,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir45minuteago = #end raw '$current($timestamp=$now-2700, $max_delta=60).windDir.ordinal_compass';
 #raw $hum45minuteago = #end raw '$current($timestamp=$now-2700, $max_delta=60).outHumidity.formatted';
 #raw $dew45minuteago = #end raw '$current($timestamp=$now-2700, $max_delta=60).dewpoint.formatted';
-#raw $baro45minuteago = #end raw '$current($timestamp=$now-2700, $max_delta=60).barometer.formatted';
+#raw $baro45minuteago = #end raw '$current($timestamp=$now-2700, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain45minuteago = #end raw '$dayagg($ago=2700).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar45minuteago = #end raw '$current($timestamp=$now-2700, $max_delta=60).radiation.formatted';
@@ -902,7 +902,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir60minuteago = #end raw '$current($timestamp=$now-3600, $max_delta=60).windDir.ordinal_compass';
 #raw $hum60minuteago = #end raw '$current($timestamp=$now-3600, $max_delta=60).outHumidity.formatted';
 #raw $dew60minuteago = #end raw '$current($timestamp=$now-3600, $max_delta=60).dewpoint.formatted';
-#raw $baro60minuteago = #end raw '$current($timestamp=$now-3600, $max_delta=60).barometer.formatted';
+#raw $baro60minuteago = #end raw '$current($timestamp=$now-3600, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain60minuteago = #end raw '$dayagg($ago=3600).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar60minuteago = #end raw '$current($timestamp=$now-3600, $max_delta=60).radiation.formatted';
@@ -921,7 +921,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir75minuteago = #end raw '$current($timestamp=$now-4500, $max_delta=60).windDir.ordinal_compass';
 #raw $hum75minuteago = #end raw '$current($timestamp=$now-4500, $max_delta=60).outHumidity.formatted';
 #raw $dew75minuteago = #end raw '$current($timestamp=$now-4500, $max_delta=60).dewpoint.formatted';
-#raw $baro75minuteago = #end raw '$current($timestamp=$now-4500, $max_delta=60).barometer.formatted';
+#raw $baro75minuteago = #end raw '$current($timestamp=$now-4500, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain75minuteago = #end raw '$dayagg($ago=4500).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar75minuteago = #end raw '$current($timestamp=$now-4500, $max_delta=60).radiation.formatted';
@@ -940,7 +940,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir90minuteago = #end raw '$current($timestamp=$now-5400, $max_delta=60).windDir.ordinal_compass';
 #raw $hum90minuteago = #end raw '$current($timestamp=$now-5400, $max_delta=60).outHumidity.formatted';
 #raw $dew90minuteago = #end raw '$current($timestamp=$now-5400, $max_delta=60).dewpoint.formatted';
-#raw $baro90minuteago = #end raw '$current($timestamp=$now-5400, $max_delta=60).barometer.formatted';
+#raw $baro90minuteago = #end raw '$current($timestamp=$now-5400, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain90minuteago = #end raw '$dayagg($ago=5400).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar90minuteago = #end raw '$current($timestamp=$now-5400, $max_delta=60).radiation.formatted';
@@ -959,7 +959,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir105minuteago = #end raw '$current($timestamp=$now-6300, $max_delta=60).windDir.ordinal_compass';
 #raw $hum105minuteago = #end raw '$current($timestamp=$now-6300, $max_delta=60).outHumidity.formatted';
 #raw $dew105minuteago = #end raw '$current($timestamp=$now-6300, $max_delta=60).dewpoint.formatted';
-#raw $baro105minuteago = #end raw '$current($timestamp=$now-6300, $max_delta=60).barometer.formatted';
+#raw $baro105minuteago = #end raw '$current($timestamp=$now-6300, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain105minuteago = #end raw '$dayagg($ago=6300).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar105minuteago = #end raw '$current($timestamp=$now-6300, $max_delta=60).radiation.formatted';
@@ -978,7 +978,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $dir120minuteago = #end raw '$current($timestamp=$now-7200, $max_delta=60).windDir.ordinal_compass';
 #raw $hum120minuteago = #end raw '$current($timestamp=$now-7200, $max_delta=60).outHumidity.formatted';
 #raw $dew120minuteago = #end raw '$current($timestamp=$now-7200, $max_delta=60).dewpoint.formatted';
-#raw $baro120minuteago = #end raw '$current($timestamp=$now-7200, $max_delta=60).barometer.formatted';
+#raw $baro120minuteago = #end raw '$current($timestamp=$now-7200, $max_delta=60).barometer.format(add_label=False, None_string='0.0')';
 #raw $rain120minuteago = #end raw '$dayagg($ago=7200).rain.sum.formatted';
 #if $day.radiation.has_data
 #raw $VPsolar120minuteago = #end raw '$current($timestamp=$now-7200, $max_delta=60).radiation.formatted';
@@ -994,7 +994,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $VPet = #end raw '$current.ET.formatted';
 #raw $VPetmonth = #end raw '$month.ET.sum.formatted';
 #raw $dateoflastrainalways = #end raw '$last_rain.format($dateFormat)';
-#raw $highbaro = #end raw '$day.barometer.max.formatted';
+#raw $highbaro = #end raw '$day.barometer.max.format(add_label=False, None_string='0.0')';
 #raw $highbarot = #end raw '$day.barometer.maxtime.format($timeFormat)';
 #if $yesterday.radiation.has_data
 #raw $highsolaryest = #end raw '$yesterday.radiation.max.formatted';
@@ -1009,7 +1009,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $maxavgdirectionletter = #end raw '$current($timestamp=$max_av_wind_ts).windDir.ordinal_compass';
 #raw $maxavgspd = #end raw '$day.windSpeed.max';
 #raw $maxavgspdt = #end raw '$day.windSpeed.maxtime.format($timeFormat)';
-#raw $maxbaroyest = #end raw '$yesterday.barometer.max.formatted';
+#raw $maxbaroyest = #end raw '$yesterday.barometer.max.format(add_label=False, None_string='0.0')';
 #raw $maxbaroyestt = #end raw '$yesterday.barometer.maxtime.format($timeFormat)';
 #raw $maxgstdirectionletter = #end raw '$day.wind.gustdir.ordinal_compass';
 #raw $maxgustyest = #end raw '$yesterday.wind.max $yesterday.wind.gustdir.ordinal_compass';
@@ -1031,7 +1031,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $mrecordhighavwindday = #end raw '$month.windSpeed.maxtime.format($dayFormat)';
 #raw $mrecordhighavwindmonth = #end raw '$month.windSpeed.maxtime.format($monthFormat)';
 #raw $mrecordhighavwindyear = #end raw '$month.windSpeed.maxtime.format($yearFormat)';
-#raw $mrecordhighbaro = #end raw '$month.barometer.max.formatted';
+#raw $mrecordhighbaro = #end raw '$month.barometer.max.format(add_label=False, None_string='0.0')';
 #raw $mrecordhighbaroday = #end raw '$month.barometer.maxtime.format($dayFormat)';
 #raw $mrecordhighbaromonth = #end raw '$month.barometer.maxtime.format($monthFormat)';
 #raw $mrecordhighbaroyear = #end raw '$month.barometer.maxtime.format($yearFormat)';
@@ -1071,7 +1071,7 @@ if ( isset($_REQUEST['sce']) && strtolower($_REQUEST['sce']) == 'view' ) {
 #raw $yrecordhighavwindday = #end raw '$year.windSpeed.maxtime.format($dayFormat)';
 #raw $yrecordhighavwindmonth = #end raw '$year.windSpeed.maxtime.format($monthFormat)';
 #raw $yrecordhighavwindyear = #end raw '$year.windSpeed.maxtime.format($yearFormat)';
-#raw $yrecordhighbaro = #end raw '$year.barometer.max.formatted';
+#raw $yrecordhighbaro = #end raw '$year.barometer.max.format(add_label=False, None_string='0.0')';
 #raw $yrecordhighbaroday = #end raw '$year.barometer.maxtime.format($dayFormat)';
 #raw $yrecordhighbaromonth = #end raw '$year.barometer.maxtime.format($monthFormat)';
 #raw $yrecordhighbaroyear = #end raw '$year.barometer.maxtime.format($yearFormat)';
@@ -1205,13 +1205,13 @@ $current_summary = preg_replace('|/|',", ",$current_summary);
 #end raw
 ### FIXME
 #raw $maxgsthrtime = #end raw '0';        // time that the max gust last prior 1 hour occurred
-#raw $minbaroyest = #end raw '$yesterday.barometer.min.formatted';
+#raw $minbaroyest = #end raw '$yesterday.barometer.min.format(add_label=False, None_string='0.0')';
 #raw $minbaroyestt = #end raw '$yesterday.barometer.mintime.format($timeFormat)';
-#raw $mrecordlowbaro = #end raw '$month.barometer.min.formatted';
+#raw $mrecordlowbaro = #end raw '$month.barometer.min.format(add_label=False, None_string='0.0')';
 #raw $mrecordlowbaroday = #end raw '$month.barometer.mintime.format($dayFormat)';
 #raw $mrecordlowbaromonth = #end raw '$month.barometer.mintime.format($monthFormat)';
 #raw $mrecordlowbaroyear = #end raw '$month.barometer.mintime.format($yearFormat)';
-#raw $yrecordlowbaro = #end raw '$year.barometer.min.formatted';
+#raw $yrecordlowbaro = #end raw '$year.barometer.min.format(add_label=False, None_string='0.0')';
 #raw $yrecordlowbaroday = #end raw '$year.barometer.mintime.format($dayFormat)';
 #raw $yrecordlowbaromonth = #end raw '$year.barometer.mintime.format($monthFormat)';
 #raw $yrecordlowbaroyear = #end raw '$year.barometer.mintime.format($yearFormat)';
@@ -1403,8 +1403,8 @@ $lighteningcountlast30minutesnextstorm = '0';
 #raw $recordlowdew = #end raw '$alltime.dewpoint.min.formatted';
 #raw $recordhighhum = #end raw '$alltime.outHumidity.max.formatted';
 #raw $recordlowhum = #end raw '$alltime.outHumidity.min.formatted';
-#raw $recordhighbaro = #end raw '$alltime.barometer.max.formatted'; // All time record high barometer
-#raw $recordlowbaro = #end raw '$alltime.barometer.min.formatted'; // All time record low barometer
+#raw $recordhighbaro = #end raw '$alltime.barometer.max.format(add_label=False, None_string='0.0')'; // All time record high barometer
+#raw $recordlowbaro = #end raw '$alltime.barometer.min.format(add_label=False, None_string='0.0')'; // All time record low barometer
 #raw $recordhighsolar = #end raw '$alltime.radiation.max.formatted';
 #raw $recordhightempmonth = #end raw '$alltime.outTemp.maxtime.format($monthFormat)'; //Record high temp month
 #raw $recordhightempday = #end raw '$alltime.outTemp.maxtime.format($dayFormat)'; //Record high temp day
@@ -1693,10 +1693,10 @@ $lighteningcountlast30minutesnextstorm = '0';
 #raw $monthtodateavgust = #end raw '$month.windGust.avg.formatted'; //MTD average wind gust
 #raw $yeartodateavwind = #end raw '$year.windSpeed.avg.formatted'; // YTD average wind speed
 #raw $yeartodategstwind = #end raw '$year.windGust.avg.formatted'; // YTD avg wind gust
-#raw $lowbaro = #end raw '$day.barometer.min.formatted';
+#raw $lowbaro = #end raw '$day.barometer.min.format(add_label=False, None_string='0.0')';
 #raw $lowbarot = #end raw '$day.barometer.mintime.format($timeFormat)';
-#raw $monthtodatemaxbaro = #end raw '$month.barometer.max.formatted'; // MTD high barometer
-#raw $monthtodateminbaro = #end raw '$month.barometer.min.formatted'; //MTD low barometer
+#raw $monthtodatemaxbaro = #end raw '$month.barometer.max.format(add_label=False, None_string='0.0')'; // MTD high barometer
+#raw $monthtodateminbaro = #end raw '$month.barometer.min.format(add_label=False, None_string='0.0')'; //MTD low barometer
 #raw $sunshinehourstodateyear = #end raw '$year_sunshine_hours';
 #raw $sunshineyesterday = #end raw '$yesterday_sunshine_hours';
 #raw $avtempsincemidnight = #end raw '$day.outTemp.avg.formatted';
@@ -2027,8 +2027,10 @@ $lighteningcountlast30minutesnextstorm = '0';
 // ----------------------------------------------------------------------------------------------------
 // end of testtags.txt/testtags.php
 //
-//Include Weewx specific tags if they exist
+//Include WeeWX specific tags if they exist
 //
-if(file_exists($SITE['Extratags'])) { include_once($SITE['Extratags']); }
+if (array_key_exists('Extratags', $SITE)) {
+    if(file_exists($SITE['Extratags'])) { include_once($SITE['Extratags']); }
+}
 //
 ?>#end raw
