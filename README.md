@@ -1,3 +1,14 @@
+# End of Life Notice #
+
+**Note**: This WeeWX extension is no longer being actively developed and supported though it should continue to operate under WeeWX 4.5.1 and earlier (note that WeeWx-WD will not operate under WeeWX v4.6.0 and later). WeeWX-WD users are encouraged to replace the WeeWX-WD extension with the [WeeWX-Saratoga extension](https://github.com/gjr80/weewx-saratoga). The WeeWX-Saratoga extension was designed in conjunction with the Saratoga weather website templates and utilises the direct WeeWX support now incorporated in the Saratoga templates. The key difference between the WeeWx-Saratoga and WeeWX-WD extensions are:
+
+- the WeeWX-Saratoga extension produces the same clientraw family of files as produced by WeeWx-WD
+- the WeeWX-Saratoga extension produces a loop packet based near realtime clientraw.txt allowing near realtime updates of the Saratoga dashboard
+- the WeeWx-Saratoga extension produces a tags file, WEEWXtags.php for use by the Saratoga templates
+- the WeeWX-Saratoga extension no longer produces the testtags.php tags file
+- the WeeWX-Saratoga extension does not support the now defunct Pocket PWS Android application
+- the WeeWX-Saratoga extension supports WeeWX v4.6.0 and later
+
 # WeeWX-WD #
 
 A WeeWX extension to support Weather Display Live, Carter Lake/Saratoga weather website templates and the Pocket PWS Android weather app.
